@@ -395,24 +395,6 @@ m4 <- readRDS("m4model")
 # ggplot(joined_runners) + aes(SB_Freq, `(Intercept)`, color = count > 597) + geom_point()
 
 
-### PLAYER-NEUTRAL MODELS
-
-# # Probability of Successful Pickoff
-# m1n <- glm(isSuccess ~ lead1b, data = pickoff_att_1b, family = binomial)
-# summary(m1n)
-# 
-# # Probability of Pickoff Attempt
-# m2n <- glm(isPickAttempt ~ lead1b + pre_balls + pre_strikes + pre_outs + pre_disengagements, data = pickoff_var_1b_threats, family = binomial)
-# summary(m2n)
-# 
-# # Probability of Successful SB
-# m3n <- glm(is_stolen_base ~ lead1b, data = sb_att_1b, family = binomial)
-# summary(m3n)
-# 
-# # Probability of SB Attempt
-# # Not dependent on lead distance
-# m4n <- glm(isSBAttempt ~ pre_balls + pre_strikes + pre_outs, data = sb_var_1b_threats, family = binomial)
-# summary(m4n)
 
 
 
@@ -525,7 +507,7 @@ pitcher_id <- c(pct10_pitcher_m3, median_pitcher_m3, pct90_pitcher_m3)
 runner_effects <- ranef(m3)$run1b
 runner_effects <- runner_effects %>% arrange(`(Intercept)`)
 sprint_speed_coef <- fixef(m3)[3]
-runner_combined <- runner_effects %>% mutate(player_id = as.numeric(rownames(runner_effects))) %>% left_join(sprints, by = "player_id") %>% mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>% arrange(combined_effect)
+runner_combined <- runner_effects %>% mutate(player_id = as.numeric(rownames(runner_effects))) %>% left_join(sprints, by = "player_id") %>% mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(sprint_speed))
 median_runner_m3 <- runner_combined[0.5 * nrow(runner_combined),"player_id"]
 median_ss <- runner_combined[0.5 * nrow(runner_combined),"sprint_speed"]
 pct90_runner_m3 <- runner_combined[0.9 * nrow(runner_combined),"player_id"]
@@ -533,6 +515,10 @@ pct90_ss <- runner_combined[0.9 * nrow(runner_combined),"sprint_speed"]
 pct10_runner_m3 <- runner_combined[0.1 * nrow(runner_combined),"player_id"]
 pct10_ss <- runner_combined[0.1 * nrow(runner_combined),"sprint_speed"]
 run1b <- c(pct10_runner_m3, median_runner_m3, pct90_runner_m3)
+
+r2_runner <- round(cor(runner_combined$sprint_speed, runner_combined$combined_effect)^2, 5)
+ggplot(runner_combined) + aes(x = sprint_speed, y = combined_effect) + geom_point() + labs(x = "Sprint Speed", y = "Runner Effect", title = "Influence of Sprint Speed on Runner Effect for SB Success", subtitle = paste0("R^2 = ", r2_runner)) + theme_classic()
+
 
 catcher_effects <- ranef(m3)$fielder_2_id
 catcher_effects <- catcher_effects %>% arrange(`(Intercept)`)
@@ -545,6 +531,10 @@ pct90_as <- catcher_combined[0.1 * nrow(catcher_combined),"arm_strength"]
 pct10_catcher_m3 <-  catcher_combined[0.9 * nrow(catcher_combined),"player_id"]
 pct10_as <- catcher_combined[0.9 * nrow(catcher_combined),"arm_strength"]
 fielder_2_id <- c(pct10_catcher_m3, median_catcher_m3, pct90_catcher_m3)
+
+
+r2_catcher <- round(cor(catcher_combined$arm_strength, catcher_combined$combined_effect)^2, 5)
+ggplot(catcher_combined) + aes(x = arm_strength, y = combined_effect) + geom_point() + labs(x = "Arm Strength", y = "Catcher Effect", title = "Influence of Arm Strength on Catcher Effect on SB Success", subtitle = paste0("R^2 = ", r2_catcher)) + theme_classic()
 
 ## BATTERY COMBINED
 battery_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(poptimes, by = "player_id") %>% cross_join(pitcher_effects) %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>% arrange(combined_effect)  %>% filter(!is.na(arm_strength))
