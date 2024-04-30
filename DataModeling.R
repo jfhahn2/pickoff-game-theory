@@ -668,7 +668,7 @@ state_leads_exp$pre_disengagements <- as.factor(state_leads_exp$pre_disengagemen
 state_leads_exp$pickoff_prob <- predict(m2, newdata = state_leads_exp, type = "response", re.form = NA)
 state_leads_exp$pick_succ <- predict(m1, newdata = state_leads_exp, type = "response", re.form = NA)
 
-state_leads_exp$pre_disengagements <- as.numeric(state_leads_exp$pre_disengagements)
+state_leads_exp$pre_disengagements <- as.numeric(state_leads_exp$pre_disengagements) - 2
 state_leads_exp$sb_prob <- predict(m4, newdata = state_leads_exp, type = "response", re.form = NA)
 state_leads_exp$sb_succ <- predict(m3, newdata = state_leads_exp, type = "response", re.form = NA)
 
@@ -693,6 +693,7 @@ prob_runner_outcome <- state_leads_exp %>% mutate(Prob_RO = case_when(
 
 # Join dataframes together 
 prob_trans_adj <- prob_transition %>% filter(Prob > 0) %>% left_join(prob_runner_outcome, by = c("State", "runner_outcome"), relationship = "many-to-many") %>% mutate(Prob_product = Prob * Prob_RO) %>% group_by(State, New_State, lead1b) %>% summarize(TotalProb = sum(Prob_product)) %>% mutate(TotalProb = ifelse(substr(State, 1, 1) == "3", ifelse(New_State == "3 0", 1, 0), TotalProb))
+
 
 
 # VALUE ITERATION STEPS ----
@@ -898,7 +899,39 @@ table3 <- skill_grid %>% ungroup() %>% select(battery_skill, runner_skill, V11) 
 
 
 
+# TWO ACTOR MODEL ----
 
+# Repeat prior steps over and over until no more policy changes
+change <- Inf                                                                                     
+threshold <- 0.01                                                                               
+old_re_table_two <- full_re_table
+old_run_1b_two <- old_run_1b
+iterations <- 0
+while(change > threshold || iterations < 2) {  
+  
+  value_of_outcomes <- prob_transition %>% left_join(runs_on_transition, by = c("State" = "State", "New_State" = "New_State")) %>% left_join(old_re_table_two, by = c("New_State" = "State")) %>% group_by(State, runner_outcome) %>% mutate(New_Value = RunsScored + RE)  %>% summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE)) %>% pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
+  
+  pitcher_decision <- state_leads_exp %>% left_join(value_of_outcomes, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N)
+  
+  best_lead <- pitcher_decision %>% mutate(Diff = abs(Val_Pick_Attempt - Val_NoPick)) %>% group_by(State) %>% mutate(minDiff = min(Diff)) %>% filter(Diff == minDiff) %>% dplyr::slice(1) %>% ungroup() %>%  mutate(RE = pmin(Val_Pick_Attempt, Val_NoPick))
+  
+  new_re_table_two <- best_lead %>% select(State, RE) 
+  
+  new_run_1b_two <- best_lead %>% filter(substr(State, 1, 2) == "10") %>% select(State, lead1b, RE)
+  
+  change <- new_run_1b_two |>                                                                              
+    dplyr::left_join(old_run_1b_two, by = "State", suffix = c("_old", "_new")) |>                      
+    with(sum(abs(lead1b_new - lead1b_old))) 
+  
+  print(change)
+  
+  old_re_table_two <- new_re_table_two
+  old_run_1b_two <- new_run_1b_two
+  iterations <- iterations + 1
+  
+}     
+
+sorted_two <- old_run_1b_two %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
 
 
 # MONOTONICITY CHECKS ----
@@ -939,4 +972,5 @@ write_csv(old_run_1b, "res.csv")
 
 write_csv(sorted, "res.csv")
 
+ggplot(lefties_fixed) + aes(x = PlateLocSide, y = PlateLocHeight, col = TaggedPitchType) + geom_point() + geom_rect(xmin = -17 / 24, xmax = 17 / 24, ymin = 1.6, ymax = 3.38, col = "blue", alpha = 0, size = 0.5) + theme_classic()
 
