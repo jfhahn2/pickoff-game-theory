@@ -933,6 +933,39 @@ while(change > threshold || iterations < 2) {
 
 sorted_two <- old_run_1b_two %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
 
+table1_twoagent <- sorted_two %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% mutate(Runners = ifelse(bases == "100", "Man on 1st", "Men on 1st and 3rd"), Outs = substr(countouts,3,3)) %>% select(Runners, Outs, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_")
+
+table2_twoagent <- sorted_two %>% ungroup() %>%  filter(substr(countouts, 3,3) == "0", bases == "100") %>% mutate(Count = paste0(substr(countouts,1,1),"-",substr(countouts,2,2))) %>% select(Count, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b,  names_prefix = "Disengagements_")
+
+
+
+## When should pitcher attempt a pick?
+pickoff_var_1b <- pickoff_var_1b %>% filter(pre_disengagements < 3)
+pickoff_var_1b$year <- as.factor(pickoff_var_1b$year)
+pickoff_var_1b$pre_disengagements <- as.factor(pickoff_var_1b$pre_disengagements)
+
+pickoff_var_1b$pickoff_prob <- predict(m2, newdata = pickoff_var_1b, type = "response", re.form = NA)
+pickoff_var_1b$pick_succ <- predict(m1, newdata = pickoff_var_1b, type = "response", re.form = NA)
+
+pickoff_var_1b$pre_disengagements <- as.numeric(pickoff_var_1b$pre_disengagements) - 1
+pickoff_var_1b$sb_prob <- predict(m4, newdata = pickoff_var_1b, type = "response", re.form = NA)
+pickoff_var_1b$sb_succ <- predict(m3, newdata = pickoff_var_1b, type = "response", re.form = NA)
+
+states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0), R2 = ifelse(!is.na(run2b), 1, 0), R3 = ifelse(!is.na(run3b), 1, 0), Runners = paste0(R1, R2, R3)) %>% select(-R1, -R2, -R3) %>% mutate(State = paste0(Runners, " ", pre_disengagements, " ", pre_balls, pre_strikes, pre_outs))
+
+pitcher_decision_real <- states_added %>% left_join(value_of_outcomes, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N) %>% mutate(PickRecommend = ifelse(Val_Pick_Attempt < Val_NoPick, 1, 0))
+
+mean(pitcher_decision_real$PickRecommend, na.rm = TRUE) # Pitcher should attempt a pickoff 73.3% of the time!
+mean(pitcher_decision_real$isPickAttempt) # Actually picks 5.3% of the time
+
+should_pick <- pitcher_decision_real %>% filter(PickRecommend == 1)
+mean(should_pick$isPickAttempt) # When pick recommended, they actually pick 6.2% of the time
+
+no_pick <- pitcher_decision_real %>% filter(PickRecommend == 0)
+mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 2.5% of the time
+
+old_re_table_two
+
 
 # MONOTONICITY CHECKS ----
 
