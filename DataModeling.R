@@ -53,11 +53,11 @@ sb_attempts <- sb_att_var %>% filter(isSBAttempt == 1)
 pickoff_var <- sb_att_var %>% mutate(isPickAttempt = ifelse(type == "pickoff", 1, 0)) 
 pickoff_attempts <- pickoff_var %>% filter(isPickAttempt == 1) %>% mutate(isSuccess = ifelse(is.na(is_pickoff), 0, ifelse(is_pickoff == TRUE, 1, 0)))
 
-# Filter only situations where 1B is occupied and 2B is not
-pickoff_var_1b <- pickoff_var %>% filter(!is.na(run1b) & is.na(run2b)) %>% filter(isSBAttempt == 0, is_defensive_indiff == FALSE, is.na(runner_going))
-pickoff_att_1b <- pickoff_attempts %>% filter(!is.na(run1b) & is.na(run2b)) %>% filter(isSBAttempt == 0, is_defensive_indiff == FALSE, is.na(runner_going))
-sb_var_1b <- sb_att_var %>% filter(!is.na(run1b) & is.na(run2b))
-sb_att_1b <- sb_attempts %>% filter(!is.na(run1b) & is.na(run2b))
+# Filter only situations where 1B is occupied and 2B/3B are not
+pickoff_var_1b <- pickoff_var %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b)) %>% filter(isSBAttempt == 0, is_defensive_indiff == FALSE, is.na(runner_going))
+pickoff_att_1b <- pickoff_attempts %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b)) %>% filter(isSBAttempt == 0, is_defensive_indiff == FALSE, is.na(runner_going))
+sb_var_1b <- sb_att_var %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b))
+sb_att_1b <- sb_attempts %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b))
 
 # Filter runners who are no threat to steal (just for modeling) # Also filter out 3-2 counts with 2 outs
 sb_threats <- sb_att_1b %>% count(pre_runner_1b_id) %>% filter(n >= 3) %>% pull(pre_runner_1b_id)
@@ -246,28 +246,14 @@ prob_transition <- rbind(P_N, P_SP, P_UP, P_SS, P_US) %>% select(State, runner_o
 
 
 # PREPARING 2022 LEAD DATA FOR COMPARISON ----
+play22 <- read_csv("data/play/2022.csv")
 
 lead22 <- read_csv("data/lead_distance/2022.csv")
 
 # Remove Duplicate Lead Distances
 no_duplicate_leads <- lead22[duplicated(lead22) == FALSE,]
 
-baserunners_22 <- no_duplicate_leads %>% pivot_wider(names_from = base, values_from = c(lead_distance, runner_id))
-second_open_22 <- baserunners_22 %>% filter(is.na(`lead_distance_2nd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`) %>% mutate(year = "2022")
-
-second_open_23 <- baserunners %>% filter(is.na(`lead_distance_2nd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`) %>% mutate(year = "2023")
-
-leads <- rbind(second_open_22, second_open_23)
-
-# Overal 2022 vs 2023 lead distance density plot
-ggplot(leads) + aes(`lead_distance_1st Base`, col = year, group = year) + geom_density() + xlim(3,16) + theme_classic() +
-  labs(x = "Lead Distance", y = "Density", title = "Lead Distance at 1st Base - 2022/2023")
-
-pitch22 <- read_csv("data/pitch/2022.csv") %>% select(play_id, description)
-play22 <- read_csv("data/play/2022.csv")
-event22 <- read_csv("data/event/2022.csv")
-poptimes22 <- read_csv("catcher_throwing22.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
-sprints22 <- read_csv("sprint_speed22.csv") %>% select(player_id, `last_name, first_name`, sprint_speed, competitive_runs)
+baserunners_22 <- no_duplicate_leads %>% pivot_wider(names_from = base, values_from = c(lead_distance, runner_id)) 
 
 with_leads22 <- play22 %>% left_join(baserunners_22, by = "play_id")
 with_leads22$run1b <- as.factor(with_leads22$pre_runner_1b_id)
@@ -276,6 +262,41 @@ with_leads22$run3b <- as.factor(with_leads22$pre_runner_3b_id)
 with_leads22$lead1b <- with_leads22$`lead_distance_1st Base`
 with_leads22$lead2b <- with_leads22$`lead_distance_2nd Base`
 with_leads22$lead3b <-with_leads22$`lead_distance_3rd Base`
+
+
+
+second_open_22 <- baserunners_22 %>% left_join(play22, by = "play_id") %>% filter(is.na(`lead_distance_2nd Base`), is.na(`lead_distance_3rd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`, pre_disengagements) %>% mutate(year = "2022")
+
+second_open_23 <- baserunners %>% left_join(play23, by = "play_id") %>% filter(is.na(`lead_distance_2nd Base`), is.na(`lead_distance_3rd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`, pre_disengagements) %>% mutate(year = "2023")
+
+leads <- rbind(second_open_22, second_open_23) %>% mutate(yeardis = paste(year, pre_disengagements)) %>% mutate(yeardis = case_when(
+  year == 2022 ~ "2022 - All Situations",
+  year == 2023 & pre_disengagements == 0 ~ "2023 - 0 Disengagements", 
+  year == 2023 & pre_disengagements == 1 ~ "2023 - 1 Disengagements", 
+  year == 2023 & pre_disengagements == 2 ~ "2023 - 2 Disengagements", 
+  TRUE ~ "Error"
+)) %>% filter(yeardis != "Error")
+
+mean_leads <- leads %>% group_by(yeardis) %>% summarize(meanlead = mean(`lead_distance_1st Base`))
+mean_lead22 <- mean_leads[1,2]$meanlead
+mean_lead23_0 <- mean_leads[2,2]$meanlead
+mean_lead23_1 <- mean_leads[3,2]$meanlead
+mean_lead23_2 <- mean_leads[4,2]$meanlead
+
+# Overal 2022 vs 2023 lead distance density plot
+leads_overall <- ggplot(leads) + aes(`lead_distance_1st Base`, col = yeardis, group = yeardis) + geom_density() + xlim(3,16) + theme_classic() + labs(x = "Lead Distance", y = "Density", title = "Lead Distance at 1st Base - 2022/2023", color = "Year and Prior Disengagements") + scale_colour_manual(values = c("red", "skyblue", "dodgerblue3", "darkblue")) + theme(legend.position = "bottom") + guides(color = guide_legend(nrow = 2)) + geom_vline(xintercept = mean_lead22, col = "red")  + geom_vline(xintercept = mean_lead23_0, col = "skyblue")  + geom_vline(xintercept = mean_lead23_1, col = "dodgerblue3")  + geom_vline(xintercept = mean_lead23_2, col = "darkblue")
+
+ppi <- 300
+png("figures/leads_overall.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+print(leads_overall)
+dev.off()
+
+
+pitch22 <- read_csv("data/pitch/2022.csv") %>% select(play_id, description)
+event22 <- read_csv("data/event/2022.csv")
+poptimes22 <- read_csv("catcher_throwing22.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
+sprints22 <- read_csv("sprint_speed22.csv") %>% select(player_id, `last_name, first_name`, sprint_speed, competitive_runs)
+
 
 
 pitcher_batter_catcher22 <- event22 %>% select(game_id, event_index, batter_id, bat_side, pitcher_id, pitch_hand, fielder_2_id, inning, half_inning, post_outs, event)
@@ -305,10 +326,10 @@ pickoff_var22 <- sb_att_var22 %>% mutate(isPickAttempt = ifelse(type == "pickoff
 pickoff_attempts22 <- pickoff_var22 %>% filter(isPickAttempt == 1) %>% mutate(isSuccess = ifelse(is.na(is_pickoff), 0, ifelse(is_pickoff == TRUE, 1, 0)))
 
 # Filter only situations where 1B is occupied and 2B is not
-pickoff_var_1b22 <- pickoff_var22 %>% filter(!is.na(run1b) & is.na(run2b)) %>% filter(isSBAttempt == 0, is_defensive_indiff == FALSE, is.na(runner_going))
-pickoff_att_1b22 <- pickoff_attempts22 %>% filter(!is.na(run1b) & is.na(run2b)) %>% filter(isSBAttempt == 0, is_defensive_indiff == FALSE, is.na(runner_going))
-sb_var_1b22 <- sb_att_var22 %>% filter(!is.na(run1b) & is.na(run2b))
-sb_att_1b22 <- sb_attempts22 %>% filter(!is.na(run1b) & is.na(run2b))
+pickoff_var_1b22 <- pickoff_var22 %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b)) %>% filter(isSBAttempt == 0, is_defensive_indiff == FALSE, is.na(runner_going))
+pickoff_att_1b22 <- pickoff_attempts22 %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b)) %>% filter(isSBAttempt == 0, is_defensive_indiff == FALSE, is.na(runner_going))
+sb_var_1b22 <- sb_att_var22 %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b))
+sb_att_1b22 <- sb_attempts22 %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b))
 
 # Filter runners who are no threat to steal (just for modeling) # Also filter out 3-2 counts with 2 outs
 sb_threats22 <- sb_att_1b22 %>% count(pre_runner_1b_id) %>% filter(n >= 3) %>% pull(pre_runner_1b_id)
@@ -320,6 +341,9 @@ sb_att_1b_threats22 <- sb_att_1b22 %>% filter(pre_runner_1b_id %in% sb_threats22
 
 
 all_sb_att1b <- rbind(sb_att_1b_threats, sb_att_1b_threats22)
+pitchers_in_sample <- unique(rep_level$pitcher_id)
+runners_in_sample <- unique(rep_level$run1b)
+all_sb_att1b <- all_sb_att1b %>% mutate(pitcher_id = ifelse(pitcher_id %in% pitchers_in_sample, pitcher_id, "p1")) %>% mutate(run1b = ifelse(run1b %in% runners_in_sample, run1b, "r1"))
 all_pickoff_var1b <- rbind(pickoff_var_1b_threats, pickoff_var_1b_threats22) %>% filter(pre_disengagements < 3)
 all_pickoff_var1b$year <- as.factor(all_pickoff_var1b$year)
 all_pickoff_var1b$pre_disengagements <- as.factor(all_pickoff_var1b$pre_disengagements)
@@ -428,9 +452,13 @@ plot_data_m1 <- plot_data %>% cross_join(pitcher_id, copy = TRUE) %>% rename(pit
 plot_data_m1$PickSuccess <- predict(m1, newdata = plot_data_m1, type = "response")
 plot_data_m1 <- plot_data_m1 %>% mutate(pitcher_id = ifelse(pitcher_id == pct90_pitcher_m1, "90th Percentile Pitcher", ifelse(pitcher_id == median_pitcher_m1, "Median Pitcher", "10th Percentile Pitcher")))
 plot_data_m1$pitcher_id <- factor(plot_data_m1$pitcher_id, levels = c("90th Percentile Pitcher", "Median Pitcher", "10th Percentile Pitcher"))
-ggplot(plot_data_m1, aes(x = lead1b, y = PickSuccess, col = pitcher_id)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Successful Pickoff by Lead Distance", subtitle = "Against Various Pitchers", col = "Pitcher Pickoff Skill") + theme_classic() + theme(legend.position = "bottom") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue")) 
 
 
+pick_succ_plot <- ggplot(plot_data_m1, aes(x = lead1b, y = PickSuccess, col = pitcher_id)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Successful Pickoff by Lead Distance", subtitle = "Against Various Pitchers", col = "Pitcher Pickoff Skill") + theme_classic() + theme(legend.position = "bottom") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue")) 
+
+png("figures/prob_pickoff_success.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+print(pick_succ_plot)
+dev.off()
 
 # GRAPH FOR M2 (pickoff attempt) - VARY PITCHER EFFECT
 pitcher_effects <- ranef(m2)$pitcher_id
@@ -493,15 +521,16 @@ leads_df$PickAttempt <- predict(m2, newdata = leads_df, type = "response")
 plot_data_m2$Legend <- as.factor(plot_data_m2$pre_disengagements)
 leads_df$Legend <- '2022 (0 disengagements)'
 
-ggplot(plot_data_m2) + geom_line(data = plot_data_m2, aes(x = lead1b, y = PickAttempt, col = Legend)) +
+pick_att <- ggplot(plot_data_m2) + geom_line(data = plot_data_m2, aes(x = lead1b, y = PickAttempt, col = Legend)) +
   geom_line(data = leads_df, aes(x = lead1b, y = PickAttempt, col = Legend)) + labs(x = "Lead Distance", y = "Probability", title = "Probability of Pickoff Attempt by Lead Distance", subtitle = "Against Typical Pitcher", col = "Number of Disengagements") + theme_classic() + theme(legend.position = "bottom") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue")) + geom_line(data = leads_df, aes(x = lead1b, y = PickAttempt), color = "red") +
   scale_colour_manual(
     values = c("skyblue", "dodgerblue3", "darkblue", "red"),
     labels = c("0", "1", "2", "2022 (0 disengagements)")
   )
 
-
-
+png("figures/prob_pickoff_attempt.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+print(pick_att)
+dev.off()
 
 
 
@@ -526,7 +555,11 @@ pct10_ss <- runner_combined[0.1 * nrow(runner_combined),"sprint_speed"]
 run1b <- c(pct10_runner_m3, median_runner_m3, pct90_runner_m3)
 
 r2_runner <- round(cor(runner_combined$sprint_speed, runner_combined$combined_effect)^2, 5)
-ggplot(runner_combined) + aes(x = sprint_speed, y = combined_effect) + geom_point() + labs(x = "Sprint Speed", y = "Runner Effect", title = "Influence of Sprint Speed on Runner Effect for SB Success", subtitle = paste0("R^2 = ", r2_runner)) + theme_classic()
+runner_eff_plot <- ggplot(runner_combined) + aes(x = sprint_speed, y = combined_effect) + geom_point() + labs(x = "Sprint Speed", y = "Runner Effect", title = "Influence of Sprint Speed on Runner Effect for SB Success", subtitle = paste0("R^2 = ", r2_runner)) + theme_classic()
+
+png("figures/runner_effect.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+print(runner_eff_plot)
+dev.off()
 
 
 catcher_effects <- ranef(m3)$fielder_2_id
@@ -543,7 +576,12 @@ fielder_2_id <- c(pct10_catcher_m3, median_catcher_m3, pct90_catcher_m3)
 
 
 r2_catcher <- round(cor(catcher_combined$arm_strength, catcher_combined$combined_effect)^2, 5)
-ggplot(catcher_combined) + aes(x = arm_strength, y = combined_effect) + geom_point() + labs(x = "Arm Strength", y = "Catcher Effect", title = "Influence of Arm Strength on Catcher Effect on SB Success", subtitle = paste0("R^2 = ", r2_catcher)) + theme_classic()
+catcher_eff_plot <- ggplot(catcher_combined) + aes(x = arm_strength, y = combined_effect) + geom_point() + labs(x = "Arm Strength", y = "Catcher Effect", title = "Influence of Arm Strength on Catcher Effect on SB Success", subtitle = paste0("R^2 = ", r2_catcher)) + theme_classic()
+
+png("figures/catcher_effect", width = 7 * ppi, height = 7 * ppi, res = ppi)
+print(catcher_eff_plot)
+dev.off()
+
 
 ## BATTERY COMBINED
 battery_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(poptimes, by = "player_id") %>% cross_join(pitcher_effects) %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>% arrange(combined_effect)  %>% filter(!is.na(arm_strength))
@@ -590,13 +628,15 @@ leads_df$SBSuccess <- predict(m3, newdata = leads_df, type = "response")
 plot_data_m3$Legend <- as.factor(plot_data_m3$run1b)
 leads_df$Legend <- '2022 (Median Runner)'
 
-ggplot(plot_data_m3) + geom_line(aes(x = lead1b, y = SBSuccess, col = Legend)) +
+sb_succ_plot <- ggplot(plot_data_m3) + geom_line(aes(x = lead1b, y = SBSuccess, col = Legend)) +
   geom_line(data = leads_df, aes(x = lead1b, y = SBSuccess, col = Legend))  + labs(x = "Lead Distance", y = "Probability", title = "Probability of Successful Stolen Base by Lead Distance", subtitle = "Against Various Runners", col = "Runner SB Skill") + theme_classic() + theme(legend.position = "bottom") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue")) +
   scale_colour_manual(
     values = c("skyblue", "dodgerblue3", "darkblue", "red"),
     labels = c("90th Pct Runner", "Median Runner", "10th Pct Runner", "2022 (Median Runner)")
   )
-
+png("figures/prob_sb_success.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+print(sb_succ_plot)
+dev.off()
 
 # 
 # ## VARY SPRINT SPEED
@@ -665,7 +705,7 @@ leads <- seq(0,30, by = 0.1)
 
 # Make grid of states and leads
 state_leads_outcomes <- expand.grid(State = all_possible_states, lead1b = leads, runner_outcome = c("N", "SP", "UP", "SS", "US"))
-state_leads_exp <- state_leads_outcomes %>% mutate(pre_balls = as.numeric(substr(State, 7, 7)), pre_strikes = as.numeric(substr(State, 8, 8)), pre_outs = as.numeric(substr(State, 9, 9)), pre_disengagements = as.factor(substr(State, 5, 5)), sb2B = ifelse(substr(State, 2, 2) == "0" & substr(State, 1, 1) == "1", 1, 0), sprint_speed = mean_ss, arm_strength = mean_as) %>% filter(pre_disengagements %in% c(0,1,2))
+state_leads_exp <- state_leads_outcomes %>% mutate(pre_balls = as.numeric(substr(State, 7, 7)), pre_strikes = as.numeric(substr(State, 8, 8)), pre_outs = as.numeric(substr(State, 9, 9)), pre_disengagements = as.factor(substr(State, 5, 5)), sb2B = ifelse(substr(State, 3, 3) == "0" & substr(State, 2, 2) == "0" & substr(State, 1, 1) == "1", 1, 0), sprint_speed = mean_ss, arm_strength = mean_as) %>% filter(pre_disengagements %in% c(0,1,2))
 
 
 
@@ -735,8 +775,8 @@ value_of_leads <- transition_values %>% mutate(WeightedValue = TotalProb * New_V
 # Find the lead that maximizes EV
 leads_by_state <- value_of_leads %>% group_by(State) %>% filter(row_number() == which.max(RunValue))
 
-# Only want situations where runner on 1b and no runner on 2b
-runon1b <- leads_by_state %>% filter(substr(State, 1, 2) == "10")
+# Only want situations where runner on 1b and no other runners on 
+runon1b <- leads_by_state %>% filter(substr(State, 1, 3) == "100")
 runon1b
 
 # Group by outcome
@@ -762,7 +802,7 @@ while(change > threshold || iterations < 2) {
     summarize(RE = sum(TotalProb * (RunsScored + RE)), n = mean(n)) %>% ungroup() %>%
     group_by(State) %>% filter(row_number() == which.max(RE))
   
-  new_run_1b <- re_vals %>% filter(substr(State, 1, 2) == "10")
+  new_run_1b <- re_vals %>% filter(substr(State, 1, 3) == "100")
   
   change <- new_run_1b |>                                                                              
     dplyr::left_join(old_run_1b, by = "State", suffix = c("_old", "_new")) |>                      
@@ -846,8 +886,8 @@ for (i in 1:nrow(skill_grid)) {
   # Find the lead that maximizes EV
   leads_by_state_it <- value_of_leads_it %>% group_by(State) %>% filter(row_number() == which.max(RunValue))
   
-  # Only want situations where runner on 1b and no runner on 2b
-  runon1b_it <- leads_by_state_it %>% filter(substr(State, 1, 2) == "10")
+  # Only want situations where runner on 1b and no runners on other bases
+  runon1b_it <- leads_by_state_it %>% filter(substr(State, 1, 3) == "100")
   runon1b_it
   
   # BELLMAN ITERATION
@@ -867,7 +907,7 @@ for (i in 1:nrow(skill_grid)) {
       summarize(RE = sum(TotalProb * (RunsScored + RE))) %>% ungroup() %>%
       group_by(State) %>% filter(row_number() == which.max(RE))
     
-    new_run_1b_it <- re_vals_it %>% filter(substr(State, 1, 2) == "10")
+    new_run_1b_it <- re_vals_it %>% filter(substr(State, 1, 3) == "100")
     
     change <- new_run_1b_it |>                                                                              
       dplyr::left_join(old_run_1b_it, by = "State", suffix = c("_old", "_new")) |>                      
@@ -885,6 +925,8 @@ for (i in 1:nrow(skill_grid)) {
   print(skill_grid[i,7])
   print(old_run_1b_it[1,])
   skill_grid[i, 11] <- old_run_1b_it[1,]$lead1b
+  skill_grid[i, 12] <- old_run_1b_it[37,]$lead1b
+  skill_grid[i, 13] <- old_run_1b_it[73,]$lead1b
 }
 
 
@@ -899,7 +941,12 @@ max0 <- lead_by_state %>% filter(State == 0) %>% arrange(-RE) %>% head(1) %>% pu
 max1 <- lead_by_state %>% filter(State == 1) %>% arrange(-RE) %>% head(1) %>% pull(lead1b)
 max2 <- lead_by_state %>% filter(State == 2) %>% arrange(-RE) %>% head(1) %>% pull(lead1b)
 
-ggplot(lead_by_state) + aes(lead1b, y = RE, col = State) + geom_line() + labs(x = "Lead Distance", y = "Run Expectancy", col = "Disengagements", title = "Run Expectancy of Runner on 1st, 0-0 count, 0 outs", subtitle = "Based on Lead Distance and Disengagements") + theme_classic() + theme(legend.position = "bottom") + scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue"))+ ylim(0.9,0.96) + xlim(0,20) + geom_vline(xintercept = max0, color = "skyblue") + geom_vline(xintercept = max1, color = "dodgerblue3") + geom_vline(xintercept = max2, color = "darkblue")
+opt_lead_plot <- ggplot(lead_by_state) + aes(lead1b, y = RE, col = State) + geom_line() + labs(x = "Lead Distance", y = "Run Expectancy", col = "Disengagements", title = "Run Expectancy of Runner on 1st, 0-0 count, 0 outs", subtitle = "Based on Lead Distance and Disengagements") + theme_classic() + theme(legend.position = "bottom") + scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue"))+ ylim(0.9,0.96) + xlim(0,20) + geom_vline(xintercept = max0, color = "skyblue") + geom_vline(xintercept = max1, color = "dodgerblue3") + geom_vline(xintercept = max2, color = "darkblue")
+
+png("figures/finding_optimal_lead.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+print(opt_lead_plot)
+dev.off()
+
 
 sorted <- old_run_1b %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
 
@@ -908,7 +955,8 @@ table1 <- sorted %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% m
 
 table2 <- sorted %>% ungroup() %>%  filter(substr(countouts, 3,3) == "0", bases == "100") %>% mutate(Count = paste0(substr(countouts,1,1),"-",substr(countouts,2,2))) %>% select(Count, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b,  names_prefix = "Disengagements_")
 
-table3 <- skill_grid %>% ungroup() %>% select(battery_skill, runner_skill, V11) %>% pivot_wider(names_from = runner_skill, values_from = V11)
+table3 <- skill_grid %>% ungroup() %>% select(battery_skill, runner_skill, V11, V12, V13)
+colnames(table3) <- c("Battery Skill", "Runner Skill", "0 Disengagements", "1 Disengagements", "2 Disengagements")
 
 print(
   xtable::xtable(table1, digits = 1),
@@ -916,7 +964,7 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "tables/lead_by_runners_outs.tex"
+  file = "figures/lead_by_runners_outs.tex"
 )
 
 print(
@@ -925,7 +973,7 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "tables/lead_by_count.tex"
+  file = "figures/lead_by_count.tex"
 )
 
 print(
@@ -934,9 +982,35 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "tables/lead_by_players.tex"
+  file = "figures/lead_by_players.tex"
 )
 
+
+## How well do runners select lead distance?
+
+pickoff_var_1b <- pickoff_var_1b %>% filter(pre_disengagements < 3)
+
+pv1b_states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0), R2 = ifelse(!is.na(run2b), 1, 0), R3 = ifelse(!is.na(run3b), 1, 0), Runners = paste0(R1, R2, R3)) %>% select(-R1, -R2, -R3) %>% mutate(State = paste0(Runners, " ", pre_disengagements, " ", pre_balls, pre_strikes, pre_outs))
+
+actual_vs_recommended_leads <- pv1b_states_added %>% left_join(old_run_1b, by = "State") %>% rename(ActualLead = lead1b.x, RecLead = lead1b.y) %>% mutate(LeadDiff = ActualLead - RecLead)
+
+avr_table <- actual_vs_recommended_leads %>% group_by(pre_disengagements) %>% summarize(Actual = mean(ActualLead, na.rm = TRUE), Rec = mean(RecLead, na.rm = TRUE))
+colnames(avr_table) <- c("Disengagements", "Actual Lead", "Recommended Lead")
+avr_table$Disengagements <- as.factor(avr_table$Disengagements)
+
+
+print(
+  xtable::xtable(avr_table, digits = 1),
+  hline.after = NULL,
+  include.colnames = FALSE,
+  include.rownames = FALSE,
+  only.contents = TRUE,
+  file = "figures/actual_vs_rec_lead.tex"
+)
+
+dis <- actual_vs_recommended_leads %>% mutate(nextLead = lead(ActualLead), nextRec = lead(RecLead)) %>% filter(lead(pre_disengagements) == pre_disengagements + 1, lead(event_index) == event_index) %>% mutate(RecIncrease = nextRec - RecLead, ActualIncrease = nextLead - ActualLead)
+
+#ggplot(dis) + aes(x = ActualIncrease, color = "red") + geom_density() + geom_density(aes(x = RecIncrease, color = "dodgerblue")) + theme_classic() + xlim(-2,5)
 
 # TWO AGENT MODEL ----
 
@@ -956,7 +1030,7 @@ while(change > threshold || iterations < 2) {
   
   new_re_table_two <- best_lead %>% select(State, RE) 
   
-  new_run_1b_two <- best_lead %>% filter(substr(State, 1, 2) == "10") %>% select(State, lead1b, RE)
+  new_run_1b_two <- best_lead %>% filter(substr(State, 1, 3) == "100") %>% select(State, lead1b, RE)
   
   change <- new_run_1b_two |>                                                                              
     dplyr::left_join(old_run_1b_two, by = "State", suffix = c("_old", "_new")) |>                      
@@ -1031,8 +1105,8 @@ for (i in 1:nrow(skill_grid)) {
   # Find the lead that maximizes EV
   leads_by_state_it <- value_of_leads_it %>% group_by(State) %>% filter(row_number() == which.max(RunValue))
   
-  # Only want situations where runner on 1b and no runner on 2b
-  runon1b_it <- leads_by_state_it %>% filter(substr(State, 1, 2) == "10")
+  # Only want situations where runner on 1b and no runners on other bases
+  runon1b_it <- leads_by_state_it %>% filter(substr(State, 1, 3) == "100")
   runon1b_it
   
   # BELLMAN ITERATION
@@ -1052,7 +1126,7 @@ for (i in 1:nrow(skill_grid)) {
       summarize(RE = sum(TotalProb * (RunsScored + RE))) %>% ungroup() %>%
       group_by(State) %>% filter(row_number() == which.max(RE))
     
-    new_run_1b_it <- re_vals_it %>% filter(substr(State, 1, 2) == "10")
+    new_run_1b_it <- re_vals_it %>% filter(substr(State, 1, 3) == "100")
     
     change <- new_run_1b_it |>                                                                              
       dplyr::left_join(old_run_1b_it, by = "State", suffix = c("_old", "_new")) |>                      
@@ -1109,7 +1183,7 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "tables/count_two_agent.tex"
+  file = "figures/count_two_agent.tex"
 )
 
 print(
@@ -1118,7 +1192,7 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "tables/runners_outs_two_agent.tex"
+  file = "figures/runners_outs_two_agent.tex"
 )
 
 
@@ -1128,44 +1202,8 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "tables/players_two_agent.tex"
+  file = "figures/players_two_agent.tex"
 )
 # MONOTONICITY CHECKS ----
 
-RE_transitions <- T_matrix %>% select(State, New_State, Freq) %>% left_join(old_re_table, by = "State") %>% rename(Old_RE = RE) %>% left_join(old_re_table, by = c("New_State" = "State")) %>% rename(New_RE = RE)  %>% left_join(runs_on_transition, by = c("State", "New_State")) %>% mutate(RE_change = New_RE - Old_RE + RunsScored)
-
-# Situations where a ball is thrown and all else is the same
-all_same_but_balls <- RE_transitions %>% filter(substr(State, 1, 6) == substr(New_State, 1, 6), substr(State, 8, 9) == substr(New_State, 8, 9)) %>% mutate(Pre_Balls = as.numeric(substr(State, 7, 7)), Post_Balls = as.numeric(substr(New_State, 7, 7))) %>% filter(Post_Balls - Pre_Balls == 1)
-#ggplot(all_same_but_balls) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Ball Thrown")
-
-balls1000 <- all_same_but_balls %>% filter(Freq > 1000)
-#ggplot(balls1000) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Ball Thrown - transitions with over 1000 iterations")
-
-# Situations where a strike is thrown and all else is the same
-all_same_but_strikes <- RE_transitions %>% filter(substr(State, 1, 7) == substr(New_State, 1, 7), substr(State, 9, 9) == substr(New_State, 9, 9)) %>% mutate(Pre_Strikes = as.numeric(substr(State, 8, 8)), Post_Strikes = as.numeric(substr(New_State, 8, 8))) %>% filter(Post_Strikes - Pre_Strikes == 1)
-#ggplot(all_same_but_strikes) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Strike Thrown")
-
-strikes1000 <- all_same_but_strikes %>% filter(Freq > 1000)
-#ggplot(strikes1000) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Strike Thrown - transitions with over 1000 iterations")
-
-
-# Situations where a disengagement occurs and all else is the same
-all_same_but_dis <- RE_transitions %>% filter(substr(State, 1, 4) == substr(New_State, 1, 4), substr(State, 6, 9) == substr(New_State, 6, 9)) %>% mutate(Pre_Dis = as.numeric(substr(State, 5, 5)), Post_Dis = as.numeric(substr(New_State, 5, 5))) %>% filter(Post_Dis - Pre_Dis == 1)
-#ggplot(all_same_but_dis) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Disengagement")
-
-dis100 <- all_same_but_dis %>% filter(Freq > 100)
-#ggplot(dis100) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Disengagement - transitions with over 100 iterations")
-
-
-# Situations where an out is made and all else is the same
-all_same_but_outs <- RE_transitions %>% filter(substr(State, 1, 8) == substr(New_State, 1, 8), substr(State, 8, 8) == substr(New_State, 8, 8)) %>% mutate(Pre_Outs = as.numeric(substr(State, 9, 9)), Post_Outs = as.numeric(substr(New_State, 9, 9))) %>% filter(Post_Outs - Pre_Outs == 1)
-#ggplot(all_same_but_outs) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Out")
-
-
-
-write_csv(old_run_1b, "res.csv")
-
-
-write_csv(sorted, "res.csv")
-
-
+RE_transitions <- T_matrix %>% select(State, 
