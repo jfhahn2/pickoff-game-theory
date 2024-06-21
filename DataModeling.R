@@ -287,7 +287,7 @@ mean_lead23_2 <- mean_leads[4,2]$meanlead
 leads_overall <- ggplot(leads) + aes(`lead_distance_1st Base`, col = yeardis, group = yeardis) + geom_density() + xlim(3,16) + theme_classic() + labs(x = "Lead Distance", y = "Density", title = "Lead Distance at 1st Base - 2022/2023", color = "Year and Prior Disengagements") + scale_colour_manual(values = c("red", "skyblue", "dodgerblue3", "darkblue")) + theme(legend.position = "bottom") + guides(color = guide_legend(nrow = 2)) + geom_vline(xintercept = mean_lead22, col = "red")  + geom_vline(xintercept = mean_lead23_0, col = "skyblue")  + geom_vline(xintercept = mean_lead23_1, col = "dodgerblue3")  + geom_vline(xintercept = mean_lead23_2, col = "darkblue")
 
 ppi <- 300
-png("figures/leads_overall.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+png("figures/leads_overall.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
 print(leads_overall)
 dev.off()
 
@@ -343,7 +343,7 @@ sb_att_1b_threats22 <- sb_att_1b22 %>% filter(pre_runner_1b_id %in% sb_threats22
 all_sb_att1b <- rbind(sb_att_1b_threats, sb_att_1b_threats22)
 pitchers_in_sample <- unique(rep_level$pitcher_id)
 runners_in_sample <- unique(rep_level$run1b)
-all_sb_att1b <- all_sb_att1b %>% mutate(pitcher_id = ifelse(pitcher_id %in% pitchers_in_sample, pitcher_id, "p1")) %>% mutate(run1b = ifelse(run1b %in% runners_in_sample, run1b, "r1"))
+all_sb_att1b <- all_sb_att1b %>% mutate(pitcher_id = ifelse(pitcher_id %in% pitchers_in_sample, pitcher_id, "p1")) %>% mutate(run1b = ifelse(run1b %in% runners_in_sample & run1b %in% sb_threats, run1b, "r1"))
 all_pickoff_var1b <- rbind(pickoff_var_1b_threats, pickoff_var_1b_threats22) %>% filter(pre_disengagements < 3)
 all_pickoff_var1b$year <- as.factor(all_pickoff_var1b$year)
 all_pickoff_var1b$pre_disengagements <- as.factor(all_pickoff_var1b$pre_disengagements)
@@ -456,7 +456,7 @@ plot_data_m1$pitcher_id <- factor(plot_data_m1$pitcher_id, levels = c("90th Perc
 
 pick_succ_plot <- ggplot(plot_data_m1, aes(x = lead1b, y = PickSuccess, col = pitcher_id)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Successful Pickoff by Lead Distance", subtitle = "Against Various Pitchers", col = "Pitcher Pickoff Skill") + theme_classic() + theme(legend.position = "bottom") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue")) 
 
-png("figures/prob_pickoff_success.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+png("figures/prob_pickoff_success.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
 print(pick_succ_plot)
 dev.off()
 
@@ -528,7 +528,7 @@ pick_att <- ggplot(plot_data_m2) + geom_line(data = plot_data_m2, aes(x = lead1b
     labels = c("0", "1", "2", "2022 (0 disengagements)")
   )
 
-png("figures/prob_pickoff_attempt.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+png("figures/prob_pickoff_attempt.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
 print(pick_att)
 dev.off()
 
@@ -557,7 +557,7 @@ run1b <- c(pct10_runner_m3, median_runner_m3, pct90_runner_m3)
 r2_runner <- round(cor(runner_combined$sprint_speed, runner_combined$combined_effect)^2, 5)
 runner_eff_plot <- ggplot(runner_combined) + aes(x = sprint_speed, y = combined_effect) + geom_point() + labs(x = "Sprint Speed", y = "Runner Effect", title = "Influence of Sprint Speed on Runner Effect for SB Success", subtitle = paste0("R^2 = ", r2_runner)) + theme_classic()
 
-png("figures/runner_effect.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+png("figures/runner_effect.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
 print(runner_eff_plot)
 dev.off()
 
@@ -578,7 +578,7 @@ fielder_2_id <- c(pct10_catcher_m3, median_catcher_m3, pct90_catcher_m3)
 r2_catcher <- round(cor(catcher_combined$arm_strength, catcher_combined$combined_effect)^2, 5)
 catcher_eff_plot <- ggplot(catcher_combined) + aes(x = arm_strength, y = combined_effect) + geom_point() + labs(x = "Arm Strength", y = "Catcher Effect", title = "Influence of Arm Strength on Catcher Effect on SB Success", subtitle = paste0("R^2 = ", r2_catcher)) + theme_classic()
 
-png("figures/catcher_effect", width = 7 * ppi, height = 7 * ppi, res = ppi)
+png("figures/catcher_effect.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
 print(catcher_eff_plot)
 dev.off()
 
@@ -634,7 +634,7 @@ sb_succ_plot <- ggplot(plot_data_m3) + geom_line(aes(x = lead1b, y = SBSuccess, 
     values = c("skyblue", "dodgerblue3", "darkblue", "red"),
     labels = c("90th Pct Runner", "Median Runner", "10th Pct Runner", "2022 (Median Runner)")
   )
-png("figures/prob_sb_success.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+png("figures/prob_sb_success.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
 print(sb_succ_plot)
 dev.off()
 
@@ -819,32 +819,32 @@ while(change > threshold || iterations < 2) {
 
 # VALUE ITERATION WITH VARYING SKILL ----
 
-skill_grid <- expand.grid(fielder_2_id_m3  = fielder_2_id, run1b_m3 = run1b)
-skill_grid$pitcher_id_m3 <- rep(c(pct10_battery_m3_pitcher, median_battery_m3_pitcher, pct90_battery_m3_pitcher), 3)
-skill_grid$arm_strength_m3  <- rep(c(pct10_as, median_as, pct90_as), 3)
-skill_grid$sprint_speed_m3  <- c(rep(pct10_ss, 3), rep(median_ss, 3), rep(pct90_ss, 3))
-skill_grid$battery_skill <- rep(c("10th Percentile Battery", "Median Battery", "90th Percentile Battery"), 3)
-skill_grid$runner_skill <- c(rep("10th Percentile Runner", 3), rep("Median Runner", 3),  rep("90th Percentile Runner", 3))
+skill_grid <- expand.grid(run1b_m3 = run1b, fielder_2_id_m3  = fielder_2_id)
+skill_grid$pitcher_id_m3 <- c(rep(pct10_battery_m3_pitcher,3), rep(median_battery_m3_pitcher,3), rep(pct90_battery_m3_pitcher,3))
+skill_grid$sprint_speed_m3  <- rep(c(pct10_ss, median_ss, pct90_ss), 3)
+skill_grid$arm_strength_m3  <- c(rep(pct10_as, 3), rep(median_as, 3), rep(pct90_as, 3))
+skill_grid$runner_skill <- rep(c("10th Percentile Runner", "Median Runner", "90th Percentile Runner"), 3)
+skill_grid$battery_skill <- c(rep("10th Percentile Battery", 3), rep("Median Battery", 3),  rep("90th Percentile Battery", 3))
 
-skill_grid$run1b_m2 <- c(rep(pct10_runner_m2, 3), rep(median_runner_m2, 3),  rep(pct90_runner_m2, 3))
-skill_grid$pitcher_id_m2 <- rep(c(pct10_pitcher_m2, median_pitcher_m2, pct90_pitcher_m2), 3)
+skill_grid$pitcher_id_m2 <- c(rep(pct10_pitcher_m2, 3), rep(median_pitcher_m2, 3),  rep(pct90_pitcher_m2, 3))
+skill_grid$run1b_m2 <- rep(c(pct10_runner_m2, median_runner_m2, pct90_runner_m2), 3)
 
-skill_grid$pitcher_id_m1 <- rep(c(pct10_pitcher_m1, median_pitcher_m1, pct90_pitcher_m1), 3)
+skill_grid$pitcher_id_m1 <- c(rep(pct10_pitcher_m1,3), rep(median_pitcher_m1,3), rep(pct90_pitcher_m1, 3))
 
 
 
 for (i in 1:nrow(skill_grid)) {
   state_leads_it <- state_leads_exp
-  state_leads_it$fielder_2_id <- skill_grid[i,1]
-  state_leads_it$run1b <- skill_grid[i,2]
+  state_leads_it$fielder_2_id <- skill_grid[i,2]
+  state_leads_it$run1b <- skill_grid[i,1]
   state_leads_it$pitcher_id <-  skill_grid[i,3]
-  state_leads_it$arm_strength <- skill_grid[i,4]
-  state_leads_it$sprint_speed <- skill_grid[i,5]
+  state_leads_it$arm_strength <- skill_grid[i,5]
+  state_leads_it$sprint_speed <- skill_grid[i,4]
   state_leads_it$sb_succ <- predict(m3, newdata = state_leads_it, type = "response")
   state_leads_it$sb_prob <- predict(m4, newdata = state_leads_it, type = "response")
   
-  state_leads_it$run1b <- skill_grid[i,8]
-  state_leads_it$pitcher_id <-  skill_grid[i,9]
+  state_leads_it$run1b <- skill_grid[i,9]
+  state_leads_it$pitcher_id <-  skill_grid[i,8]
   state_leads_it$year <- as.factor(state_leads_it$year)
   state_leads_it$pre_disengagements <- state_leads_it$pre_disengagements
   state_leads_it$pre_disengagements <- as.factor(state_leads_it$pre_disengagements)  
@@ -943,7 +943,7 @@ max2 <- lead_by_state %>% filter(State == 2) %>% arrange(-RE) %>% head(1) %>% pu
 
 opt_lead_plot <- ggplot(lead_by_state) + aes(lead1b, y = RE, col = State) + geom_line() + labs(x = "Lead Distance", y = "Run Expectancy", col = "Disengagements", title = "Run Expectancy of Runner on 1st, 0-0 count, 0 outs", subtitle = "Based on Lead Distance and Disengagements") + theme_classic() + theme(legend.position = "bottom") + scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue"))+ ylim(0.9,0.96) + xlim(0,20) + geom_vline(xintercept = max0, color = "skyblue") + geom_vline(xintercept = max1, color = "dodgerblue3") + geom_vline(xintercept = max2, color = "darkblue")
 
-png("figures/finding_optimal_lead.png", width = 7 * ppi, height = 7 * ppi, res = ppi)
+png("figures/finding_optimal_lead.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
 print(opt_lead_plot)
 dev.off()
 
@@ -951,7 +951,7 @@ dev.off()
 sorted <- old_run_1b %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
 
 
-table1 <- sorted %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% mutate(Runners = ifelse(bases == "100", "Man on 1st", "Men on 1st and 3rd"), Outs = substr(countouts,3,3)) %>% select(Runners, Outs, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_")
+table1 <- sorted %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% mutate(Runners = ifelse(bases == "100", "Man on 1st", "Men on 1st and 3rd"), Outs = substr(countouts,3,3)) %>% select(Outs, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_")
 
 table2 <- sorted %>% ungroup() %>%  filter(substr(countouts, 3,3) == "0", bases == "100") %>% mutate(Count = paste0(substr(countouts,1,1),"-",substr(countouts,2,2))) %>% select(Count, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b,  names_prefix = "Disengagements_")
 
@@ -1014,7 +1014,6 @@ dis <- actual_vs_recommended_leads %>% mutate(nextLead = lead(ActualLead), nextR
 
 # TWO AGENT MODEL ----
 
-# Repeat prior steps over and over until no more policy changes
 change <- Inf                                                                                     
 threshold <- 0.01                                                                               
 old_re_table_two <- full_re_table
@@ -1024,7 +1023,7 @@ while(change > threshold || iterations < 2) {
   
   value_of_outcomes <- prob_transition %>% left_join(runs_on_transition, by = c("State" = "State", "New_State" = "New_State")) %>% left_join(old_re_table_two, by = c("New_State" = "State")) %>% group_by(State, runner_outcome) %>% mutate(New_Value = RunsScored + RE)  %>% summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE)) %>% pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
   
-  pitcher_decision <- state_leads_exp %>% left_join(value_of_outcomes, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N)
+  pitcher_decision <- state_leads_exp %>% left_join(value_of_outcomes, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N) %>% mutate(Val_Pick_Attempt = ifelse(sb2B == 0, 10, Val_Pick_Attempt), Val_NoPick = ifelse(sb2B == 0, N, Val_NoPick))
   
   best_lead <- pitcher_decision %>% mutate(Diff = abs(Val_Pick_Attempt - Val_NoPick)) %>% group_by(State) %>% mutate(minDiff = min(Diff)) %>% filter(Diff == minDiff) %>% dplyr::slice(1) %>% ungroup() %>%  mutate(RE = pmin(Val_Pick_Attempt, Val_NoPick))
   
@@ -1037,6 +1036,7 @@ while(change > threshold || iterations < 2) {
     with(sum(abs(lead1b_new - lead1b_old))) 
   
   print(change)
+  print(old_re_table_two[1,2])
   
   old_re_table_two <- new_re_table_two
   old_run_1b_two <- new_run_1b_two
@@ -1049,102 +1049,6 @@ sorted_two <- old_run_1b_two %>% mutate(bases = substr(State, 1, 3), dis = subst
 table1_twoagent <- sorted_two %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% mutate(Runners = ifelse(bases == "100", "Man on 1st", "Men on 1st and 3rd"), Outs = substr(countouts,3,3)) %>% select(Runners, Outs, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_")
 
 table2_twoagent <- sorted_two %>% ungroup() %>%  filter(substr(countouts, 3,3) == "0", bases == "100") %>% mutate(Count = paste0(substr(countouts,1,1),"-",substr(countouts,2,2))) %>% select(Count, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b,  names_prefix = "Disengagements_")
-
-
-# TWO-ACTOR VALUE ITERATION WITH VARYING SKILL ----
-for (i in 1:nrow(skill_grid)) {
-  state_leads_it <- state_leads_exp
-  state_leads_it$fielder_2_id <- skill_grid[i,1]
-  state_leads_it$run1b <- skill_grid[i,2]
-  state_leads_it$pitcher_id <-  skill_grid[i,3]
-  state_leads_it$arm_strength <- skill_grid[i,4]
-  state_leads_it$sprint_speed <- skill_grid[i,5]
-  state_leads_it$sb_succ <- predict(m3, newdata = state_leads_it, type = "response")
-  state_leads_it$sb_prob <- predict(m4, newdata = state_leads_it, type = "response")
-  
-  state_leads_it$run1b <- skill_grid[i,8]
-  state_leads_it$pitcher_id <-  skill_grid[i,9]
-  state_leads_it$year <- as.factor(state_leads_it$year)
-  state_leads_it$pre_disengagements <- state_leads_it$pre_disengagements
-  state_leads_it$pre_disengagements <- as.factor(state_leads_it$pre_disengagements)  
-  state_leads_it$pickoff_prob <- predict(m2, newdata = state_leads_it, type = "response")
-  
-  state_leads_it$pitcher_id <-  skill_grid[i,10]
-  state_leads_it$pick_succ <- predict(m1, newdata = state_leads_it, type = "response")
-  
-  state_leads_it$pickoff_prob <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$pickoff_prob)
-  state_leads_it$pick_succ <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$pick_succ)
-  state_leads_it$sb_prob <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$sb_prob)
-  state_leads_it$sb_succ <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$sb_succ)
-  
-  prob_runner_outcome_it <- state_leads_it %>% mutate(Prob_RO = case_when(
-    runner_outcome == "N" ~ (1 - pickoff_prob) * (1 - sb_prob),
-    runner_outcome == "SP" ~ pickoff_prob * pick_succ,
-    runner_outcome == "UP" ~ pickoff_prob * (1- pick_succ),
-    runner_outcome == "SS" ~ (1 - pickoff_prob) *  sb_prob * sb_succ,
-    runner_outcome == "US" ~ (1 - pickoff_prob) * sb_prob * (1- sb_succ)
-  )) %>% select(State, lead1b, sb2B, runner_outcome, Prob_RO)
-  
-  
-  #print(Sys.time())
-  
-  
-  # Join dataframes together 
-  prob_trans_adj_it <- prob_transition %>% filter(Prob > 0) %>% left_join(prob_runner_outcome_it, by = c("State", "runner_outcome"), relationship = "many-to-many") %>% mutate(Prob_product = Prob * Prob_RO) %>% group_by(State, New_State, lead1b) %>% summarize(TotalProb = sum(Prob_product)) %>% mutate(TotalProb = ifelse(substr(State, 1, 1) == "3", ifelse(New_State == "3 0", 1, 0), TotalProb))
-  
-  
-  
-  # Get Run Values of each new state you can transition to
-  transition_values_it <- prob_trans_adj_it %>% left_join(runs_on_transition, by = c("State", "New_State")) %>% left_join(full_re_table, by = c("State" = "State")) %>% left_join(full_re_table, by = c("New_State" = "State")) %>% mutate(New_Value = RunsScored + RE.y) %>% rename(Old_RE = RE.x, New_RE = RE.y)
-  
-  # Get the expected value of each lead distance
-  value_of_leads_it <- transition_values_it %>% mutate(WeightedValue = TotalProb * New_Value) %>% group_by(State, lead1b) %>% summarize(RunValue = sum(WeightedValue, na.rm = TRUE))
-  
-  # Step 3
-  
-  # Find the lead that maximizes EV
-  leads_by_state_it <- value_of_leads_it %>% group_by(State) %>% filter(row_number() == which.max(RunValue))
-  
-  # Only want situations where runner on 1b and no runners on other bases
-  runon1b_it <- leads_by_state_it %>% filter(substr(State, 1, 3) == "100")
-  runon1b_it
-  
-  # BELLMAN ITERATION
-  
-  
-  # Repeat prior steps over and over until no more policy changes
-  change <- Inf                                                                                     
-  threshold <- 0.01                                                                               
-  old_re_table_it <- full_re_table
-  old_run_1b_it <- runon1b_it
-  old_run_1b_it$lead1b <- 10
-  iterations <- 0
-  while(change > threshold || iterations < 2) {                                                                       
-    re_vals_it <-  transition_values_it %>% 
-      left_join(old_re_table_it, by = c("New_State" = "State")) %>%
-      group_by(State, lead1b) %>% 
-      summarize(RE = sum(TotalProb * (RunsScored + RE))) %>% ungroup() %>%
-      group_by(State) %>% filter(row_number() == which.max(RE))
-    
-    new_run_1b_it <- re_vals_it %>% filter(substr(State, 1, 3) == "100")
-    
-    change <- new_run_1b_it |>                                                                              
-      dplyr::left_join(old_run_1b_it, by = "State", suffix = c("_old", "_new")) |>                      
-      with(sum(abs(lead1b_new - lead1b_old))) 
-    
-    print(change)
-    
-    old_re_table_it <- re_vals_it %>% select(-lead1b)     
-    old_run_1b_it <- new_run_1b_it
-    iterations <- iterations + 1
-    
-  }     
-  
-  print(skill_grid[i,6])
-  print(skill_grid[i,7])
-  print(old_run_1b_it[1,])
-  skill_grid[i, 11] <- old_run_1b_it[1,]$lead1b
-}
 
 
 ## When should pitcher attempt a pick?
@@ -1163,18 +1067,17 @@ states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0), R2 =
 
 pitcher_decision_real <- states_added %>% left_join(value_of_outcomes, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N) %>% mutate(PickRecommend = ifelse(Val_Pick_Attempt < Val_NoPick, 1, 0))
 
-mean(pitcher_decision_real$PickRecommend, na.rm = TRUE) # Pitcher should attempt a pickoff 73.3% of the time!
-mean(pitcher_decision_real$isPickAttempt) # Actually picks 5.3% of the time
+mean(pitcher_decision_real$PickRecommend, na.rm = TRUE) # Pitcher should attempt a pickoff 20.2% of the time!
+mean(pitcher_decision_real$isPickAttempt) # Actually picks 5.5% of the time
 
 should_pick <- pitcher_decision_real %>% filter(PickRecommend == 1)
-mean(should_pick$isPickAttempt) # When pick recommended, they actually pick 6.2% of the time
+mean(should_pick$isPickAttempt) # When pick recommended, they actually pick 8.6% of the time
 
 no_pick <- pitcher_decision_real %>% filter(PickRecommend == 0)
-mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 2.5% of the time
+mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 4.6% of the time
 
 old_re_table_two
 
-table3_twoagent <- skill_grid %>% ungroup() %>% select(battery_skill, runner_skill, V11) %>% pivot_wider(names_from = runner_skill, values_from = V11)
 
 
 print(
@@ -1183,7 +1086,7 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "figures/count_two_agent.tex"
+  file = "figures/runners_outs_two_agent.tex"
 )
 
 print(
@@ -1192,7 +1095,7 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "figures/runners_outs_two_agent.tex"
+  file = "figures/count_two_agent.tex"
 )
 
 
@@ -1206,4 +1109,40 @@ print(
 )
 # MONOTONICITY CHECKS ----
 
-RE_transitions <- T_matrix %>% select(State, 
+RE_transitions <- T_matrix %>% select(State, New_State, Freq) %>% left_join(old_re_table, by = "State") %>% rename(Old_RE = RE) %>% left_join(old_re_table, by = c("New_State" = "State")) %>% rename(New_RE = RE)  %>% left_join(runs_on_transition, by = c("State", "New_State")) %>% mutate(RE_change = New_RE - Old_RE + RunsScored)
+
+# Situations where a ball is thrown and all else is the same
+all_same_but_balls <- RE_transitions %>% filter(substr(State, 1, 6) == substr(New_State, 1, 6), substr(State, 8, 9) == substr(New_State, 8, 9)) %>% mutate(Pre_Balls = as.numeric(substr(State, 7, 7)), Post_Balls = as.numeric(substr(New_State, 7, 7))) %>% filter(Post_Balls - Pre_Balls == 1)
+#ggplot(all_same_but_balls) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Ball Thrown")
+
+balls1000 <- all_same_but_balls %>% filter(Freq > 1000)
+#ggplot(balls1000) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Ball Thrown - transitions with over 1000 iterations")
+
+# Situations where a strike is thrown and all else is the same
+all_same_but_strikes <- RE_transitions %>% filter(substr(State, 1, 7) == substr(New_State, 1, 7), substr(State, 9, 9) == substr(New_State, 9, 9)) %>% mutate(Pre_Strikes = as.numeric(substr(State, 8, 8)), Post_Strikes = as.numeric(substr(New_State, 8, 8))) %>% filter(Post_Strikes - Pre_Strikes == 1)
+#ggplot(all_same_but_strikes) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Strike Thrown")
+
+strikes1000 <- all_same_but_strikes %>% filter(Freq > 1000)
+#ggplot(strikes1000) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Strike Thrown - transitions with over 1000 iterations")
+
+
+# Situations where a disengagement occurs and all else is the same
+all_same_but_dis <- RE_transitions %>% filter(substr(State, 1, 4) == substr(New_State, 1, 4), substr(State, 6, 9) == substr(New_State, 6, 9)) %>% mutate(Pre_Dis = as.numeric(substr(State, 5, 5)), Post_Dis = as.numeric(substr(New_State, 5, 5))) %>% filter(Post_Dis - Pre_Dis == 1)
+#ggplot(all_same_but_dis) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Disengagement")
+
+dis100 <- all_same_but_dis %>% filter(Freq > 100)
+#ggplot(dis100) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Disengagement - transitions with over 100 iterations")
+
+
+# Situations where an out is made and all else is the same
+all_same_but_outs <- RE_transitions %>% filter(substr(State, 1, 8) == substr(New_State, 1, 8), substr(State, 8, 8) == substr(New_State, 8, 8)) %>% mutate(Pre_Outs = as.numeric(substr(State, 9, 9)), Post_Outs = as.numeric(substr(New_State, 9, 9))) %>% filter(Post_Outs - Pre_Outs == 1)
+#ggplot(all_same_but_outs) + aes(Freq, RE_change) + geom_point() + geom_hline(yintercept = 0) + labs(title = "Change in RE from Out")
+
+
+
+write_csv(old_run_1b, "res.csv")
+
+
+write_csv(sorted, "res.csv")
+
+
