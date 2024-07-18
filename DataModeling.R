@@ -48,7 +48,7 @@ rep_level <- counts %>% mutate(batter_id = ifelse(batterCount < 500, "b1", batte
 
 
 # Make variables for whether certain events occur
-sb_att_var <- rep_level %>% mutate(isSBAttempt = ifelse(is_stolen_base == TRUE | is_caught_stealing == TRUE, 1, 0))
+sb_att_var <- rep_level %>% mutate(isSBAttempt = ifelse(is_stolen_base == TRUE | is_caught_stealing == TRUE | (runner_going & post_balls == 4), 1, 0))
 sb_attempts <- sb_att_var %>% filter(isSBAttempt == 1)
 pickoff_var <- sb_att_var %>% mutate(isPickAttempt = ifelse(type == "pickoff", 1, 0)) 
 pickoff_attempts <- pickoff_var %>% filter(isPickAttempt == 1) %>% mutate(isSuccess = ifelse(is.na(is_pickoff), 0, ifelse(is_pickoff == TRUE, 1, 0)))
@@ -107,7 +107,7 @@ state_grid <- state_grid %>% mutate(State_No_Dis = paste0(substr(State, 1, 3), s
 
 
 # P^N MATRIX (No pickoff or steal attempt)
-no_picks_or_steals <- states_final %>% filter(isPickAttempt == 0, isSBAttempt == 0)
+no_picks_or_steals <- states_final %>% filter(((isPickAttempt == 0 | is.na(isPickAttempt)) & (isSBAttempt == 0 | is.na(isSBAttempt))) | (substr(State, 1, 3) == "999"))
 
 # Get probability of event given count and outs
 event_probs <- no_picks_or_steals %>% count(State_No_Dis, pitch_event) %>% group_by(State_No_Dis) %>% mutate(Prob = n / sum(n))
@@ -203,7 +203,7 @@ P_UP <- P_UP %>% mutate(Prob = ifelse(is.na(Prob), ifelse(New_State == State, 1,
 
 # P^SS MATRIX (Stolen Base)
 
-stolen_base <- states_final %>% filter(is_stolen_base == 1)
+stolen_base <- states_final %>% filter(is_stolen_base == 1 | (runner_going == TRUE & post_balls == 4))
 
 # Get transitions on stolen bases from each state
 T_ss <- stolen_base %>% group_by(State_No_Dis, New_State_No_Dis) %>%  summarize(Freq = n()) %>% ungroup()
@@ -222,6 +222,12 @@ caught <- states_final %>% filter(is_caught_stealing == 1)
 
 # Get transitions on failed stolen bases from each state
 T_us <- caught %>% group_by(State_No_Dis, New_State_No_Dis) %>%  summarize(Freq = n()) %>% ungroup()
+
+# Hard code in some 3 ball states that never occured in 2023
+T_us[nrow(T_us)+1,] <- list("100 300", "000 311", 1)
+T_us[nrow(T_us)+1,] <- list("100 301", "000 312", 1)
+T_us[nrow(T_us)+1,] <- list("100 302", "3 0", 1)
+T_us[nrow(T_us)+1,] <- list("100 310", "000 321", 1)
 
 # Add disengagements back in (Assumed Disengagements do not affect results once decision to pitch is made)
 Dis_added <- T_us %>% expand_grid(., Old_Dis) %>% mutate(New_Dis = ifelse(substr(New_State_No_Dis, 1, 3) != substr(State_No_Dis, 1, 3), 0, ifelse(substr(New_State_No_Dis, 5, 6) == "00", 0, Old_Dis))) %>% mutate(State = paste0(substr(State_No_Dis, 1, 4), Old_Dis, substr(State_No_Dis, 4, 7)))  %>% mutate(New_State = paste0(substr(New_State_No_Dis, 1, 4), New_Dis, substr(New_State_No_Dis, 4, 7))) %>% mutate(New_State = ifelse(substr(New_State, 1, 1) == "3", substr(New_State, 1, 3), New_State)) %>% select(State, New_State, Freq)
@@ -320,7 +326,7 @@ rep_level22 <- counts22 %>% mutate(batter_id = ifelse(batterCount < 500, "b1", b
 
 
 # Make variables for whether certain events occur
-sb_att_var22 <- rep_level22 %>% mutate(isSBAttempt = ifelse(is_stolen_base == TRUE | is_caught_stealing == TRUE, 1, 0))
+sb_att_var22 <- rep_level22 %>% mutate(isSBAttempt = ifelse(is_stolen_base == TRUE | is_caught_stealing == TRUE | (runner_going & post_balls == 4), 1, 0))
 sb_attempts22 <- sb_att_var22 %>% filter(isSBAttempt == 1)
 pickoff_var22 <- sb_att_var22 %>% mutate(isPickAttempt = ifelse(type == "pickoff", 1, 0)) 
 pickoff_attempts22 <- pickoff_var22 %>% filter(isPickAttempt == 1) %>% mutate(isSuccess = ifelse(is.na(is_pickoff), 0, ifelse(is_pickoff == TRUE, 1, 0)))
@@ -343,7 +349,7 @@ sb_att_1b_threats22 <- sb_att_1b22 %>% filter(pre_runner_1b_id %in% sb_threats22
 all_sb_att1b <- rbind(sb_att_1b_threats, sb_att_1b_threats22)
 pitchers_in_sample <- unique(rep_level$pitcher_id)
 runners_in_sample <- unique(rep_level$run1b)
-all_sb_att1b <- all_sb_att1b %>% mutate(pitcher_id = ifelse(pitcher_id %in% pitchers_in_sample, pitcher_id, "p1")) %>% mutate(run1b = ifelse(run1b %in% runners_in_sample & run1b %in% sb_threats, run1b, "r1"))
+all_sb_att1b <- all_sb_att1b %>% mutate(pitcher_id = ifelse(pitcher_id %in% pitchers_in_sample, pitcher_id, "p1")) %>% mutate(run1b = ifelse(run1b %in% runners_in_sample & run1b %in% sb_threats, run1b, "r1")) %>% mutate(is_stolen_base = ifelse(runner_going == TRUE & post_balls == 4, TRUE, is_stolen_base))
 all_pickoff_var1b <- rbind(pickoff_var_1b_threats, pickoff_var_1b_threats22) %>% filter(pre_disengagements < 3)
 all_pickoff_var1b$year <- as.factor(all_pickoff_var1b$year)
 all_pickoff_var1b$pre_disengagements <- as.factor(all_pickoff_var1b$pre_disengagements)
@@ -741,7 +747,7 @@ prob_runner_outcome <- state_leads_exp %>% mutate(Prob_RO = case_when(
 
 
 # Join dataframes together 
-prob_trans_adj <- prob_transition %>% filter(Prob > 0) %>% left_join(prob_runner_outcome, by = c("State", "runner_outcome"), relationship = "many-to-many") %>% mutate(Prob_product = Prob * Prob_RO) %>% group_by(State, New_State, lead1b) %>% summarize(TotalProb = sum(Prob_product)) %>% mutate(TotalProb = ifelse(substr(State, 1, 1) == "3", ifelse(New_State == "3 0", 1, 0), TotalProb))
+prob_trans_adj <- prob_transition %>% filter(Prob > 0) %>% left_join(prob_runner_outcome, by = c("State", "runner_outcome"), relationship = "many-to-many") %>% mutate(Prob_product = Prob * Prob_RO) %>% mutate(TotalProb = ifelse(substr(State, 1, 1) == "3", ifelse(New_State == "3 0", 1, 0), Prob_product))
 
 
 
@@ -755,17 +761,19 @@ re_table <- run_counts %>% group_by(State) %>% summarize(RE = mean(runs_roi), n 
 all_states_df <- data.frame(State = all_possible_states)
 full_re_table <- all_states_df %>% left_join(re_table, by = "State") %>% mutate(RE = ifelse(is.na(RE), 0, RE), n = ifelse(is.na(n), 0, n))
 
+
+runner_outcomes <- c("N", "SP", "UP", "SS", "US")
 # Get Runs Scored in Each State
-transitions_expanded <- expand.grid(State = all_possible_states, New_State = all_possible_states) %>% mutate(OldRunners = as.numeric(substr(State, 1, 1)) + as.numeric(substr(State, 2, 2)) + as.numeric(substr(State, 3, 3))) %>% mutate(NewRunners = as.numeric(substr(New_State, 1, 1)) + as.numeric(substr(New_State, 2, 2)) + as.numeric(substr(New_State, 3, 3))) %>% mutate(OldOuts = as.numeric(substr(State, 9, 9))) %>% mutate(NewOuts = as.numeric(substr(New_State, 9, 9))) %>% mutate(OldDis = as.numeric(substr(State, 5, 5))) %>% mutate(NewDis = as.numeric(substr(New_State, 5, 5))) %>% mutate(OldCount = substr(State, 7,8)) %>% mutate(NewCount = substr(New_State, 7,8)) %>% mutate(NewBatter = ifelse(NewCount == "00" & NewDis == 0, 1, 0)) %>% mutate(RunnerPickedOff = ifelse(OldCount == NewCount & NewOuts == OldOuts + 1 & NewRunners == OldRunners - 1, 1, 0)) %>% mutate(NewBatter = ifelse(RunnerPickedOff == 1 & (State != "101 0 000" | New_State != "100 0 001"), 0, NewBatter))
+transitions_expanded <- expand.grid(State = all_possible_states, New_State = all_possible_states, runner_outcome = runner_outcomes) %>% mutate(OldRunners = as.numeric(substr(State, 1, 1)) + as.numeric(substr(State, 2, 2)) + as.numeric(substr(State, 3, 3))) %>% mutate(NewRunners = as.numeric(substr(New_State, 1, 1)) + as.numeric(substr(New_State, 2, 2)) + as.numeric(substr(New_State, 3, 3))) %>% mutate(OldOuts = as.numeric(substr(State, 9, 9))) %>% mutate(NewOuts = as.numeric(substr(New_State, 9, 9))) %>% mutate(OldDis = as.numeric(substr(State, 5, 5))) %>% mutate(NewDis = as.numeric(substr(New_State, 5, 5))) %>% mutate(OldCount = substr(State, 7,8)) %>% mutate(NewCount = substr(New_State, 7,8)) %>% mutate(NewBatter = ifelse(NewCount == "00" & runner_outcome %in% c("N", "SS", "US"), 1, 0)) 
 
 # Runs Scored on Each Transition
 all_transitions <- transitions_expanded %>% mutate(RunsScored = OldRunners + OldOuts + NewBatter - NewRunners - NewOuts)  %>% mutate(RunsScored = ifelse(OldOuts > NewOuts, 0, RunsScored), RunsScored = ifelse(NewRunners - OldRunners > 1, 0, RunsScored)) %>% mutate(RunsScored = ifelse(RunsScored < 0, 0, RunsScored)) %>% mutate(RunsScored = ifelse(is.na(NewOuts), as.numeric(substr(New_State, 3, 3)), RunsScored), RunsScored = ifelse(is.na(OldOuts), 0, RunsScored))
-runs_on_transition <- all_transitions %>% select(State, New_State, RunsScored) 
+runs_on_transition <- all_transitions %>% select(State, New_State, runner_outcome, RunsScored) 
 
 # Step 2
 
 # Get Run Values of each new state you can transition to
-transition_values <- prob_trans_adj %>% left_join(runs_on_transition, by = c("State", "New_State")) %>% left_join(full_re_table, by = c("State" = "State")) %>% left_join(full_re_table, by = c("New_State" = "State")) %>% mutate(New_Value = RunsScored + RE.y) %>% rename(Old_RE = RE.x, New_RE = RE.y)
+transition_values <- prob_trans_adj %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) %>% left_join(full_re_table, by = c("State" = "State")) %>% left_join(full_re_table, by = c("New_State" = "State")) %>% mutate(New_Value = RunsScored + RE.y) %>% rename(Old_RE = RE.x, New_RE = RE.y)
 
 # Get the expected value of each lead distance
 value_of_leads <- transition_values %>% mutate(WeightedValue = TotalProb * New_Value) %>% group_by(State, lead1b) %>% summarize(RunValue = sum(WeightedValue, na.rm = TRUE))
@@ -799,8 +807,8 @@ while(change > threshold || iterations < 2) {
   re_vals <-  transition_values %>% 
     left_join(old_re_table, by = c("New_State" = "State")) %>%
     group_by(State, lead1b) %>% 
-    summarize(RE = sum(TotalProb * (RunsScored + RE)), n = mean(n)) %>% ungroup() %>%
-    group_by(State) %>% filter(row_number() == which.max(RE))
+    summarize(RE = sum(TotalProb * (RunsScored + RE)), n = mean(n)) %>% 
+    filter(row_number() == which.max(RE))
   
   new_run_1b <- re_vals %>% filter(substr(State, 1, 3) == "100")
   
@@ -808,11 +816,43 @@ while(change > threshold || iterations < 2) {
     dplyr::left_join(old_run_1b, by = "State", suffix = c("_old", "_new")) |>                      
     with(sum(abs(lead1b_new - lead1b_old))) 
   
-  print(change)
-  print(old_re_table[1,2])
+  
   
   old_re_table <- re_vals %>% select(-lead1b)     
   old_run_1b <- new_run_1b
+  iterations <- iterations + 1
+  print(change)
+  print(old_re_table[1,2])
+}     
+
+value_of_outcomes <- prob_transition %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) %>% left_join(old_re_table, by = c("New_State" = "State")) %>% group_by(State, runner_outcome) %>% mutate(New_Value = RunsScored + RE)  %>% summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE)) %>% pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
+
+
+
+# BASELINE VALUE OF AN INNING ----
+
+transitions_nolead <- states_final %>% count(State, New_State) %>% mutate(runner_outcome = "N") %>% group_by(State) %>% mutate(Prob = n / sum(n)) %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) 
+
+# Repeat prior steps over and over until no more value changes
+change <- Inf                                                                                     
+threshold <- 0.001                                                                                
+old_re_table_nolead <- full_re_table
+iterations <- 0
+while(change > threshold || iterations < 2) {                                                                       
+  re_vals_nolead  <-  transitions_nolead %>% 
+    right_join(old_re_table_nolead, by = c("New_State" = "State")) %>%
+    group_by(State) %>% 
+    summarize(RE = sum(Prob * (RunsScored + RE)))
+  
+  change <- re_vals_nolead |>                                                                              
+    dplyr::left_join(old_re_table_nolead, by = "State", suffix = c("_old", "_new")) |>  
+    filter(!is.na(RE_new)) |> 
+    with(sum(abs(RE_new - RE_old))) 
+  
+  print(change)
+  print(re_vals_nolead[1,2])
+  
+  old_re_table_nolead <- re_vals_nolead
   iterations <- iterations + 1
   
 }     
@@ -871,12 +911,12 @@ for (i in 1:nrow(skill_grid)) {
   
   
   # Join dataframes together 
-  prob_trans_adj_it <- prob_transition %>% filter(Prob > 0) %>% left_join(prob_runner_outcome_it, by = c("State", "runner_outcome"), relationship = "many-to-many") %>% mutate(Prob_product = Prob * Prob_RO) %>% group_by(State, New_State, lead1b) %>% summarize(TotalProb = sum(Prob_product)) %>% mutate(TotalProb = ifelse(substr(State, 1, 1) == "3", ifelse(New_State == "3 0", 1, 0), TotalProb))
+  prob_trans_adj_it <- prob_transition %>% filter(Prob > 0) %>% left_join(prob_runner_outcome_it, by = c("State", "runner_outcome"), relationship = "many-to-many") %>% mutate(Prob_product = Prob * Prob_RO) %>% mutate(TotalProb = ifelse(substr(State, 1, 1) == "3", ifelse(New_State == "3 0", 1, 0), Prob_product))
   
   
   
   # Get Run Values of each new state you can transition to
-  transition_values_it <- prob_trans_adj_it %>% left_join(runs_on_transition, by = c("State", "New_State")) %>% left_join(full_re_table, by = c("State" = "State")) %>% left_join(full_re_table, by = c("New_State" = "State")) %>% mutate(New_Value = RunsScored + RE.y) %>% rename(Old_RE = RE.x, New_RE = RE.y)
+  transition_values_it <- prob_trans_adj_it %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) %>% left_join(full_re_table, by = c("State" = "State")) %>% left_join(full_re_table, by = c("New_State" = "State")) %>% mutate(New_Value = RunsScored + RE.y) %>% rename(Old_RE = RE.x, New_RE = RE.y)
   
   # Get the expected value of each lead distance
   value_of_leads_it <- transition_values_it %>% mutate(WeightedValue = TotalProb * New_Value) %>% group_by(State, lead1b) %>% summarize(RunValue = sum(WeightedValue, na.rm = TRUE))
@@ -993,6 +1033,7 @@ pickoff_var_1b <- pickoff_var_1b %>% filter(pre_disengagements < 3)
 pv1b_states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0), R2 = ifelse(!is.na(run2b), 1, 0), R3 = ifelse(!is.na(run3b), 1, 0), Runners = paste0(R1, R2, R3)) %>% select(-R1, -R2, -R3) %>% mutate(State = paste0(Runners, " ", pre_disengagements, " ", pre_balls, pre_strikes, pre_outs))
 
 actual_vs_recommended_leads <- pv1b_states_added %>% left_join(old_run_1b, by = "State") %>% rename(ActualLead = lead1b.x, RecLead = lead1b.y) %>% mutate(LeadDiff = ActualLead - RecLead)
+mean(actual_vs_recommended_leads$LeadDiff > 0, na.rm = TRUE) # Actual lead only exceeds recommended lead 20.0% of the team
 
 avr_table <- actual_vs_recommended_leads %>% group_by(pre_disengagements) %>% summarize(Actual = mean(ActualLead, na.rm = TRUE), Rec = mean(RecLead, na.rm = TRUE))
 colnames(avr_table) <- c("Disengagements", "Actual Lead", "Recommended Lead")
@@ -1021,9 +1062,9 @@ old_run_1b_two <- old_run_1b
 iterations <- 0
 while(change > threshold || iterations < 2) {  
   
-  value_of_outcomes <- prob_transition %>% left_join(runs_on_transition, by = c("State" = "State", "New_State" = "New_State")) %>% left_join(old_re_table_two, by = c("New_State" = "State")) %>% group_by(State, runner_outcome) %>% mutate(New_Value = RunsScored + RE)  %>% summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE)) %>% pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
+  value_of_outcomes_two <- prob_transition %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) %>% filter(Prob > 0) %>% left_join(old_re_table_two, by = c("New_State" = "State")) %>% mutate(New_Value = RunsScored + RE) %>% group_by(State, runner_outcome)  %>% summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE)) %>% pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
   
-  pitcher_decision <- state_leads_exp %>% left_join(value_of_outcomes, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N) %>% mutate(Val_Pick_Attempt = ifelse(sb2B == 0, 10, Val_Pick_Attempt), Val_NoPick = ifelse(sb2B == 0, N, Val_NoPick))
+  pitcher_decision <- state_leads_exp %>% left_join(value_of_outcomes_two, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N) %>% mutate(Val_Pick_Attempt = ifelse(sb2B == 0, 10, Val_Pick_Attempt), Val_NoPick = ifelse(sb2B == 0, N, Val_NoPick))
   
   best_lead <- pitcher_decision %>% mutate(Diff = abs(Val_Pick_Attempt - Val_NoPick)) %>% group_by(State) %>% mutate(minDiff = min(Diff)) %>% filter(Diff == minDiff) %>% dplyr::slice(1) %>% ungroup() %>%  mutate(RE = pmin(Val_Pick_Attempt, Val_NoPick))
   
@@ -1034,14 +1075,14 @@ while(change > threshold || iterations < 2) {
   change <- new_run_1b_two |>                                                                              
     dplyr::left_join(old_run_1b_two, by = "State", suffix = c("_old", "_new")) |>                      
     with(sum(abs(lead1b_new - lead1b_old))) 
-  
-  print(change)
-  print(old_re_table_two[1,2])
+ 
   
   old_re_table_two <- new_re_table_two
   old_run_1b_two <- new_run_1b_two
   iterations <- iterations + 1
   
+  print(change)
+  print(old_re_table_two[1,2])
 }     
 
 sorted_two <- old_run_1b_two %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
