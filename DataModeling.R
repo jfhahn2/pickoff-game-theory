@@ -362,28 +362,28 @@ all_pickoff_var1b$pre_disengagements <- as.factor(all_pickoff_var1b$pre_disengag
 ### PLAYER-SPECIFIC
 
 # Probability of Successful Pickoff
-m1 <- glmer(isSuccess ~ lead1b + (1|pitcher_id) , data = pickoff_att_1b_threats, family = binomial)
+#m1 <- glmer(isSuccess ~ lead1b + (1|pitcher_id) , data = pickoff_att_1b_threats, family = binomial)
 #summary(m1)
 # Pitcher matters a bit - runner/catcher/batter lead to singular effect
 
 # Probability of Pickoff Attempt
-m2 <- glmer(isPickAttempt ~ lead1b + pre_balls + pre_strikes + pre_outs  + (1|pitcher_id) + (1|run1b) + as.factor(year) + as.factor(year) * pre_disengagements, data = all_pickoff_var1b, family = binomial)
+#m2 <- glmer(isPickAttempt ~ lead1b + pre_balls + pre_strikes + pre_outs  + (1|pitcher_id) + as.factor(year) + as.factor(year) * pre_disengagements, data = all_pickoff_var1b, family = binomial)
 #summary(m2)
 # Pitcher and runner matters 
 
 # Probability of Successful SB
-m3 <- glmer(is_stolen_base ~ lead1b + (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength + as.factor(year), data = all_sb_att1b, family = binomial)
+#m3 <- glmer(is_stolen_base ~ lead1b + (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength + as.factor(year), data = all_sb_att1b, family = binomial)
 #summary(m3)
 
 # Probability of SB Attempt
 # Not dependent on lead distance
-m4 <- glmer(isSBAttempt ~ pre_balls + pre_strikes + pre_outs + pre_disengagements + (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength, data = sb_var_1b_threats, family = binomial)
+#m4 <- glmer(isSBAttempt ~ pre_balls + pre_strikes + pre_outs + pre_disengagements + (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength, data = sb_var_1b_threats, family = binomial)
 #summary(m4)
 
-saveRDS(m1, "m1model")
-saveRDS(m2, "m2model")
-saveRDS(m3, "m3model")
-saveRDS(m4, "m4model")
+#saveRDS(m1, "m1model")
+#saveRDS(m2, "m2model")
+#saveRDS(m3, "m3model")
+#saveRDS(m4, "m4model")
 
 m1 <- readRDS("m1model")
 m2 <- readRDS("m2model")
@@ -474,16 +474,15 @@ pct90_pitcher_m2 <- rownames(pitcher_effects)[0.9 * nrow(pitcher_effects)]
 pct10_pitcher_m2 <- rownames(pitcher_effects)[0.1 * nrow(pitcher_effects)]
 pitcher_id <- c(pct10_pitcher_m2, median_pitcher_m2, pct90_pitcher_m2)
 
-runner_effects <- ranef(m2)$run1b
-runner_effects <- runner_effects %>% arrange(`(Intercept)`) 
-median_runner_m2 <- rownames(runner_effects)[0.5 * nrow(runner_effects)]
-pct90_runner_m2 <- rownames(runner_effects)[0.9 * nrow(runner_effects)]
-pct10_runner_m2 <- rownames(runner_effects)[0.1 * nrow(runner_effects)]
-run1b <- c(pct10_runner_m2, median_runner_m2, pct90_runner_m2)
+# runner_effects <- ranef(m2)$run1b
+# runner_effects <- runner_effects %>% arrange(`(Intercept)`) 
+# median_runner_m2 <- rownames(runner_effects)[0.5 * nrow(runner_effects)]
+# pct90_runner_m2 <- rownames(runner_effects)[0.1 * nrow(runner_effects)]
+# pct10_runner_m2 <- rownames(runner_effects)[0.9 * nrow(runner_effects)]
+# run1b <- c(pct10_runner_m2, median_runner_m2, pct90_runner_m2)
 
 
 plot_data_m2 <- plot_data %>% cross_join(pitcher_id, copy = TRUE) %>% rename(pitcher_id = y)
-plot_data_m2$run1b <- median_runner_m2
 plot_data_m2$pre_disengagements <- 0
 plot_data_m2$year <- 2023
 plot_data_m2$year <- factor(plot_data_m2$year, levels = levels(all_pickoff_var1b$year))
@@ -491,35 +490,34 @@ plot_data_m2$pre_disengagements <- factor(plot_data_m2$pre_disengagements, level
 plot_data_m2$PickAttempt <- predict(m2, newdata = plot_data_m2, type = "response")
 plot_data_m2 <- plot_data_m2 %>% mutate(pitcher_id = ifelse(pitcher_id == pct90_pitcher_m2, "90th Percentile Pitcher", ifelse(pitcher_id == median_pitcher_m2, "Median Pitcher", "10th Percentile Pitcher")))
 plot_data_m2$pitcher_id <- factor(plot_data_m2$pitcher_id, levels = c("90th Percentile Pitcher", "Median Pitcher", "10th Percentile Pitcher"))
-#ggplot(plot_data_m2, aes(x = lead1b, y = PickAttempt, col = pitcher_id)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Pickoff Attempt by Lead Distance", subtitle = "Against Various Pitchers with 0 Disengagements", col = "Pitcher Pickoff Frequency") + theme_classic() + theme(legend.position = "right") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue")) 
+ggplot(plot_data_m2, aes(x = lead1b, y = PickAttempt, col = pitcher_id)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Pickoff Attempt by Lead Distance", subtitle = "Against Various Pitchers with 0 Disengagements", col = "Pitcher Pickoff Frequency") + theme_classic() + theme(legend.position = "right") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue"))
 
 
 
 
 # GRAPH FOR M2 (pickoff attempt) - VARY RUNNER EFFECT
 
-plot_data_m2 <- plot_data %>% cross_join(run1b, copy = TRUE) %>% rename(run1b = y)
-plot_data_m2$pitcher_id <- median_pitcher_m2
-plot_data_m2$pre_disengagements <- 0
-plot_data_m2$year <- "2023"
-plot_data_m2$year <- factor(plot_data_m2$year, levels = levels(all_pickoff_var1b$year))
-plot_data_m2$pre_disengagements <- factor(plot_data_m2$pre_disengagements, levels = levels(all_pickoff_var1b$pre_disengagements))
-plot_data_m2$PickAttempt <- predict(m2, newdata = plot_data_m2, type = "response")
-plot_data_m2 <- plot_data_m2 %>% mutate(run1b = ifelse(run1b == pct90_runner_m2, "90th Percentile Runner", ifelse(run1b == median_runner_m2, "Median Runner", "10th Percentile Runner")))
-plot_data_m2$run1b <- factor(plot_data_m2$run1b, levels = c("90th Percentile Runner", "Median Runner", "10th Percentile Runner"))
+# plot_data_m2 <- plot_data %>% cross_join(run1b, copy = TRUE) %>% rename(run1b = y)
+# plot_data_m2$pitcher_id <- median_pitcher_m2
+# plot_data_m2$pre_disengagements <- 0
+# plot_data_m2$year <- "2023"
+# plot_data_m2$year <- factor(plot_data_m2$year, levels = levels(all_pickoff_var1b$year))
+# plot_data_m2$pre_disengagements <- factor(plot_data_m2$pre_disengagements, levels = levels(all_pickoff_var1b$pre_disengagements))
+# plot_data_m2$PickAttempt <- predict(m2, newdata = plot_data_m2, type = "response")
+# plot_data_m2 <- plot_data_m2 %>% mutate(run1b = ifelse(run1b == pct90_runner_m2, "90th Percentile Runner", ifelse(run1b == median_runner_m2, "Median Runner", "10th Percentile Runner")))
+# plot_data_m2$run1b <- factor(plot_data_m2$run1b, levels = c("90th Percentile Runner", "Median Runner", "10th Percentile Runner"))
 #ggplot(plot_data_m2, aes(x = lead1b, y = PickAttempt, col = run1b)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Pickoff Attempt by Lead Distance", subtitle = "Against Various Runners with 0 Disengagements", col = "Runner Skill") + theme_classic() + theme(legend.position = "right") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue")) 
 
 
 # GRAPH FOR M2 (pickoff attempt) - VARY DISENGAGEMENTS
 plot_data_m2 <- plot_data %>% cross_join(pitcher_id, copy = TRUE) %>% rename(pitcher_id = y)
-plot_data_m2$run1b <- median_runner_m2
 plot_data_m2$pitcher_id <- median_pitcher_m2
 plot_data_m2$year <- "2023"
 plot_data_m2$year <- factor(plot_data_m2$year, levels = levels(all_pickoff_var1b$year))
 plot_data_m2$pre_disengagements <- factor(plot_data_m2$pre_disengagements, levels = levels(all_pickoff_var1b$pre_disengagements))
 plot_data_m2$PickAttempt <- predict(m2, newdata = plot_data_m2, type = "response")
 
-leads_df <- data.frame(lead1b = seq(0,20,0.1), pitcher_id = median_pitcher_m2, run1b = median_runner_m2, year = "2022", pre_balls = 0, pre_strikes = 0, pre_outs = 0, pre_disengagements = 0)
+leads_df <- data.frame(lead1b = seq(0,20,0.1), pitcher_id = median_pitcher_m2, year = "2022", pre_balls = 0, pre_strikes = 0, pre_outs = 0, pre_disengagements = 0)
 leads_df$year <- factor(leads_df$year, levels = levels(all_pickoff_var1b$year))
 leads_df$pre_disengagements <- factor(leads_df$pre_disengagements, levels = levels(all_pickoff_var1b$pre_disengagements))
 leads_df$PickAttempt <- predict(m2, newdata = leads_df, type = "response")
@@ -553,12 +551,12 @@ runner_effects <- runner_effects %>% arrange(`(Intercept)`)
 sprint_speed_coef <- fixef(m3)[3]
 runner_combined <- runner_effects %>% mutate(player_id = as.numeric(rownames(runner_effects))) %>% left_join(sprints, by = "player_id") %>% mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(sprint_speed))
 median_runner_m3 <- runner_combined[0.5 * nrow(runner_combined),"player_id"]
-median_ss <- runner_combined[0.5 * nrow(runner_combined),"sprint_speed"]
+median_ss_m3 <- runner_combined[0.5 * nrow(runner_combined),"sprint_speed"]
 pct90_runner_m3 <- runner_combined[0.9 * nrow(runner_combined),"player_id"]
-pct90_ss <- runner_combined[0.9 * nrow(runner_combined),"sprint_speed"]
+pct90_ss_m3 <- runner_combined[0.9 * nrow(runner_combined),"sprint_speed"]
 pct10_runner_m3 <- runner_combined[0.1 * nrow(runner_combined),"player_id"]
-pct10_ss <- runner_combined[0.1 * nrow(runner_combined),"sprint_speed"]
-run1b <- c(pct10_runner_m3, median_runner_m3, pct90_runner_m3)
+pct10_ss_m3 <- runner_combined[0.1 * nrow(runner_combined),"sprint_speed"]
+run1b_m3 <- c(pct10_runner_m3, median_runner_m3, pct90_runner_m3)
 
 r2_runner <- round(cor(runner_combined$sprint_speed, runner_combined$combined_effect)^2, 5)
 runner_eff_plot <- ggplot(runner_combined) + aes(x = sprint_speed, y = combined_effect) + geom_point() + labs(x = "Sprint Speed", y = "Runner Effect", title = "Influence of Sprint Speed on Runner Effect for SB Success", subtitle = paste0("R^2 = ", r2_runner)) + theme_classic()
@@ -573,12 +571,12 @@ catcher_effects <- catcher_effects %>% arrange(`(Intercept)`)
 arm_strength_coef <- fixef(m3)[4]
 catcher_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(poptimes, by = "player_id") %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(arm_strength))
 median_catcher_m3 <- catcher_combined[0.5 * nrow(catcher_combined),"player_id"]
-median_as <- catcher_combined[0.5 * nrow(catcher_combined),"arm_strength"]
+median_as_m3 <- catcher_combined[0.5 * nrow(catcher_combined),"arm_strength"]
 pct90_catcher_m3 <-  catcher_combined[0.1 * nrow(catcher_combined),"player_id"]
-pct90_as <- catcher_combined[0.1 * nrow(catcher_combined),"arm_strength"]
+pct90_as_m3 <- catcher_combined[0.1 * nrow(catcher_combined),"arm_strength"]
 pct10_catcher_m3 <-  catcher_combined[0.9 * nrow(catcher_combined),"player_id"]
-pct10_as <- catcher_combined[0.9 * nrow(catcher_combined),"arm_strength"]
-fielder_2_id <- c(pct10_catcher_m3, median_catcher_m3, pct90_catcher_m3)
+pct10_as_m3 <- catcher_combined[0.9 * nrow(catcher_combined),"arm_strength"]
+fielder_2_id_m3 <- c(pct10_catcher_m3, median_catcher_m3, pct90_catcher_m3)
 
 
 r2_catcher <- round(cor(catcher_combined$arm_strength, catcher_combined$combined_effect)^2, 5)
@@ -593,13 +591,13 @@ dev.off()
 battery_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(poptimes, by = "player_id") %>% cross_join(pitcher_effects) %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>% arrange(combined_effect)  %>% filter(!is.na(arm_strength))
 median_battery_m3_catcher <- battery_combined[0.5 * nrow(battery_combined),"player_id.x"]
 median_battery_m3_pitcher <- battery_combined[0.5 * nrow(battery_combined),"player_id.y"]
-median_as_bat <- battery_combined[0.5 * nrow(battery_combined),"arm_strength"]
+median_as_bat_m3 <- battery_combined[0.5 * nrow(battery_combined),"arm_strength"]
 pct90_battery_m3_catcher <-  battery_combined[0.1 * nrow(battery_combined),"player_id.x"]
 pct90_battery_m3_pitcher <-  battery_combined[0.1 * nrow(battery_combined),"player_id.y"]
-pct90_as_bat <- battery_combined[0.1 * nrow(battery_combined),"arm_strength"]
+pct90_as_bat_m3 <- battery_combined[0.1 * nrow(battery_combined),"arm_strength"]
 pct10_battery_m3_catcher <-  battery_combined[0.9 * nrow(battery_combined),"player_id.x"]
 pct10_battery_m3_pitcher <-  battery_combined[0.9 * nrow(battery_combined),"player_id.y"]
-pct10_as_bat <- battery_combined[0.9 * nrow(battery_combined),"arm_strength"]
+pct10_as_bat_m3 <- battery_combined[0.9 * nrow(battery_combined),"arm_strength"]
 
 
 ## VARY PITCHER EFFECT
@@ -616,18 +614,18 @@ plot_data_m3$pitcher_id <- factor(plot_data_m3$pitcher_id, levels = c("90th Perc
 #ggplot(plot_data_m3, aes(x = lead1b, y = SBSuccess, col = pitcher_id)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Successful Stolen Base by Lead Distance", subtitle = "Against Various Pitchers", col = "Pitcher SB Prevention Skill") + theme_classic() + theme(legend.position = "right") +   scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue")) 
 
 ## VARY RUNNER EFFECT
-plot_data_m3 <- plot_data %>% cross_join(run1b, copy = TRUE) %>% rename(run1b = y)
+plot_data_m3 <- plot_data %>% cross_join(run1b_m3, copy = TRUE) %>% rename(run1b = y)
 plot_data_m3$pitcher_id <- median_pitcher_m3
 plot_data_m3$fielder_2_id <- median_catcher_m3
-plot_data_m3$arm_strength <- mean_as
-plot_data_m3$sprint_speed <- rep(c(pct10_ss, median_ss, pct90_ss))
+plot_data_m3$arm_strength <- median_as_m3
+plot_data_m3$sprint_speed <- rep(c(pct10_ss_m3, median_ss_m3, pct90_ss_m3))
 plot_data_m3$pre_disengagements <- 0
 plot_data_m3$year <- 2023
 plot_data_m3$SBSuccess <- predict(m3, newdata = plot_data_m3, type = "response")
 plot_data_m3 <- plot_data_m3 %>% mutate(run1b = ifelse(run1b == pct90_runner_m3, "90th Percentile Runner", ifelse(run1b == median_runner_m3, "Median Runner", "10th Percentile Runner")))
 plot_data_m3$run1b <- factor(plot_data_m3$run1b, levels = c("90th Percentile Runner", "Median Runner", "10th Percentile Runner"))
 
-leads_df <- data.frame(lead1b = seq(0,20,0.1), sprint_speed = median_ss, arm_strength = mean_as, pitcher_id = median_pitcher_m3, fielder_2_id = median_catcher_m3, run1b = median_runner_m3, year = 2022)
+leads_df <- data.frame(lead1b = seq(0,20,0.1), sprint_speed = median_ss_m3, arm_strength = median_as_m3, pitcher_id = median_pitcher_m3, fielder_2_id = median_catcher_m3, run1b = median_runner_m3, year = 2022)
 leads_df$SBSuccess <- predict(m3, newdata = leads_df, type = "response")
 
 
@@ -683,19 +681,70 @@ dev.off()
 
 
 ## VARY BATTERY EFFECT (ARM STRENGTH PLUS RANDOM EFFECT FOR CATCHERS PLUS RANDOM EFFECT FOR PITCHERS)
-fielder_2_id <- c(pct10_battery_m3_catcher, median_battery_m3_catcher, pct90_battery_m3_catcher)
+fielder_2_id_m3 <- c(pct10_battery_m3_catcher, median_battery_m3_catcher, pct90_battery_m3_catcher)
 
-plot_data_m3 <- plot_data %>% cross_join(fielder_2_id, copy = TRUE) %>% rename(fielder_2_id = y)
+plot_data_m3 <- plot_data %>% cross_join(fielder_2_id_m3, copy = TRUE) %>% rename(fielder_2_id = y)
 plot_data_m3$run1b <- median_runner_m3
-plot_data_m3$arm_strength <- rep(c(pct10_as_bat, median_as_bat, pct90_as_bat))
-plot_data_m3$sprint_speed <- mean_ss
+plot_data_m3$arm_strength <- rep(c(pct10_as_bat_m3, median_as_bat_m3, pct90_as_bat_m3))
+plot_data_m3$sprint_speed <- median_ss_m3
 plot_data_m3$pre_disengagements <- 0
 plot_data_m3$year <- 2023
 plot_data_m3 <- plot_data_m3 %>% mutate(pitcher_id = ifelse(fielder_2_id == pct90_battery_m3_catcher, pct90_battery_m3_pitcher, ifelse(fielder_2_id == median_battery_m3_catcher, median_battery_m3_pitcher, pct10_battery_m3_pitcher)))
 plot_data_m3$SBSuccess <- predict(m3, newdata = plot_data_m3, type = "response")
 plot_data_m3 <- plot_data_m3 %>% mutate(fielder_2_id = ifelse(fielder_2_id == pct90_battery_m3_catcher, "90th Percentile Battery", ifelse(fielder_2_id == median_battery_m3_catcher, "Median Battery", "10th Percentile Battery")))
 plot_data_m3$fielder_2_id <- factor(plot_data_m3$fielder_2_id, levels = c("90th Percentile Battery", "Median Battery", "10th Percentile Battery"))
-#ggplot(plot_data_m3, aes(x = lead1b, y = SBSuccess, col = fielder_2_id)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Successful Stolen Base by Lead Distance", subtitle = "Against Various Batteries", col = "Battery Skill (Catcher + Pitcher Effect)") + theme_classic() + theme(legend.position = "right") + scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue"))
+#ggplot(plot_data_m3, aes(x = lead1b, y = SBSuccess, col = fielder_2_id_m3)) + geom_line() + labs(x = "Lead Distance", y = "Probability", title = "Probability of Successful Stolen Base by Lead Distance", subtitle = "Against Various Batteries", col = "Battery Skill (Catcher + Pitcher Effect)") + theme_classic() + theme(legend.position = "right") + scale_colour_manual(values = c("skyblue", "dodgerblue3", "darkblue"))
+
+
+## M4 PITCHER EFFECTS
+pitcher_effects <- ranef(m4)$pitcher_id
+pitcher_effects <- pitcher_effects %>% mutate(player_id = as.numeric(rownames(pitcher_effects))) %>% arrange(`(Intercept)`) 
+median_pitcher_m4 <- rownames(pitcher_effects)[0.5 * nrow(pitcher_effects)]
+pct90_pitcher_m4 <- rownames(pitcher_effects)[0.1 * nrow(pitcher_effects)]
+pct10_pitcher_m4 <- rownames(pitcher_effects)[0.9 * nrow(pitcher_effects)]
+pitcher_id <- c(pct10_pitcher_m4, median_pitcher_m4, pct90_pitcher_m4)
+
+## M4 RUNNER EFFECTS
+
+runner_effects <- ranef(m4)$run1b
+runner_effects <- runner_effects %>% arrange(`(Intercept)`)
+sprint_speed_coef <- fixef(m4)[6]
+runner_combined <- runner_effects %>% mutate(player_id = as.numeric(rownames(runner_effects))) %>% left_join(sprints, by = "player_id") %>% mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(sprint_speed))
+median_runner_m4 <- runner_combined[0.5 * nrow(runner_combined),"player_id"]
+median_ss_m4 <- runner_combined[0.5 * nrow(runner_combined),"sprint_speed"]
+pct90_runner_m4 <- runner_combined[0.9 * nrow(runner_combined),"player_id"]
+pct90_ss_m4 <- runner_combined[0.9 * nrow(runner_combined),"sprint_speed"]
+pct10_runner_m4 <- runner_combined[0.1 * nrow(runner_combined),"player_id"]
+pct10_ss_m4 <- runner_combined[0.1 * nrow(runner_combined),"sprint_speed"]
+run1b_m4 <- c(pct10_runner_m4, median_runner_m4, pct90_runner_m4)
+
+
+## M4 CATCHER EFFECT
+catcher_effects <- ranef(m4)$fielder_2_id
+catcher_effects <- catcher_effects %>% arrange(`(Intercept)`)
+arm_strength_coef <- fixef(m4)[7]
+catcher_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(poptimes, by = "player_id") %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(arm_strength))
+median_catcher_m4 <- catcher_combined[0.5 * nrow(catcher_combined),"player_id"]
+median_as_m4 <- catcher_combined[0.5 * nrow(catcher_combined),"arm_strength"]
+pct90_catcher_m4 <-  catcher_combined[0.1 * nrow(catcher_combined),"player_id"]
+pct90_as_m4 <- catcher_combined[0.1 * nrow(catcher_combined),"arm_strength"]
+pct10_catcher_m4 <-  catcher_combined[0.9 * nrow(catcher_combined),"player_id"]
+pct10_as_m4 <- catcher_combined[0.9 * nrow(catcher_combined),"arm_strength"]
+fielder_2_id_m4 <- c(pct10_catcher_m4, median_catcher_m4, pct90_catcher_m4)
+
+
+## M4 BATTERY COMBINED
+battery_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(poptimes, by = "player_id") %>% cross_join(pitcher_effects) %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>% arrange(combined_effect)  %>% filter(!is.na(arm_strength))
+median_battery_m4_catcher <- battery_combined[0.5 * nrow(battery_combined),"player_id.x"]
+median_battery_m4_pitcher <- battery_combined[0.5 * nrow(battery_combined),"player_id.y"]
+median_as_bat_m4 <- battery_combined[0.5 * nrow(battery_combined),"arm_strength"]
+pct90_battery_m4_catcher <-  battery_combined[0.1 * nrow(battery_combined),"player_id.x"]
+pct90_battery_m4_pitcher <-  battery_combined[0.1 * nrow(battery_combined),"player_id.y"]
+pct90_as_bat_m4 <- battery_combined[0.1 * nrow(battery_combined),"arm_strength"]
+pct10_battery_m4_catcher <-  battery_combined[0.9 * nrow(battery_combined),"player_id.x"]
+pct10_battery_m4_pitcher <-  battery_combined[0.9 * nrow(battery_combined),"player_id.y"]
+pct10_as_bat_m4 <- battery_combined[0.9 * nrow(battery_combined),"arm_strength"]
+
 
 
 # Actual Pick Prob
@@ -829,48 +878,66 @@ value_of_outcomes <- prob_transition %>% left_join(runs_on_transition, by = c("S
 
 
 
-# BASELINE VALUE OF AN INNING ----
-
-transitions_nolead <- states_final %>% count(State, New_State) %>% mutate(runner_outcome = "N") %>% group_by(State) %>% mutate(Prob = n / sum(n)) %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) 
-
-# Repeat prior steps over and over until no more value changes
-change <- Inf                                                                                     
-threshold <- 0.001                                                                                
-old_re_table_nolead <- full_re_table
-iterations <- 0
-while(change > threshold || iterations < 2) {                                                                       
-  re_vals_nolead  <-  transitions_nolead %>% 
-    right_join(old_re_table_nolead, by = c("New_State" = "State")) %>%
-    group_by(State) %>% 
-    summarize(RE = sum(Prob * (RunsScored + RE)))
-  
-  change <- re_vals_nolead |>                                                                              
-    dplyr::left_join(old_re_table_nolead, by = "State", suffix = c("_old", "_new")) |>  
-    filter(!is.na(RE_new)) |> 
-    with(sum(abs(RE_new - RE_old))) 
-  
-  print(change)
-  print(re_vals_nolead[1,2])
-  
-  old_re_table_nolead <- re_vals_nolead
-  iterations <- iterations + 1
-  
-}     
-
 # VALUE ITERATION WITH VARYING SKILL ----
 
-skill_grid <- expand.grid(run1b_m3 = run1b, fielder_2_id_m3  = fielder_2_id)
+skill_grid <- expand.grid(run1b_m3 = run1b_m3, fielder_2_id_m3  = fielder_2_id_m3)
 skill_grid$pitcher_id_m3 <- c(rep(pct10_battery_m3_pitcher,3), rep(median_battery_m3_pitcher,3), rep(pct90_battery_m3_pitcher,3))
-skill_grid$sprint_speed_m3  <- rep(c(pct10_ss, median_ss, pct90_ss), 3)
-skill_grid$arm_strength_m3  <- c(rep(pct10_as, 3), rep(median_as, 3), rep(pct90_as, 3))
+skill_grid$sprint_speed_m3  <- rep(c(pct10_ss_m3, median_ss_m3, pct90_ss_m3), 3)
+skill_grid$arm_strength_m3  <- c(rep(pct10_as_m3, 3), rep(median_as_m3, 3), rep(pct90_as_m3, 3))
 skill_grid$runner_skill <- rep(c("10th Percentile Runner", "Median Runner", "90th Percentile Runner"), 3)
 skill_grid$battery_skill <- c(rep("10th Percentile Battery", 3), rep("Median Battery", 3),  rep("90th Percentile Battery", 3))
 
+skill_grid$run1b_m4  <- rep(c(pct10_runner_m4, median_runner_m4, pct90_runner_m4), 3)
+skill_grid$fielder_2_id_m4  <- c(rep(pct10_catcher_m4, 3), rep(median_catcher_m4, 3), rep(pct90_battery_m4_catcher, 3))
+skill_grid$pitcher_id_m4 <- c(rep(pct10_battery_m4_pitcher,3), rep(median_battery_m4_pitcher,3), rep(pct90_battery_m4_pitcher,3))
+skill_grid$sprint_speed_m4  <- rep(c(pct10_ss_m4, median_ss_m4, pct90_ss_m4), 3)
+skill_grid$arm_strength_m4  <- c(rep(pct10_as_m4, 3), rep(median_as_m4, 3), rep(pct90_as_m4, 3))
+
 skill_grid$pitcher_id_m2 <- c(rep(pct10_pitcher_m2, 3), rep(median_pitcher_m2, 3),  rep(pct90_pitcher_m2, 3))
-skill_grid$run1b_m2 <- rep(c(pct10_runner_m2, median_runner_m2, pct90_runner_m2), 3)
+#skill_grid$run1b_m2 <- rep(c(median_runner_m2, median_runner_m2, median_runner_m2), 3)
 
 skill_grid$pitcher_id_m1 <- c(rep(pct10_pitcher_m1,3), rep(median_pitcher_m1,3), rep(pct90_pitcher_m1, 3))
 
+# 
+# for (i in 1:nrow(skill_grid)) {
+#   state_leads_it <- state_leads_exp
+#   state_leads_it$fielder_2_id <- skill_grid[i,2]
+#   state_leads_it$run1b <- skill_grid[i,1]
+#   state_leads_it$pitcher_id <-  skill_grid[i,3]
+#   state_leads_it$arm_strength <- skill_grid[i,5]
+#   state_leads_it$sprint_speed <- skill_grid[i,4]
+#   state_leads_it$sb_succ <- predict(m3, newdata = state_leads_it, type = "response")
+#   
+#   
+#   state_leads_it$fielder_2_id <- skill_grid[i,9]
+#   state_leads_it$run1b <- skill_grid[i,8]
+#   state_leads_it$pitcher_id <-  skill_grid[i,10]
+#   state_leads_it$arm_strength <- skill_grid[i,12]
+#   state_leads_it$sprint_speed <- skill_grid[i,11]
+#   state_leads_it$sb_prob <- predict(m4, newdata = state_leads_it, type = "response")
+#   
+#   state_leads_it$run1b <- skill_grid[i,14]
+#   state_leads_it$pitcher_id <-  skill_grid[i,13]
+#   state_leads_it$year <- as.factor(state_leads_it$year)
+#   state_leads_it$pre_disengagements <- state_leads_it$pre_disengagements
+#   state_leads_it$pre_disengagements <- as.factor(state_leads_it$pre_disengagements)  
+#   state_leads_it$pickoff_prob <- predict(m2, newdata = state_leads_it, type = "response")
+#   
+#   state_leads_it$pitcher_id <-  skill_grid[i,15]
+#   state_leads_it$pick_succ <- predict(m1, newdata = state_leads_it, type = "response")
+#   
+#   state_leads_it$pickoff_prob <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$pickoff_prob)
+#   state_leads_it$pick_succ <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$pick_succ)
+#   state_leads_it$sb_prob <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$sb_prob)
+#   state_leads_it$sb_succ <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$sb_succ)
+#   
+#   base10 <- state_leads_it %>% filter(State == "100 0 000", lead1b == 10, runner_outcome == "N")
+#   print(skill_grid[i,6])
+#   print(skill_grid[i,7])
+#   print(base10)
+#   
+#   
+# }
 
 
 for (i in 1:nrow(skill_grid)) {
@@ -881,16 +948,23 @@ for (i in 1:nrow(skill_grid)) {
   state_leads_it$arm_strength <- skill_grid[i,5]
   state_leads_it$sprint_speed <- skill_grid[i,4]
   state_leads_it$sb_succ <- predict(m3, newdata = state_leads_it, type = "response")
+  
+  
+  state_leads_it$fielder_2_id <- skill_grid[i,9]
+  state_leads_it$run1b <- skill_grid[i,8]
+  state_leads_it$pitcher_id <-  skill_grid[i,10]
+  state_leads_it$arm_strength <- skill_grid[i,12]
+  state_leads_it$sprint_speed <- skill_grid[i,11]
   state_leads_it$sb_prob <- predict(m4, newdata = state_leads_it, type = "response")
   
-  state_leads_it$run1b <- skill_grid[i,9]
-  state_leads_it$pitcher_id <-  skill_grid[i,8]
+  #state_leads_it$run1b <- skill_grid[i,14]
+  state_leads_it$pitcher_id <-  skill_grid[i,13]
   state_leads_it$year <- as.factor(state_leads_it$year)
   state_leads_it$pre_disengagements <- state_leads_it$pre_disengagements
   state_leads_it$pre_disengagements <- as.factor(state_leads_it$pre_disengagements)  
   state_leads_it$pickoff_prob <- predict(m2, newdata = state_leads_it, type = "response")
   
-  state_leads_it$pitcher_id <-  skill_grid[i,10]
+  state_leads_it$pitcher_id <-  skill_grid[i,14]
   state_leads_it$pick_succ <- predict(m1, newdata = state_leads_it, type = "response")
   
   state_leads_it$pickoff_prob <- ifelse(state_leads_it$sb2B == 0, 0, state_leads_it$pickoff_prob)
@@ -964,9 +1038,9 @@ for (i in 1:nrow(skill_grid)) {
   print(skill_grid[i,6])
   print(skill_grid[i,7])
   print(old_run_1b_it[1,])
-  skill_grid[i, 11] <- old_run_1b_it[1,]$lead1b
-  skill_grid[i, 12] <- old_run_1b_it[37,]$lead1b
-  skill_grid[i, 13] <- old_run_1b_it[73,]$lead1b
+  skill_grid[i, 15] <- old_run_1b_it[1,]$lead1b
+  skill_grid[i, 16] <- old_run_1b_it[37,]$lead1b
+  skill_grid[i, 17] <- old_run_1b_it[73,]$lead1b
 }
 
 
@@ -995,7 +1069,7 @@ table1 <- sorted %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% m
 
 table2 <- sorted %>% ungroup() %>%  filter(substr(countouts, 3,3) == "0", bases == "100") %>% mutate(Count = paste0(substr(countouts,1,1),"-",substr(countouts,2,2))) %>% select(Count, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b,  names_prefix = "Disengagements_")
 
-table3 <- skill_grid %>% ungroup() %>% select(battery_skill, runner_skill, V11, V12, V13)
+table3 <- skill_grid %>% ungroup() %>% select(battery_skill, runner_skill, V15, V16, V17)
 colnames(table3) <- c("Battery Skill", "Runner Skill", "0 Disengagements", "1 Disengagements", "2 Disengagements")
 
 print(
@@ -1035,8 +1109,8 @@ pv1b_states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0),
 actual_vs_recommended_leads <- pv1b_states_added %>% left_join(old_run_1b, by = "State") %>% rename(ActualLead = lead1b.x, RecLead = lead1b.y) %>% mutate(LeadDiff = ActualLead - RecLead)
 mean(actual_vs_recommended_leads$LeadDiff > 0, na.rm = TRUE) # Actual lead only exceeds recommended lead 20.0% of the team
 
-avr_table <- actual_vs_recommended_leads %>% group_by(pre_disengagements) %>% summarize(Actual = mean(ActualLead, na.rm = TRUE), Rec = mean(RecLead, na.rm = TRUE))
-colnames(avr_table) <- c("Disengagements", "Actual Lead", "Recommended Lead")
+avr_table <- actual_vs_recommended_leads %>% group_by(pre_disengagements) %>% summarize(Actual = mean(ActualLead, na.rm = TRUE), Rec = mean(RecLead, na.rm = TRUE), Exceeds = mean(LeadDiff > 0, na.rm = TRUE)) %>% mutate(Exceeds = paste0(round(Exceeds * 100, 1), "%"))
+colnames(avr_table) <- c("Disengagements", "Actual Lead", "Recommended Lead", "Actual Exceeds Recommendation")
 avr_table$Disengagements <- as.factor(avr_table$Disengagements)
 
 
@@ -1108,14 +1182,14 @@ states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0), R2 =
 
 pitcher_decision_real <- states_added %>% left_join(value_of_outcomes, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N) %>% mutate(PickRecommend = ifelse(Val_Pick_Attempt < Val_NoPick, 1, 0))
 
-mean(pitcher_decision_real$PickRecommend, na.rm = TRUE) # Pitcher should attempt a pickoff 20.2% of the time!
-mean(pitcher_decision_real$isPickAttempt) # Actually picks 5.5% of the time
+mean(pitcher_decision_real$PickRecommend, na.rm = TRUE) # Pitcher should attempt a pickoff 8.3% of the time!
+mean(pitcher_decision_real$isPickAttempt) # Actually picks 5.6% of the time
 
 should_pick <- pitcher_decision_real %>% filter(PickRecommend == 1)
-mean(should_pick$isPickAttempt) # When pick recommended, they actually pick 8.6% of the time
+mean(should_pick$isPickAttempt) # When pick recommended, they actually pick 10.8% of the time
 
 no_pick <- pitcher_decision_real %>% filter(PickRecommend == 0)
-mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 4.6% of the time
+mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 5.0% of the time
 
 old_re_table_two
 
@@ -1177,4 +1251,7 @@ write_csv(old_run_1b, "res.csv")
 
 
 write_csv(sorted, "res.csv")
+
+
+
 
