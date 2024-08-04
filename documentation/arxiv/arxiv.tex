@@ -306,7 +306,7 @@
 
     \begin{figure}[b]
       \centering
-      \includegraphics[width = 0.5\textwidth]{../../figures/leads_overall.png}
+      \includegraphics[width = 0.5\textwidth]{figures/leads_overall.png}
       \caption{The curves show the distribution of the lead distances at first base in feet. The red curve shows all leads from 2022, while the blue curves show the leads from 2023 under different levels of disengagements. The vertical lines represent the mean in each situation.}
       \label{fig:leads-overall}
     \end{figure}
@@ -405,7 +405,7 @@
           \begin{tabular}{c|ccc}
             Count & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
             \hline
-            \input{figures/lead_by_count}
+            \input{tables/lead_by_count.tex}
           \end{tabular}
           \caption{Based on the count in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements}
           \label{tab:count}
@@ -421,7 +421,7 @@
           \begin{tabular}{c|ccc}
              Outs & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
             \hline
-            \input{figures/lead_by_runners_outs}
+            \input{tables/lead_by_runners_outs.tex}
           \end{tabular}
           \caption{Based on the number of outs in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements}
           \label{tab:runners-outs}
@@ -437,7 +437,7 @@
           \begin{tabular}{cc|ccc}
             Battery Skill  & Runner Skill & 0 Disengagements & 1 Disengagements & 2 Disengagements\\
             \hline
-            \input{figures/lead_by_players}
+            \input{tables/lead_by_players.tex}
           \end{tabular}
           \caption{Based on the skill of the battery (pitcher and catcher) and the skill of the runner in each row, each entry shows the optimal lead distance for a runner on first base depending on the number of disengagements}
           \label{tab:players}
@@ -452,7 +452,7 @@
           \begin{tabular}{c|ccc}
             Disengagements & Average Actual Lead & Average Recommended Lead & Actual Exceeds Recommendation\\
             \hline
-            \input{figures/actual_vs_rec_lead}
+            \input{tables/actual_vs_rec_lead.tex}
           \end{tabular}
           \caption{Each entry shows the average lead at 1st base based on the number of disengagements prior to the pitch. The recommended leads in the final column are based on our single-agent model. The final column shows the percent of pitches where the actual lead exceeds our recommendation.}
           \label{tab:actual-vs-rec}
@@ -473,7 +473,7 @@
           \begin{tabular}{c|ccc}
             Count & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
             \hline
-            \input{figures/count_two_agent}
+            \input{tables/count_two_agent.tex}
           \end{tabular}
           \caption{Based on the count in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements for our two-agent model}
           \label{tab:count-twoagent}
