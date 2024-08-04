@@ -1,0 +1,40 @@
+
+\documentclass{article}
+
+\usepackage[margin=1in]{geometry}
+
+\begin{document}
+    \section{Introduction}
+    \section{Data}
+    \section{Methods}
+        \subsection{Probability model for runner outcomes}
+            \subsubsection{Linear mixed-effects regression}
+        \subsection{The baseball inning as a Markov decision process}
+            \subsubsection{The single-agent model}
+            \subsubsection{The two-agent model}
+            \subsubsection{Policy iteration}
+    \section{Results}
+        \subsection{Runner outcome probabilities given lead distance}
+            \begin{itemize}
+                \item What is the relationship between lead distance and:
+                \begin{itemize}
+                    \item the probability of a pickoff attempt,
+                    \item the success probability of a pickoff attempt,
+                    \item the success probability of a stolen base attempt?
+                \end{itemize}
+            \end{itemize}
+        \subsection{Optimal lead distance under current conditions}
+            \begin{itemize}
+                \item What is the optimal lead distance for the average runner against an average battery, as a function of disengagements?
+                \item How does optimal lead distance change for 10$^{th}$-/90$^{th}$-percentile runner?
+                How does optimal lead distance change for 10$^{th}$-/90$^{th}$-percentile battery?
+                \item How many more runs could an offense expect to score (in the current environment) if they successfully implemented the optimal policy?
+            \end{itemize}
+        \subsection{Game theoretic equilibrium}
+            \begin{itemize}
+                \item How much more frequently does our model think pitchers should be attempting pickoffs? Under the game theoretic equilibrium, how frequently would pitchers be attempting pickoffs?
+                \item Under the game theoretic equilibrium, what is the optimal lead distance for an average runner against an average battery, given disengagements?
+                \item Relative to current conditions, would the game theoretic equilibrium favor offense or defense, and by how much?
+            \end{itemize}
+    \section{Discussion}
+\end{document}
