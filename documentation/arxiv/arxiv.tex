@@ -38,10 +38,18 @@
   \section{Data}
 
     \subsection{MLB Stats API}
+    \label{sec:statsapi}
+
+      Most of the data used for this article were downloaded from the publicly available MLB Stats API using the R package sabRmetrics \citep{powers_sabrmetrics_2024}. The dataset comprises 722,899 plays from the 2022 MLB regular season and 726,868 plays from the 2023 MLB regular season, where each play is either a pitch or a pickoff attempt (2.0\% pickoff attempts in 2022, 1.2\% in 2023). For each play, we observe the identities of the pitcher, catcher and runners involved. Before and after each play, we observe the state of the game, described by the number of outs in the inning; which bases are occupied by runners; the ball-strike count on the batter; and the number of disengagements already used by the pitcher. On each pickoff attempt, we observe whether it is successful (runner is out) or unsuccessful (runner is safe). On each pitch, we observe whether the runner attempts a stolen base; and if so, we observe whether they are successful (runner is safe) or unsuccessful (runner is out). On each pitch terminating a plate appearance (a batting attempt by a batter), we observe the plate appearance outcome, such as strikeout, groundout, single or home run.
 
     \subsection{Baseball Savant}
+    \label{sec:baseballsavant}
+
+      In addition to the play-by-play data described in Section \ref{sec:statsapi}, we manually downloaded publicly available player-season level data from Baseball Savant \citep{mlb_advanced_media_notitle_2024} describing measurable performance characteristics of catchers and runners in each season, both estimated using computer vision on video data from several camera angles. For each catcher-season, we observe {\it arm strength} (miles per hour), which measures how hard the catcher throws the ball. This is defined as the average of the top 10 percent of throw speeds when the catcher is attempting to catch a base stealer. For each runner-season, we observe {\it sprint speed} (feet per second), which measures the runner's top running speed in their fastest one-second window. This is defined as the average of the top 67 percent of peak running speeds on qualified runs: (1) home-to-first runs on weakly hit batted balls and (2) runs of two or more bases on balls hit into play (excluding runs from second base on extra-base hits).
 
     \subsection{Proprietary Statcast Data}
+
+      In addition to the publicly available data described in Sections \ref{sec:statsapi} and \ref{sec:baseballsavant}, this article relies on one key piece of proprietary information provided by MLB Advanced Media, estimated using computer vision on video data from several camera angles. For each play, observe each runner's {\it lead distance} (feet), which is how far they are ranging from their base at the time of the pitcher's first movement. This is defined as the distance between the runner's center of mass (projected onto the line between the runner's current base and their next base) and the nearest edge of the runner's current base. When the pitcher throws a pitch, runners will typically extend their lead by several feet from the time of the pitcher's first movement to the time of pitch release (known as taking a {\it secondary lead}), which is relevant for runner advancement on batted balls but not on stolen base attempts. Our data include only the lead distance at the time of the pitcher's first movement, not the secondary lead.
 
   \section{Methods}
 
@@ -280,7 +288,7 @@
 
         {\it Reward function.} The reward function (\ref{eqn:reward}) is the same for the two-agent model as for the single-agent model. In this game, however, the runner wants to maximize the reward, and the pitcher wants to minimize the reward.
 
-        {\it Policy iteration.} In the the policy update step (\ref{eqn:update-policy-single-agent}) of policy iteration for the single-agent model, we seek the policy which maximizes the expected one-step sum of reward and resulting value, given an estimated value function. In the two-agent model, there are game theoretic considerations. Given the estimated value function $\hat V$ and the runner's chosen lead distance $\ell$, the pitcher chooses $p$ to minimize the expected one-step sum of reward and resulting value:
+        {\it Policy iteration.} In the policy update step (\ref{eqn:update-policy-single-agent}) of policy iteration for the single-agent model, we seek the policy which maximizes the expected one-step sum of reward and resulting value, given an estimated value function. In the two-agent model, there are game theoretic considerations. Given the estimated value function $\hat V$ and the runner's chosen lead distance $\ell$, the pitcher chooses $p$ to minimize the expected one-step sum of reward and resulting value:
         \begin{align*}
           \arg\min_{p\in\mathcal{P}} \sum_{s' \in \mathcal{S}} P(s' \mid s,\, \ell,\, p) [R(s, s') + \hat V(s')].
         \end{align*}
@@ -289,7 +297,7 @@
           \arg\max_{\ell \in \mathcal{L}}\left\{\min_{p\in\mathcal{P}} \sum_{s' \in \mathcal{S}} P(s' \mid s,\, \ell,\, p) [R(s, s') + \hat V(s')]\right\}.
         \end{align*}
 
-        The optimal policy for the pitcher is clear: between the choices of attempting a pickoff or not, make the choice that results in the lower run expectation. To find the optimal policy $\pi^* : \mathcal{S} \rightarrow \mathcal{L}$ for the runner, we again apply policy iteration. Starting with $\hat V_0(s) = 0$ and $\hat pi_0(s) = 0$ for all $s \in \mathcal{S}$, we iteratively apply the updates below until the policy converges.\footnote{Are we guaranteed convergence to the optimal policy?}
+        The optimal policy for the pitcher is clear: between the choices of attempting a pickoff or not, make the choice that results in the lower run expectation. To find the optimal policy $\pi^* : \mathcal{S} \rightarrow \mathcal{L}$ for the runner, we again apply policy iteration. Starting with $\hat V_0(s) = 0$ and $\hat \pi_0(s) = 0$ for all $s \in \mathcal{S}$, we iteratively apply the updates below until the policy converges.\footnote{TODO: Are we guaranteed convergence to the optimal policy?}
         
         \begin{align}
           \label{eqn:update-value-two-agent}
@@ -297,6 +305,8 @@
           \label{eqn:update-policy-two-agent}
           \hat\pi_{i+1}(s) &= \arg\max_{\ell \in \mathcal{L}} \left\{\min_{p \in \mathcal{P}}\sum_{s' \in \mathcal{S}} P(s' | s,\, \ell,\, p) [R(s, s') + \hat V_{i+1}(s')]\right\} && \forall s \in \mathcal{S}.
         \end{align}
+
+        Given this runner policy, the pitcher is indifferent between throwing a pitch and attempting a pickoff.
 
   \section{Results}
   
@@ -316,7 +326,7 @@
      Next, we will examine the results of our runner outcome probability models. These logistic regression models help us update our transition probabilities based on the runner's lead distance, the game situation, and the players involved in a play.
       
       
-        Starting with the pickoff attempt probability model, Figure \ref{fig:prob-pickoff-attempt} shows how our estimated probability changes based on lead distance and the the number of prior disengagements:
+        Starting with the pickoff attempt probability model, Figure \ref{fig:prob-pickoff-attempt} shows how our estimated probability changes based on lead distance and the number of prior disengagements:
 
         \begin{figure}
           \label{fig:prob-pickoff-attempt}
@@ -497,12 +507,17 @@
 
     \begin{itemize}
       \item NOTE (SP): Let's try including pitcher handedness in our model
+      \item NOTE (SP): Should we use catcher pop time instead of arm strength?
       \item Successful pickoff eliminates runner with no other runner movement
       \item Number of disengagements does not affect batter outcomes
       \item Lead distance does not affect outcomes on batted balls (note: domain knowledge tells us that secondary lead is more important than the lead distance we observe, which is first pitcher movement)
       \item We are ignoring the possibility that the runner takes off for 2B on a pickoff attempt
       \item Other than pickoff attempts, no other disengagements occur
     \end{itemize}
+
+  \section{Acknowledgments}
+
+    Major League Baseball trademarks and copyrights are used with permission of MLB Advanced Media, L.P. All rights reserved.
 
   \bibliography{arxiv}
 
