@@ -38,10 +38,18 @@
   \section{Data}
 
     \subsection{MLB Stats API}
+    \label{sec:statsapi}
+
+      Most of the data used for this article were downloaded from the publicly available MLB Stats API using the R package sabRmetrics \citep{powers_sabrmetrics_2024}. The dataset comprises 722,899 plays from the 2022 MLB regular season and 726,868 plays from the 2023 MLB regular season, where each play is either a pitch or a pickoff attempt (2.0\% pickoff attempts in 2022, 1.2\% in 2023). For each play, we observe the identities of the pitcher, catcher and runners involved. Before and after each play, we observe the state of the game, described by the number of outs in the inning; which bases are occupied by runners; the ball-strike count on the batter; and the number of disengagements already used by the pitcher. On each pickoff attempt, we observe whether it is successful (runner is out) or unsuccessful (runner is safe). On each pitch, we observe whether the runner attempts a stolen base; and if so, we observe whether they are successful (runner is safe) or unsuccessful (runner is out). On each pitch terminating a plate appearance (a batting attempt by a batter), we observe the plate appearance outcome, such as strikeout, groundout, single or home run.
 
     \subsection{Baseball Savant}
+    \label{sec:baseballsavant}
+
+      In addition to the play-by-play data described in Section \ref{sec:statsapi}, we manually downloaded publicly available player-season level data from Baseball Savant \citep{mlb_advanced_media_notitle_2024} describing measurable performance characteristics of catchers and runners in each season, both estimated using computer vision on video data from several camera angles. For each catcher-season, we observe {\it arm strength} (miles per hour), which measures how hard the catcher throws the ball. This is defined as the average of the top 10 percent of throw speeds when the catcher is attempting to catch a base stealer. For each runner-season, we observe {\it sprint speed} (feet per second), which measures the runner's top running speed in their fastest one-second window. This is defined as the average of the top 67 percent of peak running speeds on qualified runs: (1) home-to-first runs on weakly hit batted balls and (2) runs of two or more bases on balls hit into play (excluding runs from second base on extra-base hits).
 
     \subsection{Proprietary Statcast Data}
+
+      In addition to the publicly available data described in Sections \ref{sec:statsapi} and \ref{sec:baseballsavant}, this article relies on one key piece of proprietary information provided by MLB Advanced Media, estimated using computer vision on video data from several camera angles. For each play, observe each runner's {\it lead distance} (feet), which is how far they are ranging from their base at the time of the pitcher's first movement. This is defined as the distance between the runner's center of mass (projected onto the line between the runner's current base and their next base) and the nearest edge of the runner's current base. When the pitcher throws a pitch, runners will typically extend their lead by several feet from the time of the pitcher's first movement to the time of pitch release (known as taking a {\it secondary lead}), which is relevant for runner advancement on batted balls but not on stolen base attempts. Our data include only the lead distance at the time of the pitcher's first movement, not the secondary lead.
 
   \section{Methods}
 
@@ -280,7 +288,7 @@
 
         {\it Reward function.} The reward function (\ref{eqn:reward}) is the same for the two-agent model as for the single-agent model. In this game, however, the runner wants to maximize the reward, and the pitcher wants to minimize the reward.
 
-        {\it Policy iteration.} In the the policy update step (\ref{eqn:update-policy-single-agent}) of policy iteration for the single-agent model, we seek the policy which maximizes the expected one-step sum of reward and resulting value, given an estimated value function. In the two-agent model, there are game theoretic considerations. Given the estimated value function $\hat V$ and the runner's chosen lead distance $\ell$, the pitcher chooses $p$ to minimize the expected one-step sum of reward and resulting value:
+        {\it Policy iteration.} In the policy update step (\ref{eqn:update-policy-single-agent}) of policy iteration for the single-agent model, we seek the policy which maximizes the expected one-step sum of reward and resulting value, given an estimated value function. In the two-agent model, there are game theoretic considerations. Given the estimated value function $\hat V$ and the runner's chosen lead distance $\ell$, the pitcher chooses $p$ to minimize the expected one-step sum of reward and resulting value:
         \begin{align*}
           \arg\min_{p\in\mathcal{P}} \sum_{s' \in \mathcal{S}} P(s' \mid s,\, \ell,\, p) [R(s, s') + \hat V(s')].
         \end{align*}
@@ -289,7 +297,7 @@
           \arg\max_{\ell \in \mathcal{L}}\left\{\min_{p\in\mathcal{P}} \sum_{s' \in \mathcal{S}} P(s' \mid s,\, \ell,\, p) [R(s, s') + \hat V(s')]\right\}.
         \end{align*}
 
-        The optimal policy for the pitcher is clear: between the choices of attempting a pickoff or not, make the choice that results in the lower run expectation. To find the optimal policy $\pi^* : \mathcal{S} \rightarrow \mathcal{L}$ for the runner, we again apply policy iteration. Starting with $\hat V_0(s) = 0$ and $\hat pi_0(s) = 0$ for all $s \in \mathcal{S}$, we iteratively apply the updates below until the policy converges.\footnote{Are we guaranteed convergence to the optimal policy?}
+        The optimal policy for the pitcher is clear: between the choices of attempting a pickoff or not, make the choice that results in the lower run expectation. To find the optimal policy $\pi^* : \mathcal{S} \rightarrow \mathcal{L}$ for the runner, we again apply policy iteration. Starting with $\hat V_0(s) = 0$ and $\hat \pi_0(s) = 0$ for all $s \in \mathcal{S}$, we iteratively apply the updates below until the policy converges.\footnote{TODO: Are we guaranteed convergence to the optimal policy?}
         
         \begin{align}
           \label{eqn:update-value-two-agent}
@@ -298,198 +306,213 @@
           \hat\pi_{i+1}(s) &= \arg\max_{\ell \in \mathcal{L}} \left\{\min_{p \in \mathcal{P}}\sum_{s' \in \mathcal{S}} P(s' | s,\, \ell,\, p) [R(s, s') + \hat V_{i+1}(s')]\right\} && \forall s \in \mathcal{S}.
         \end{align}
 
+        Given this runner policy, the pitcher is indifferent between throwing a pitch and attempting a pickoff.
+
   \section{Results}
   
     \subsection{Runner outcome probabilities given lead distance}
 
-    First, let's look at how runners' behavior changed in MLB with the new pickoff rules introduced before the 2023 season. Figure \ref{fig:leads-overall} shows how runners' lead distances at 1st base changes from 2022 to 2023 once disengagements were limited.
-
-    \begin{figure}[b]
-      \centering
-      \includegraphics[width = 0.5\textwidth]{figures/leads_overall.png}
-      \caption{The curves show the distribution of the lead distances at first base in feet. The red curve shows all leads from 2022, while the blue curves show the leads from 2023 under different levels of disengagements. The vertical lines represent the mean in each situation.}
-      \label{fig:leads-overall}
-    \end{figure}
-
-    In 2022, we found that the number of disengagements did not have much of an  effect on lead distances at first base. In 2023, we saw that the distribution of leads by runners under 0 disengagement situations was virtually identical to all situations from 2022. With each successive disengagement, runners' leads tended to increase by about 0.6-0.8 feet. Unsurprisingly, the rule changes did make runners slightly more aggressive when taking their leads at first base. However, runners did not increase their aggression to the level that we would have recommended.
-    
-     Next, we will examine the results of our runner outcome probability models. These logistic regression models help us update our transition probabilities based on the runner's lead distance, the game situation, and the players involved in a play.
+      First, let's look at how runners' behavior changed in MLB with the new pickoff rules introduced before the 2023 season. Figure \ref{fig:leads-overall} shows how runners' lead distances at 1st base changes from 2022 to 2023 once disengagements were limited.
+  
+      \begin{figure}
+        \centering
+        \includegraphics[width = 0.5\textwidth]{figures/leads_overall.png}
+        \caption{
+          \it The curves show the distribution of the lead distances at first base in feet. The red curve shows all leads from 2022, while the blue curves show the leads from 2023 under different levels of disengagements. The vertical lines represent the mean in each situation.
+        }
+        \label{fig:leads-overall}
+      \end{figure}
+  
+      In 2022, we found that the number of disengagements did not have much of an  effect on lead distances at first base. In 2023, we saw that the distribution of leads by runners under 0 disengagement situations was virtually identical to all situations from 2022. With each successive disengagement, runners' leads tended to increase by about 0.6-0.8 feet. Unsurprisingly, the rule changes did make runners slightly more aggressive when taking their leads at first base. However, runners did not increase their aggression to the level that we would have recommended.
       
+      Next, we will examine the results of our runner outcome probability models. These logistic regression models help us update our transition probabilities based on the runner's lead distance, the game situation, and the players involved in a play.
+        
+      Starting with the pickoff attempt probability model, Figure \ref{fig:prob-pickoff-attempt} shows how our estimated probability changes based on lead distance and the number of prior disengagements:
+  
+      \begin{figure}
+        \centering
+        \includegraphics[width = 0.5\textwidth]{figures/prob_pickoff_attempt.png}
+        \caption{
+          \it The y-axis shows the probability of a pickoff attempt based on the lead distance on the x-axis. The blue lines represent the number of prior disengagements in our 2023 data, and the red line compares that to data from 2022.
+        }
+        \label{fig:prob-pickoff-attempt}
+      \end{figure}
+  
+      The number of disengagements has a major effect on the likelihood of a pickoff attempt. With each successive disengagement, the probability is cut by about 50\%. Even at large lead distances, the probability of a pickoff remains very low after a pitcher has performed a disengagement or two. Notably, the 2023 rule changes also caused a significant decline from 2022's frequency of pickoffs. Even when they had 0 prior disengagements, pitchers in 2023 attempted pickoffs less often than in 2022. Other factors affecting pickoff attempt probability include the count and the pitcher's tendency to attempt pickoffs. However, prior disengagements has the most significant effect.
       
-        Starting with the pickoff attempt probability model, Figure \ref{fig:prob-pickoff-attempt} shows how our estimated probability changes based on lead distance and the the number of prior disengagements:
-
-        \begin{figure}
-          \label{fig:prob-pickoff-attempt}
-          \centering
-          \includegraphics[width = 0.5\textwidth]{figures/prob_pickoff_attempt.png}
-          \caption{The y-axis shows the probability of a pickoff attempt based on the lead distance on the x-axis. The blue lines represent the number of prior disengagements in our 2023 data, and the red line compares that to data from 2022.}
-        \end{figure}
-
-        The number of disengagements has a major effect on the likelihood of a pickoff attempt. With each successive disengagement, the probability is cut by about 50\%. Even at large lead distances, the probability of a pickoff remains very low after a pitcher has performed a disengagement or two. Notably, the 2023 rule changes also caused a significant decline from 2022's frequency of pickoffs. Even when they had 0 prior disengagements, pitchers in 2023 attempted pickoffs less often than in 2022. Other factors affecting pickoff attempt probability include the count and the pitcher's tendency to attempt pickoffs. However, prior disengagements has the most significant effect.
-    
+      Next, we'll take a look at the pickoff success probability model. Figure \ref{fig:prob-pickoff-success}  shows how our estimated probability changes based on lead distance and the pitcher's skill at picking runners off:
       
-        Next, we'll take a look at the pickoff success probability model. Figure \ref{fig:prob-pickoff-success}  shows how our estimated probability changes based on lead distance and the pitcher's skill at picking runners off:
-    
-        \begin{figure}
-          \label{fig:prob-pickoff-success}
-          \centering
-          \includegraphics[width = 0.5\textwidth]{figures/prob_pickoff_success.png}
-          \caption{The y-axis shows the likelihood of success on a pickoff attempt based on the lead distance on the x-axis. The blue lines represent the skill level of the pitcher at picking off runners, which was calculated in our random effects model}
-        \end{figure}
-
-        Unsurprisingly, the probability of a successful pickoff is fairly low for most lead distances. However, once leads approach 13-15 feet, the success rate of pickoffs increases quickly. The gap between the median pitcher and 90th percentile pitcher indicates that certain pitchers are uniquely talented at picking runners off at first base, but even the most talented pitchers' success rates remain low. We found that runner's skill level and the game situation do not have any significant effect on the success rate of a pickoff.
-
-       
-        Now taking a look at the stolen base success probability model, Figure \ref{fig:prob-sb-success}  shows how our estimated probability of success changes based on lead distance and the skill level of the runner. The runner skill level is derived from the combined effects of the runner's sprint speed and his ability to steal bases:
-
-    
-        \begin{figure}
-          \label{fig:prob-sb-success}
-          \centering
-          \includegraphics[width = 0.5\textwidth]{figures/prob_sb_success.png}
-          \caption{The y-axis shows the likelihood of success on a stolen base attempt based on the lead distance on the x-axis. The blue lines represent the skill of the runner in our 2023 model, and the red line compares that to a median runner from our 2022 model.}
-        \end{figure}
-    
-        Clearly, longer leads make stolen bases much more likely to be successful. The 2023 rule changes have made stealing bases significantly easier. A 10th percentile runner in 2023 is now even more likely to be successful while stealing as a median runner was in 2022. Other factors affecting stolen base success include the pitcher and catcher skill levels and the arm strength of the catcher.
-
-
-        We elected not to include lead distance in our stolen base attempt probability model. We found that the results obtained by solely modeling stolen base attempt probability based on game situation and player's involved made much more sense than if we used lead distance. For each possible combination of situation and players, we model the probability that the runner will steal and then allow the runner to choose a lead to maximize their likelihood of stealing successfully while avoiding the risk of being picked off. 
-
-    Finally, let's also look at how our random effect models assign skill levels to runners and catchers. Figure \ref{fig:random-effect-catcher} shows how correlated our catcher skill effect is with their arm strength. 
-
-    
-        \begin{figure}
-          \label{fig:random-effect-catcher}
-          \centering
-          \includegraphics[width = 0.5\textwidth]{figures/catcher_effect.png}
-          \caption{The x-axis shows the catcher's arm strength in miles per hour, while the y-axis shows their skill at preventing stolen bases according to our random effects model. A lower y-value means a catcher is better at preventing stolen bases.}
-        \end{figure}
-
-        There's clearly a strong correlation between arm strength and catcher skill. However, there is also a decent amount of variance in catcher skill that arm strength cannot explain. This likely comes from a catcher's arm accuracy and pop time.
-
-
-        Figure \ref{fig:random-effect-runner} shows how correlated our runner skill effect is with their sprint speed.
-
-         \begin{figure}
-          \label{fig:random-effect-runner}
-          \centering
-          \includegraphics[width = 0.5\textwidth]{figures/runner_effect.png}
-          \caption{The x-axis shows the runner's sprint speed in feet per second, while the y-axis shows their skill at stealing bases according to our random effects model. A higher y-value means a runner is better at stealing bases.}
-        \end{figure}
-
-        Sprint speed definitely is a major factor in how good a runner is at stealing bases. However, it cannot explain all of the variance in skill here. Getting good jumps and skilfully avoiding tags also likely help differentiate runners in this area.
-
-    
+      \begin{figure}
+        \centering
+        \includegraphics[width = 0.5\textwidth]{figures/prob_pickoff_success.png}
+        \caption{
+          \it The y-axis shows the likelihood of success on a pickoff attempt based on the lead distance on the x-axis. The blue lines represent the skill level of the pitcher at picking off runners, which was calculated in our random effects model.
+        }
+        \label{fig:prob-pickoff-success}
+      \end{figure}
+  
+      Unsurprisingly, the probability of a successful pickoff is fairly low for most lead distances. However, once leads approach 13-15 feet, the success rate of pickoffs increases quickly. The gap between the median pitcher and 90th percentile pitcher indicates that certain pitchers are uniquely talented at picking runners off at first base, but even the most talented pitchers' success rates remain low. We found that runner's skill level and the game situation do not have any significant effect on the success rate of a pickoff.
+         
+      Now taking a look at the stolen base success probability model, Figure \ref{fig:prob-sb-success}  shows how our estimated probability of success changes based on lead distance and the skill level of the runner. The runner skill level is derived from the combined effects of the runner's sprint speed and his ability to steal bases:
+      
+      \begin{figure}
+        \centering
+        \includegraphics[width = 0.5\textwidth]{figures/prob_sb_success.png}
+        \caption{
+          \it The y-axis shows the likelihood of success on a stolen base attempt based on the lead distance on the x-axis. The blue lines represent the skill of the runner in our 2023 model, and the red line compares that to a median runner from our 2022 model.
+        }
+        \label{fig:prob-sb-success}
+      \end{figure}
+      
+      Clearly, longer leads make stolen bases much more likely to be successful. The 2023 rule changes have made stealing bases significantly easier. A 10th percentile runner in 2023 is now even more likely to be successful while stealing as a median runner was in 2022. Other factors affecting stolen base success include the pitcher and catcher skill levels and the arm strength of the catcher.
+  
+  
+      We elected not to include lead distance in our stolen base attempt probability model. We found that the results obtained by solely modeling stolen base attempt probability based on game situation and player's involved made much more sense than if we used lead distance. For each possible combination of situation and players, we model the probability that the runner will steal and then allow the runner to choose a lead to maximize their likelihood of stealing successfully while avoiding the risk of being picked off. 
+  
+      Finally, let's also look at how our random effect models assign skill levels to runners and catchers. Figure \ref{fig:random-effect-catcher} shows how correlated our catcher skill effect is with their arm strength. 
+      
+      \begin{figure}
+        \centering
+        \includegraphics[width = 0.5\textwidth]{figures/catcher_effect.png}
+        \caption{
+          \it The x-axis shows the catcher's arm strength in miles per hour, while the y-axis shows their skill at preventing stolen bases according to our random effects model. A lower y-value means a catcher is better at preventing stolen bases.
+        }
+        \label{fig:random-effect-catcher}
+      \end{figure}
+  
+      There's clearly a strong correlation between arm strength and catcher skill. However, there is also a decent amount of variance in catcher skill that arm strength cannot explain. This likely comes from a catcher's arm accuracy and pop time.
+  
+  
+      Figure \ref{fig:random-effect-runner} shows how correlated our runner skill effect is with their sprint speed.
+  
+      \begin{figure}
+        \centering
+        \includegraphics[width = 0.5\textwidth]{figures/runner_effect.png}
+        \caption{
+          \it The x-axis shows the runner's sprint speed in feet per second, while the y-axis shows their skill at stealing bases according to our random effects model. A higher y-value means a runner is better at stealing bases.
+        }
+        \label{fig:random-effect-runner}
+      \end{figure}
+  
+      Sprint speed definitely is a major factor in how good a runner is at stealing bases. However, it cannot explain all of the variance in skill here. Getting good jumps and skilfully avoiding tags also likely help differentiate runners in this area.
 
     \subsection{Optimal lead distance under current conditions}
     
       We use the models described in the previous section to update our transition probabilities based on the runner's lead distance. Then, for each game state, we select the lead distance that maximizes the run expectancy, update the transition probabilities again, and repeat until convergence. 
     
 
-        Figure \ref{fig:finding-optimal-lead} illustrates how we find the optimal lead distance for a runner on first in a given situation. This shows how the run expectancy of the inning changes based on the runner's lead distance and the number of prior disengagements. This chart assumes a 0-0 count, 0 outs, an average runner, pitcher, and catcher, and nobody else on base:
+      Figure \ref{fig:finding-optimal-lead} illustrates how we find the optimal lead distance for a runner on first in a given situation. This shows how the run expectancy of the inning changes based on the runner's lead distance and the number of prior disengagements. This chart assumes a 0-0 count, 0 outs, an average runner, pitcher, and catcher, and nobody else on base:
 
-        \begin{figure}
-          \label{fig:finding-optimal-lead}
-          \centering
-          \includegraphics[width = 0.5\textwidth]{figures/finding_optimal_lead.png}
-          \caption{The y-axis shows the run expectancy of each lead distance on the x-axis. The blue curves represent the number of prior disengagements in the plate appearance, and the vertical lines mark the lead that maximizes the run expectancy in each situation.}
-        \end{figure}
+      \begin{figure}
+        \centering
+        \includegraphics[width = 0.5\textwidth]{figures/finding_optimal_lead.png}
+        \caption{
+          \it The y-axis shows the run expectancy of each lead distance on the x-axis. The blue curves represent the number of prior disengagements in the plate appearance, and the vertical lines mark the lead that maximizes the run expectancy in each situation.
+        }
+        \label{fig:finding-optimal-lead}
+      \end{figure}
 
-        For each situation, we select the lead that maximizes the run expectancy for the inning. In this situation, along with most others we will examine, each successive disengagement increases the optimal lead distance by about two feet.
+      For each situation, we select the lead that maximizes the run expectancy for the inning. In this situation, along with most others we will examine, each successive disengagement increases the optimal lead distance by about two feet.
     
+      Table \ref{tab:count} shows the optimal lead distance for a runner on first base based on the count and prior disengagements. This table assumes an average runner and battery, 0 outs, and no other runners on base:
+
+      \begin{table}
+        \centering
+        \begin{tabular}{c|ccc}
+          Count & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
+          \hline
+          \input{tables/lead_by_count.tex}
+        \end{tabular}
+        \caption{
+          \it Based on the count in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements.
+        }
+        \label{tab:count}
+      \end{table}
+
+      Each successive disengagement leads to an increase in recommended lead distance of approximately two feet. As pitchers approach the two disengagement threshold, the likelihood of a pickoff plummets, so runners can be more aggressive. Also, we notice that recommended leads tend to be a bit higher as the count becomes more advantageous for the batter. This is mainly because pitchers are more likely to attempt a pickoff in these counts.
     
-        Table \ref{tab:count} shows the optimal lead distance for a runner on first base based on the count and prior disengagements. This table assumes an average runner and battery, 0 outs, and no other runners on base:
+      Table \ref{tab:runners-outs} shows the optimal lead distance for a runner on first base based on the number of outs and prior disengagements. This table assumes an average runner and battery and a 0-0 count:
 
-        \begin{table}
-          \centering
-          \begin{tabular}{c|ccc}
-            Count & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
-            \hline
-            \input{figures/lead_by_count}
-          \end{tabular}
-          \caption{Based on the count in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements}
-          \label{tab:count}
-        \end{table}
+      \begin{table}
+        \centering
+        \begin{tabular}{c|ccc}
+           Outs & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
+          \hline
+          \input{tables/lead_by_runners_outs.tex}
+        \end{tabular}
+        \caption{
+          \it Based on the number of outs in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements.
+        }
+        \label{tab:runners-outs}
+      \end{table}
 
-        Each successive disengagement leads to an increase in recommended lead distance of approximately two feet. As pitchers approach the two disengagement threshold, the likelihood of a pickoff plummets, so runners can be more aggressive. Also, we notice that recommended leads tend to be a bit higher as the count becomes more advantageous for the batter. This is mainly because pitchers are more likely to attempt a pickoff in these counts.
-
-    
-        Table \ref{tab:runners-outs} shows the optimal lead distance for a runner on first base based on the number of outs and prior disengagements. This table assumes an average runner and battery and a 0-0 count:
-
-        \begin{table}
-          \centering
-          \begin{tabular}{c|ccc}
-             Outs & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
-            \hline
-            \input{figures/lead_by_runners_outs}
-          \end{tabular}
-          \caption{Based on the number of outs in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements}
-          \label{tab:runners-outs}
-        \end{table}
-
-        Again, we see that each successive disengagement leads to an increase in recommended lead distance of approximately two feet. We also see that the recommended leads for 0 and 1 out are virtually identical, and are slightly longer with 2 outs. With 2 outs, stolen bases are more likely and pickoff attempts are less likely, so runners can be more aggressive.
+      Again, we see that each successive disengagement leads to an increase in recommended lead distance of approximately two feet. We also see that the recommended leads for 0 and 1 out are virtually identical, and are slightly longer with 2 outs. With 2 outs, stolen bases are more likely and pickoff attempts are less likely, so runners can be more aggressive.
 
     
-        Table \ref{tab:players} shows the optimal lead distance for a runner on first base based on the players involved in the play. The runner skill level is based on sprint speed and their ability to steal bases. The battery skill level includes the pitcher and catcher's abilities to pick runners off and throw out potential basestealers, as well as the catcher's arm strength. This table assumes a 0-0 count, 0 outs, and nobody else on base:
+      Table \ref{tab:players} shows the optimal lead distance for a runner on first base based on the players involved in the play. The runner skill level is based on sprint speed and their ability to steal bases. The battery skill level includes the pitcher and catcher's abilities to pick runners off and throw out potential basestealers, as well as the catcher's arm strength. This table assumes a 0-0 count, 0 outs, and nobody else on base:
     
-        \begin{table}
-          \centering
-          \begin{tabular}{cc|ccc}
-            Battery Skill  & Runner Skill & 0 Disengagements & 1 Disengagements & 2 Disengagements\\
-            \hline
-            \input{figures/lead_by_players}
-          \end{tabular}
-          \caption{Based on the skill of the battery (pitcher and catcher) and the skill of the runner in each row, each entry shows the optimal lead distance for a runner on first base depending on the number of disengagements}
-          \label{tab:players}
-        \end{table}
+      \begin{table}
+        \centering
+        \begin{tabular}{cc|ccc}
+          Battery Skill  & Runner Skill & 0 Disengagements & 1 Disengagements & 2 Disengagements\\
+          \hline
+          \input{tables/lead_by_players.tex}
+        \end{tabular}
+        \caption{
+          \it Based on the skill of the battery (pitcher and catcher) and the skill of the runner in each row, each entry shows the optimal lead distance for a runner on first base depending on the number of disengagements.
+        }
+        \label{tab:players}
+      \end{table}
 
-        The effect of the battery seems to be more significant than the effect of the runner. Facing a stronger pitcher and catcher cause the runner's optimal lead distance to shrink by several feet. We again see consistent results that runners should increase their lead by 1.5-2.5 feet upon each successive disengagement. However, better runners don't need to increase their leads by as much, likely because their stolen base success rates will be high to begin with.
+      The effect of the battery seems to be more significant than the effect of the runner. Facing a stronger pitcher and catcher cause the runner's optimal lead distance to shrink by several feet. We again see consistent results that runners should increase their lead by 1.5-2.5 feet upon each successive disengagement. However, better runners don't need to increase their leads by as much, likely because their stolen base success rates will be high to begin with.
 
-        Currently, MLB runners are not doing a great job of putting pressure on the defense by maximizing their lead distances. Table \ref{tab:actual-vs-rec} compares the average actual and recommended leads for runners at 1st base with 2nd base open. With 0 disengagements, runners' actual leads come close to our recommendation, but they could often be adding an extra foot. As disengagements increase, we recommend about a 2 foot increase, but runners only tend to increase their leads by 0.6-0.7 feet. Runners overestimate the danger of a pickoff attempt under these situations, and could be increasing their team's run expectancy by adding a few feet to their lead distances here. Runners rarely meet or exceed the lead distance we recommend, especially with 1 or 2 disengagements.
+      Currently, MLB runners are not doing a great job of putting pressure on the defense by maximizing their lead distances. Table \ref{tab:actual-vs-rec} compares the average actual and recommended leads for runners at 1st base with 2nd base open. With 0 disengagements, runners' actual leads come close to our recommendation, but they could often be adding an extra foot. As disengagements increase, we recommend about a 2 foot increase, but runners only tend to increase their leads by 0.6-0.7 feet. Runners overestimate the danger of a pickoff attempt under these situations, and could be increasing their team's run expectancy by adding a few feet to their lead distances here. Runners rarely meet or exceed the lead distance we recommend, especially with 1 or 2 disengagements.
 
-        \begin{table}
-          \centering
-          \begin{tabular}{c|ccc}
-            Disengagements & Average Actual Lead & Average Recommended Lead & Actual Exceeds Recommendation\\
-            \hline
-            \input{figures/actual_vs_rec_lead}
-          \end{tabular}
-          \caption{Each entry shows the average lead at 1st base based on the number of disengagements prior to the pitch. The recommended leads in the final column are based on our single-agent model. The final column shows the percent of pitches where the actual lead exceeds our recommendation.}
-          \label{tab:actual-vs-rec}
-        \end{table}
+      \begin{table}
+        \centering
+        \begin{tabular}{c|ccc}
+          Disengagements & Average Actual Lead & Average Recommended Lead & Actual Exceeds Recommendation\\
+          \hline
+          \input{tables/actual_vs_rec_lead.tex}
+        \end{tabular}
+        \caption{
+          \it Each entry shows the average lead at 1st base based on the number of disengagements prior to the pitch. The recommended leads in the final column are based on our single-agent model. The final column shows the percent of pitches where the actual lead exceeds our recommendation.
+        }
+        \label{tab:actual-vs-rec}
+      \end{table}
 
+      In order to quantify the effect of optimizing baserunners' lead distances, we compared the run expectancy at the start of an inning before and after iterating through the Bellman Equation. In the 2023 season, the run expectancy of an inning was 0.5163 runs. After our policy iteration, the run expectancy jumped to 0.5277 runs. This increase of 0.0114 runs per inning may seem very small, but this difference adds up quickly. Over a 162 game season, adding 0.0114 runs per inning increases a team's run total by 16.68 runs. Using the typical valuation of \$1 Million per run, optimizing baserunners' lead distances could be worth nearly \$17 Million to a team under the current conditions. This is an incredibly valuable result that does not require much effort for a team to implement.
 
-        In order to quantify the effect of optimizing baserunners' lead distances, we compared the run expectancy at the start of an inning before and after iterating through the Bellman Equation. In the 2023 season, the run expectancy of an inning was 0.5163 runs. After our policy iteration, the run expectancy jumped to 0.5277 runs. This increase of 0.0114 runs per inning may seem very small, but this difference adds up quickly. Over a 162 game season, adding 0.0114 runs per inning increases a team's run total by 16.68 runs. Using the typical valuation of \$1 Million per run, optimizing baserunners' lead distances could be worth nearly \$17 Million to a team under the current conditions. This is an incredibly valuable result that does not require much effort for a team to implement.
+    \subsection{Game theoretic equilibrium}
 
-      \subsection{Game theoretic equilibrium}
+      All of the results shown so far correspond to our single-actor model, where a runner choose a lead distance and all other outcomes are probabilistic based on their choice. Now, we expand our model to a two-actor model, where the runner first chooses a lead distance, then the pitcher elects whether to attempt a pickoff or throw a pitch. The pitcher makes whichever decision minimizes the run expectancy for the offensive team. Therefore, in order for the runner to maximize their run expectancy, they should choose a lead distance such that the pitcher is indifferent as to whether to attempt a pickoff or throw a pitch. Pitchers should always attempt a pickoff if the runner's lead extends beyond this distance, and should always throw a pitch if the lead is shorter. This is the game theoretic equilibrium.
 
-        All of the results shown so far correspond to our single-actor model, where a runner choose a lead distance and all other outcomes are probabilistic based on their choice. Now, we expand our model to a two-actor model, where the runner first chooses a lead distance, then the pitcher elects whether to attempt a pickoff or throw a pitch. The pitcher makes whichever decision minimizes the run expectancy for the offensive team. Therefore, in order for the runner to maximize their run expectancy, they should choose a lead distance such that the pitcher is indifferent as to whether to attempt a pickoff or throw a pitch. Pitchers should always attempt a pickoff if the runner's lead extends beyond this distance, and should always throw a pitch if the lead is shorter. This is the game theoretic equilibrium.
+      Table \ref{tab:count-twoagent} shows the optimal lead by count under the two-agent model:
 
+      \begin{table}
+        \centering
+        \begin{tabular}{c|ccc}
+          Count & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
+          \hline
+          \input{tables/count_two_agent.tex}
+        \end{tabular}
+        \caption{
+          \it Based on the count in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements for our two-agent model.
+        }
+        \label{tab:count-twoagent}
+      \end{table}
 
-        Table \ref{tab:count-twoagent} shows the optimal lead by count under the two-agent model:
+      Under this game-theoretic equilibrium, we see that runners should be taking even longer leads in most situations. This is likely because pickoffs are often wasteful at lower lead distances. If pitchers were to optimize their pickoff behavior, then runners would be able to get longer leads before a pickoff becomes worthwhile for the pitcher. Our two-foot rule of thumb from the single-agent model doesn't hold here. Instead, we see a recommended increase of about 0.5-1 feet after 1 disengagement, and a recommended increase of around 3.5-5 feet after the 2nd disengagement. Once a pitcher reaches 2 disengagements, it becomes extremely risky to attempt a pickoff, so runners can take advantage of that by extending their leads beyond 15 feet.
 
-        \begin{table}
-          \centering
-          \begin{tabular}{c|ccc}
-            Count & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
-            \hline
-            \input{figures/count_two_agent}
-          \end{tabular}
-          \caption{Based on the count in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements for our two-agent model}
-          \label{tab:count-twoagent}
-        \end{table}
+      In order to evaluate how well pitchers follow our recommendations, we looked back at all situations from the 2023 season with a runner on first base only. Our two-agent model suggests that pitchers should have attempted a pickoff in 8.3\% of these situations. In reality, they only attempted pickoffs 5.6\% of the time.
 
-        Under this game-theoretic equilibrium, we see that runners should be taking even longer leads in most situations. This is likely because pickoffs are often wasteful at lower lead distances. If pitchers were to optimize their pickoff behavior, then runners would be able to get longer leads before a pickoff becomes worthwhile for the pitcher. Our two-foot rule of thumb from the single-agent model doesn't hold here. Instead, we see a recommended increase of about 0.5-1 feet after 1 disengagement, and a recommended increase of around 3.5-5 feet after the 2nd disengagement. Once a pitcher reaches 2 disengagements, it becomes extremely risky to attempt a pickoff, so runners can take advantage of that by extending their leads beyond 15 feet.
+      In situations where our model suggested a pickoff, pitchers actually attempted a pickoff 10.8\% of the time in 2023.
 
-        In order to evaluate how well pitchers follow our recommendations, we looked back at all situations from the 2023 season with a runner on first base only. Our two-agent model suggests that pitchers should have attempted a pickoff in 8.3\% of these situations. In reality, they only attempted pickoffs 5.6\% of the time.
+      In situations where our model suggests throwing a pitch, pitchers actually attempted a pickoff 5.0\% of the time.
 
-        In situations where our model suggested a pickoff, pitchers actually attempted a pickoff 10.8\% of the time in 2023.
+      Overall, it seems that pitchers should be attempting more pickoffs. If runners start increasing their lead distances in the way we recommend, then pitchers should respond by picking off even more often.
 
-        In situations where our model suggests throwing a pitch, pitchers actually attempted a pickoff 5.0\% of the time.
-
-        Overall, it seems that pitchers should be attempting more pickoffs. If runners start increasing their lead distances in the way we recommend, then pitchers should respond by picking off even more often.
-
-        Under this equilibrium of optimal pitcher and baserunner behavior, runners still hold a slight advantage compared to the status quo, but not by much. We calculated that runners could increase their team's run expectancy by about 0.0036 runs per inning by following these lead recommendations if pitchers also optimized their behavior. Over a 162 game season, this adds up to 5.2 runs. Ultimately, the current behavior of pitchers and runners is not far from the Nash Equilibrium. However, both sides could improve their team's performance by several runs by optimizing their behavior surrounding the running game.
+      Under this equilibrium of optimal pitcher and baserunner behavior, runners still hold a slight advantage compared to the status quo, but not by much. We calculated that runners could increase their team's run expectancy by about 0.0036 runs per inning by following these lead recommendations if pitchers also optimized their behavior. Over a 162 game season, this adds up to 5.2 runs. Ultimately, the current behavior of pitchers and runners is not far from the Nash Equilibrium. However, both sides could improve their team's performance by several runs by optimizing their behavior surrounding the running game.
 
   \section{Discussion}
 
@@ -497,12 +520,17 @@
 
     \begin{itemize}
       \item NOTE (SP): Let's try including pitcher handedness in our model
+      \item NOTE (SP): Should we use catcher pop time instead of arm strength?
       \item Successful pickoff eliminates runner with no other runner movement
       \item Number of disengagements does not affect batter outcomes
       \item Lead distance does not affect outcomes on batted balls (note: domain knowledge tells us that secondary lead is more important than the lead distance we observe, which is first pitcher movement)
       \item We are ignoring the possibility that the runner takes off for 2B on a pickoff attempt
       \item Other than pickoff attempts, no other disengagements occur
     \end{itemize}
+
+  \section{Acknowledgments}
+
+    Major League Baseball trademarks and copyrights are used with permission of MLB Advanced Media, L.P. All rights reserved.
 
   \bibliography{arxiv}
 
