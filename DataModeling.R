@@ -1,7 +1,5 @@
 # DATA SET UP ----
 
-setwd("~/Documents/pickoff-game-theory")
-
 library(tidyverse)
 library(lme4)
 
@@ -10,10 +8,10 @@ lead23 <- read_csv("data/lead_distance/2023.csv")
 game23 <- read_csv("data/game/2023.csv")
 pitch23 <- read_csv("data/pitch/2023.csv") %>% select(play_id, description)
 play23 <- read_csv("data/play/2023.csv")
-event_map <- read_csv("batter_event.csv")
-pitch_map <- read_csv("batter_pitch.csv")
-poptimes <- read_csv("catcher_throwing.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
-sprints <- read_csv("sprint_speed.csv") %>% select(player_id, `last_name, first_name`, sprint_speed, competitive_runs)
+event_map <- read_csv("data/batter_event.csv")
+pitch_map <- read_csv("data/batter_pitch.csv")
+poptimes <- read_csv("data/catcher_throwing.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
+sprints <- read_csv("data/sprint_speed.csv") %>% select(player_id, `last_name, first_name`, sprint_speed, competitive_runs)
 
 # Remove Duplicate Lead Distances
 no_duplicate_leads <- lead23[duplicated(lead23) == FALSE,]
@@ -300,8 +298,8 @@ dev.off()
 
 pitch22 <- read_csv("data/pitch/2022.csv") %>% select(play_id, description)
 event22 <- read_csv("data/event/2022.csv")
-poptimes22 <- read_csv("catcher_throwing22.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
-sprints22 <- read_csv("sprint_speed22.csv") %>% select(player_id, `last_name, first_name`, sprint_speed, competitive_runs)
+poptimes22 <- read_csv("data/catcher_throwing22.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
+sprints22 <- read_csv("data/sprint_speed22.csv") %>% select(player_id, `last_name, first_name`, sprint_speed, competitive_runs)
 
 
 
@@ -385,10 +383,10 @@ all_pickoff_var1b$pre_disengagements <- as.factor(all_pickoff_var1b$pre_disengag
 #saveRDS(m3, "m3model")
 #saveRDS(m4, "m4model")
 
-m1 <- readRDS("m1model")
-m2 <- readRDS("m2model")
-m3 <- readRDS("m3model")
-m4 <- readRDS("m4model")
+m1 <- readRDS("models/m1.rds")
+m2 <- readRDS("models/m2.rds")
+m3 <- readRDS("models/m3.rds")
+m4 <- readRDS("models/m4.rds")
 
 # 
 # # Pitcher Pickoff Ratio vs Effect
