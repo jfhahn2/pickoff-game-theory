@@ -15,12 +15,12 @@ In this project, we use game theoretic concepts to analyze the effects of the 20
 ## Folder Structure
 
 ```
-├── articles
+├── articles                            # LaTeX code for papers and slides
 │   └── arxiv
-├── figures
-├── scripts
+├── figures                             # results in .pdf and .png form
+├── scripts                             # R code for reproducing results
 │   ├── sandbox
 │   ├── estimate_models.R
 │   └── generate_results.R
-└── tables
+└── tables                              # results in .tex form
 ```
