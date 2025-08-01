@@ -322,7 +322,7 @@ dev.off()
 pitch22 <- read_csv("data/pitch/2022.csv") %>% select(play_id, description)
 event22 <- read_csv("data/event/2022.csv")
 arm_strength_2022 <- read_csv("data/catcher_throwing22.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
-sprint_speed_2022 <- read_csv("data/sprint_speed22.csv") %>% select(player_id, `last_name, first_name`, sprint_speed, competitive_runs)
+sprint_speed_2022 <- read_csv("data/sprint_speed22.csv") %>% select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
 
 
 
