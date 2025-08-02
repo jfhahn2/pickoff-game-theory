@@ -893,9 +893,6 @@ while(change > threshold || iterations < 2) {
   print(old_re_table_two[1,2])
 }     
 
-sorted_two <- old_run_1b_two %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
-
-table1_twoagent <- sorted_two %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% mutate(Runners = ifelse(bases == "100", "Man on 1st", "Men on 1st and 3rd"), Outs = substr(countouts,3,3)) %>% select(Runners, Outs, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_")
 
 
 
@@ -927,15 +924,6 @@ mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 5.0%
 old_re_table_two
 
 
-
-print(
-  xtable::xtable(table1_twoagent, digits = 1),
-  hline.after = NULL,
-  include.colnames = FALSE,
-  include.rownames = FALSE,
-  only.contents = TRUE,
-  file = "figures/runners_outs_two_agent.tex"
-)
 
 
 # MONOTONICITY CHECKS ----
