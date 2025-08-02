@@ -1,5 +1,10 @@
 *.DS_Store
-data/*
-figures/*
-models/*
-tables/*
+input/*
+output/*
+
+# LaTeX auxiliary files
+*.aux
+*.bbl
+*.fdb_latexmk
+*.fls
+*.log
