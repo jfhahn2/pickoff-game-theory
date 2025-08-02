@@ -322,7 +322,7 @@ dev.off()
 pitch22 <- read_csv("data/pitch/2022.csv") %>% select(play_id, description)
 event22 <- read_csv("data/event/2022.csv")
 arm_strength_2022 <- read_csv("data/catcher_throwing22.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
-sprint_speed_2022 <- read_csv("data/sprint_speed22.csv") %>% select(player_id, `last_name, first_name`, sprint_speed, competitive_runs)
+sprint_speed_2022 <- read_csv("data/sprint_speed22.csv") %>% select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
 
 
 
@@ -458,8 +458,74 @@ m4 <- readRDS("models/m4.rds")
 
 
 
-# PLOTTING MODEL RESULTS ----
+# EXTRACT PLAYER EFFECTS FROM MODELS ----
 
+# M1 pitcher effects
+pitcher_effects <- ranef(fit_po_success)$pitcher_id %>%
+  arrange(`(Intercept)`)
+median_pitcher_m1 <- rownames(pitcher_effects)[0.5 * nrow(pitcher_effects)]
+pct90_pitcher_m1 <- rownames(pitcher_effects)[0.9 * nrow(pitcher_effects)]
+pct10_pitcher_m1 <- rownames(pitcher_effects)[0.1 * nrow(pitcher_effects)]
+
+# M2 pitcher effects
+pitcher_effects <- ranef(fit_po_attempt)$pitcher_id %>%
+  arrange(`(Intercept)`)
+pct10_pitcher_m2 <- rownames(pitcher_effects)[0.1 * nrow(pitcher_effects)]
+median_pitcher_m2 <- rownames(pitcher_effects)[0.5 * nrow(pitcher_effects)]
+pct90_pitcher_m2 <- rownames(pitcher_effects)[0.9 * nrow(pitcher_effects)]
+
+# M3 pitcher effects
+pitcher_effects <- ranef(fit_sb_success)$pitcher_id %>%
+  tibble::rownames_to_column(var = "player_id") %>%
+  arrange(`(Intercept)`) 
+
+# M3 runner effects
+runner_effects <- ranef(fit_sb_success)$run1b %>%
+  arrange(`(Intercept)`)
+sprint_speed_coef <- fixef(fit_sb_success)[3]
+runner_combined <- runner_effects %>%
+  mutate(player_id = as.numeric(rownames(runner_effects))) %>%
+  left_join(sprint_speed, by = "player_id") %>%
+  mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>%
+  arrange(combined_effect) %>%
+  filter(!is.na(sprint_speed))
+pct10_runner_m3 <- runner_combined[0.1 * nrow(runner_combined),"player_id"]
+median_runner_m3 <- runner_combined[0.5 * nrow(runner_combined),"player_id"]
+pct90_runner_m3 <- runner_combined[0.9 * nrow(runner_combined),"player_id"]
+run1b_m3 <- c(pct10_runner_m3, median_runner_m3, pct90_runner_m3)
+pct10_ss_m3 <- runner_combined[0.1 * nrow(runner_combined),"sprint_speed"]
+median_ss_m3 <- runner_combined[0.5 * nrow(runner_combined),"sprint_speed"]
+pct90_ss_m3 <- runner_combined[0.9 * nrow(runner_combined),"sprint_speed"]
+
+# M3 catcher effects
+catcher_effects <- ranef(fit_sb_success)$fielder_2_id %>%
+  arrange(`(Intercept)`)
+arm_strength_coef <- fixef(fit_sb_success)[4]
+catcher_combined <- catcher_effects %>%
+  mutate(player_id = as.numeric(rownames(catcher_effects))) %>%
+  left_join(arm_strength, by = "player_id") %>%
+  mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept)`) %>%
+  arrange(combined_effect) %>%
+  filter(!is.na(arm_strength))
+pct10_catcher_m3 <-  catcher_combined[0.9 * nrow(catcher_combined),"player_id"]
+median_catcher_m3 <- catcher_combined[0.5 * nrow(catcher_combined),"player_id"]
+pct90_catcher_m3 <-  catcher_combined[0.1 * nrow(catcher_combined),"player_id"]
+fielder_2_id_m3 <- c(pct10_catcher_m3, median_catcher_m3, pct90_catcher_m3)
+pct10_as_m3 <- catcher_combined[0.9 * nrow(catcher_combined),"arm_strength"]
+median_as_m3 <- catcher_combined[0.5 * nrow(catcher_combined),"arm_strength"]
+pct90_as_m3 <- catcher_combined[0.1 * nrow(catcher_combined),"arm_strength"]
+
+# M3 combined battery effects
+battery_combined <- catcher_effects %>%
+  mutate(player_id = as.numeric(rownames(catcher_effects))) %>%
+  left_join(arm_strength, by = "player_id") %>%
+  cross_join(pitcher_effects) %>%
+  mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>%
+  arrange(combined_effect) %>%
+  filter(!is.na(arm_strength))
+pct10_battery_m3_pitcher <- battery_combined[0.9 * nrow(battery_combined),"player_id.y"]
+median_battery_m3_pitcher <- battery_combined[0.5 * nrow(battery_combined),"player_id.y"]
+pct90_battery_m3_pitcher <- battery_combined[0.1 * nrow(battery_combined),"player_id.y"]
 
 ## M4 PITCHER EFFECTS
 pitcher_effects <- ranef(m4)$pitcher_id
@@ -470,7 +536,6 @@ pct10_pitcher_m4 <- rownames(pitcher_effects)[0.9 * nrow(pitcher_effects)]
 pitcher_id <- c(pct10_pitcher_m4, median_pitcher_m4, pct90_pitcher_m4)
 
 ## M4 RUNNER EFFECTS
-
 runner_effects <- ranef(m4)$run1b
 runner_effects <- runner_effects %>% arrange(`(Intercept)`)
 sprint_speed_coef <- fixef(m4)[6]
@@ -482,7 +547,6 @@ pct90_ss_m4 <- runner_combined[0.9 * nrow(runner_combined),"sprint_speed"]
 pct10_runner_m4 <- runner_combined[0.1 * nrow(runner_combined),"player_id"]
 pct10_ss_m4 <- runner_combined[0.1 * nrow(runner_combined),"sprint_speed"]
 run1b_m4 <- c(pct10_runner_m4, median_runner_m4, pct90_runner_m4)
-
 
 ## M4 CATCHER EFFECT
 catcher_effects <- ranef(m4)$fielder_2_id
@@ -496,7 +560,6 @@ pct90_as_m4 <- catcher_combined[0.1 * nrow(catcher_combined),"arm_strength"]
 pct10_catcher_m4 <-  catcher_combined[0.9 * nrow(catcher_combined),"player_id"]
 pct10_as_m4 <- catcher_combined[0.9 * nrow(catcher_combined),"arm_strength"]
 fielder_2_id_m4 <- c(pct10_catcher_m4, median_catcher_m4, pct90_catcher_m4)
-
 
 ## M4 BATTERY COMBINED
 battery_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(arm_strength, by = "player_id") %>% cross_join(pitcher_effects) %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>% arrange(combined_effect)  %>% filter(!is.na(arm_strength))
