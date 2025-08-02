@@ -17,10 +17,10 @@ In this project, we use game theoretic concepts to analyze the effects of the 20
 ```
 ├── articles                            # LaTeX code for papers and slides
 │   └── arxiv
-├── figures                             # results in .pdf and .png form
-├── scripts                             # R code for reproducing results
-│   ├── sandbox
-│   ├── estimate_models.R
-│   └── generate_results.R
-└── tables                              # results in .tex form
+├── input                               # data go here
+├── output                              # models, figures, tables go here
+└── scripts                             # R code for reproducing results
+    ├── sandbox
+    ├── estimate_models.R
+    └── generate_results.R
 ```
