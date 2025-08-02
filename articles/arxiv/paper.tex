@@ -323,7 +323,7 @@
  
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{../../output/figures/leads_overall.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/leads_overall_light.pdf}
         \caption{
           \it The league-wide distribution of lead distance from first base when second base is unoccupied, comparing 2022 with 2023. The 2023 data are split by prior disengagements because, beginning in 2023, pitchers were limited to three disengagements, influencing pitcher and runner behavior. In 2022, there was no limit on the number of disengagements. The vertical lines mark the means of the distributions.
         }
@@ -338,7 +338,7 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_pickoff_attempt.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_po_attempt_light.pdf}
         \caption{
           \it Pickoff attempt probability modeled as function of lead distance, split by season and number of prior disengagements. This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-po-attempt}, assuming 0 balls, 0 strikes, 0 outs and a median pitcher random effect.
         }
@@ -349,7 +349,7 @@
   
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_pickoff_success.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_po_success_light.pdf}
         \caption{
           \it Pickoff success probability modeled as function of lead distance, split by pitcher random effect. This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-po-success}, which includes only an intercept, a fixed effect for lead distance and a random effect for pitcher identity.
         }
@@ -362,7 +362,7 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_sb_success.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_sb_success_light.pdf}
         \caption{
           \it Stolen base success probability modeled as function of lead distance, split by season and runner effect (combining the fixed effect of runner sprint speed and the random effect of runner identity). This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-sb-success}, assuming 0 balls, 0 strikes, 0 outs and a median value for the combined effect of pitcher identity (random effect), catcher arm strength (fixed effect) and catcher identity (random effect).
         }
@@ -375,8 +375,8 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.49\textwidth]{../../output/figures/catcher_effect.png}
-        \includegraphics[width = 0.49\textwidth]{../../output/figures/runner_effect.png}
+        \includegraphics[width = 0.49\textwidth]{../../output/figures/effect_catcher_light.pdf}
+        \includegraphics[width = 0.49\textwidth]{../../output/figures/effect_runner_light.pdf}
         \caption{
           \it
           (Left) The relationship between arm strength and catcher combined effect on stolen base success probability (relative to average, on the log-odds scale). The combined effect is the sum of the fixed effect due to arm strength and the catcher random effect.
@@ -393,7 +393,7 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{../../output/figures/finding_optimal_lead.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/finding_optimal_lead_light.pdf}
         \caption{
           \it Rest-of-inning run expectancy for different choices of lead distance. Three separate curves show the run expectancy for differing numbers of prior disengagements, assuming 0 balls; 0 strikes; 0 outs; third base unoccupied; and median player effects for pitcher, catcher and runner. Run expectancy is defined as the expectation of the value function $V_{\pi^*}$ (evaluated at the resulting state) corresponding to the optimal policy $\pi^*$ defined by (\ref{eqn:run-expectancy}). The vertical line corresponding to each curve marks the value at which the curve is maximized.
         }

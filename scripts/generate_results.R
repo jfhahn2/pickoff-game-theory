@@ -1,6 +1,6 @@
 
 fig_make <- TRUE
-fig_mode <- "dark"
+fig_mode <- "light"
 
 
 # Read data ----
@@ -63,7 +63,7 @@ if (fig_make) {
     ) +
     ggplot2::labs(x = "Lead Distance", y = "Density") +
     ggplot2::coord_cartesian(xlim = c(3, 16)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.2, 0.8))
   print(plot)
   dev.off()
@@ -126,7 +126,7 @@ if (fig_make) {
     ) +
     ggplot2::labs(title = "Pickoff Attempt", x = "Lead Distance", y = "Probability") +
     ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.7)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.4, 0.7))
   print(plot)
   dev.off()
@@ -177,7 +177,7 @@ if (fig_make) {
     ) +
     ggplot2::labs(title = "Pickoff Success", x = "Lead Distance", y = "Probability") +
     ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.7)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.3, 0.7))
   print(plot)
   dev.off()
@@ -204,7 +204,7 @@ if (fig_make) {
       y = "Effect on SB Success (log-odds)"
     ) +
     ggplot2::coord_cartesian(ylim = c(-0.6, 0.6)) +
-    sputil::theme_sleek()
+    sputil::theme_sleek(mode = fig_mode)
   print(plot)
   dev.off()
 }
@@ -230,7 +230,7 @@ if (fig_make) {
       y = "Effect on SB Success (log-odds)"
     ) +
     ggplot2::coord_cartesian(ylim = c(-0.6, 0.6)) +
-    sputil::theme_sleek()
+    sputil::theme_sleek(mode = fig_mode)
   print(plot)
   dev.off()
 }
@@ -281,7 +281,7 @@ if (fig_make) {
     ) +
     ggplot2::labs(x = "Lead Distance", y = "Probability") +
     ggplot2::coord_cartesian(xlim = c(3, 16)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.85, 0.25))
   print(plot)
   dev.off()
@@ -319,7 +319,7 @@ if (fig_make) {
       values = c("dotted", "dashed", "solid")
     ) +
     ggplot2::coord_cartesian(xlim = c(0, 20), ylim = c(0.9, 0.96)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.2, 0.25))
   print(plot)
   dev.off()
