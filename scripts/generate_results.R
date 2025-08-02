@@ -5,19 +5,50 @@ fig_mode <- "dark"
 
 # Read data ----
 
-arm_strength <- data.table::fread("data/catcher_throwing.csv") |>
+arm_strength <- data.table::fread("input/data/arm_strength/2023.csv") |>
   dplyr::select(player_id, player_name, arm_strength, sb_attempts)
-sprint_speed <- data.table::fread("data/sprint_speed.csv") |>
+sprint_speed <- data.table::fread("input/data/sprint_speed/2023.csv") |>
   dplyr::select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
 
 
 # Plot data summary ----
 
+second_open_22 <- baserunners_22 |>
+  dplyr::left_join(play_2022, by = "play_id") |>
+  dplyr::filter(
+    is.na(`lead_distance_2nd Base`),
+    is.na(`lead_distance_3rd Base`),
+    !is.na(`lead_distance_1st Base`)
+  ) |>
+  dplyr::select(`lead_distance_1st Base`, pre_disengagements) |>
+  dplyr::mutate(year = "2022")
+
+second_open_23 <- baserunners |>
+  dplyr::left_join(play_2023, by = "play_id") |>
+  dplyr::filter(
+    is.na(`lead_distance_2nd Base`),
+    is.na(`lead_distance_3rd Base`),
+    !is.na(`lead_distance_1st Base`)
+  ) |>
+  dplyr::select(`lead_distance_1st Base`, pre_disengagements) |>
+  dplyr::mutate(year = "2023")
+
+lead_distance_1b <- rbind(second_open_22, second_open_23) |>
+  dplyr::mutate(
+    year_dis = case_when(
+      year == 2022 ~ "2022 - All Situations",
+      year == 2023 & pre_disengagements == 0 ~ "2023 - 0 Disengagements",
+      year == 2023 & pre_disengagements == 1 ~ "2023 - 1 Disengagements",
+      year == 2023 & pre_disengagements == 2 ~ "2023 - 2 Disengagements"
+    )
+  ) |>
+  dplyr::filter(!is.na(year_dis))
+
 breaks <- seq(from = 4, to = 16, by = 2)
 
 if (fig_make) {
 
-  sputil::open_device(glue::glue("figures/leads_overall_{fig_mode}.pdf"), height = 4, width = 7)
+  sputil::open_device(glue::glue("output/figures/leads_overall_{fig_mode}.pdf"), height = 4, width = 7)
   plot <- lead_distance_1b |>
     ggplot2::ggplot(ggplot2::aes(`lead_distance_1st Base`, col = year_dis, linetype = year_dis)) +
     ggplot2::stat_density(geom = "line", position = "identity") +
@@ -55,7 +86,7 @@ lead_distance_grid <- tibble::tibble(lead1b = seq(from = 0, to = 20, by = 0.1))
 
 if (fig_make) {
 
-  sputil::open_device(glue::glue("figures/prob_po_attempt_{fig_mode}.pdf"), height = 4, width = 4)
+  sputil::open_device(glue::glue("output/figures/prob_po_attempt_{fig_mode}.pdf"), height = 4, width = 4)
   covariate_grid <- covariate_baseline |>
     dplyr::cross_join(lead_distance_grid) |>
     dplyr::cross_join(tibble::tibble(subset = c("2022_0", "2023_0", "2023_1", "2023_2"))) |>
@@ -115,7 +146,7 @@ pitcher_grid <- ranef(fit_po_success)$pitcher_id |>
   )
 
 if (fig_make) {
-  sputil::open_device(glue::glue("figures/prob_po_success_{fig_mode}.pdf"), height = 4, width = 4)
+  sputil::open_device(glue::glue("output/figures/prob_po_success_{fig_mode}.pdf"), height = 4, width = 4)
   covariate_grid <- covariate_baseline |>
     dplyr::cross_join(lead_distance_grid) |>
     dplyr::cross_join(pitcher_grid) |>
@@ -163,7 +194,7 @@ sb_success_effect_runner <- ranef(fit_sb_success)$run1b |>
   )
 
 if (fig_make) {
-  sputil::open_device(glue::glue("figures/effect_runner_{fig_mode}.pdf"), height = 4, width = 4)
+  sputil::open_device(glue::glue("output/figures/effect_runner_{fig_mode}.pdf"), height = 4, width = 4)
   plot <- sb_success_effect_runner |>
     ggplot2::ggplot(ggplot2::aes(x = sprint_speed, y = effect)) +
     ggplot2::geom_point(color = sputil::color("blue", fig_mode), alpha = 0.5) +
@@ -189,7 +220,7 @@ sb_success_effect_catcher <- ranef(fit_sb_success)$fielder_2_id |>
   )
 
 if (fig_make) {
-  sputil::open_device(glue::glue("figures/effect_catcher_{fig_mode}.pdf"), height = 4, width = 4)
+  sputil::open_device(glue::glue("output/figures/effect_catcher_{fig_mode}.pdf"), height = 4, width = 4)
   plot <- sb_success_effect_catcher |>
     ggplot2::ggplot(ggplot2::aes(x = arm_strength, y = effect)) +
     ggplot2::geom_point(color = sputil::color("blue", fig_mode), alpha = 0.5) +
@@ -218,7 +249,7 @@ runner_grid <- sb_success_effect_runner |>
   )
 
 if (fig_make) {
-  sputil::open_device(glue::glue("figures/prob_sb_success_{fig_mode}.pdf"), height = 4, width = 7)
+  sputil::open_device(glue::glue("output/figures/prob_sb_success_{fig_mode}.pdf"), height = 4, width = 7)
   covariate_grid <- covariate_baseline |>
     dplyr::cross_join(lead_distance_grid) |>
     dplyr::cross_join(runner_grid)
@@ -274,7 +305,7 @@ lead_value_max <- lead_value |>
 
 if (fig_make) {
   sputil::open_device(
-    file = glue::glue("figures/finding_optimal_lead_{fig_mode}.pdf"),
+    file = glue::glue("output/figures/finding_optimal_lead_{fig_mode}.pdf"),
     height = 4,
     width = 7
   )
@@ -304,7 +335,7 @@ sorted |>
   dplyr::select(count, dis, lead1b) |>
   tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "disengagements_") |>
   sputil::write_latex_table(
-    file = "tables/lead_by_count.tex",
+    file = "output/tables/lead_by_count.tex",
     prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
     colnames = c("Count", "0", "1", "2"),
     align = "c|rrr",
@@ -328,7 +359,7 @@ skill_grid |>
   ) |>
   dplyr::select(battery_skill, runner_skill, V15, V16, V17) |>
   sputil::write_latex_table(
-    file = "tables/lead_by_players.tex",
+    file = "output/tables/lead_by_players.tex",
     prefix_rows = "\\multicolumn{2}{c|}{Skill Percentile} & \\multicolumn{3}{c}{Disengagements}",
     colnames = c("Battery", "Runner", "0", "1", "2"),
     align = "cc|rrr",
@@ -343,7 +374,7 @@ sorted_two |>
   dplyr::select(Count, dis, lead1b) |>
   pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_") |>
   sputil::write_latex_table(
-    file = "tables/count_two_agent.tex",
+    file = "output/tables/count_two_agent.tex",
     prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
     colnames = c("Count", "0", "1", "2"),
     align = "l|rrr",
@@ -359,7 +390,7 @@ actual_vs_recommended_leads |>
   ) |>
   dplyr::mutate(Exceeds = glue::glue("{sprintf('%.1f', 100 * Exceeds)}\\%")) |>
   sputil::write_latex_table(
-    file = "tables/actual_vs_rec_lead.tex",
+    file = "output/tables/actual_vs_rec_lead.tex",
     prefix_rows = " & \\multicolumn{2}{c|}{Average Lead} & Actual Exceeds",
     colnames = c("Disengagements", "Actual", "Recommended", "Recommendation"),
     align = "c|cc|c",

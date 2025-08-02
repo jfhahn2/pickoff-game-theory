@@ -3,24 +3,40 @@
 library(tidyverse)
 library(lme4)
 
-event23 <- read_csv("data/event/2023.csv")
-lead23 <- read_csv("data/lead_distance/2023.csv")
-game23 <- read_csv("data/game/2023.csv")
-pitch23 <- read_csv("data/pitch/2023.csv") %>% select(play_id, description)
-play23 <- read_csv("data/play/2023.csv")
-event_map <- read_csv("data/batter_event.csv")
-pitch_map <- read_csv("data/batter_pitch.csv")
-arm_strength <- data.table::fread("data/catcher_throwing.csv") |>
-  dplyr::select(player_id, player_name, arm_strength, sb_attempts)
-sprint_speed <- data.table::fread("data/sprint_speed.csv") |>
-  dplyr::select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
+event_2022 <- read_csv("input/data/event/2022.csv")
+event_2023 <- read_csv("input/data/event/2023.csv")
+
+lead_2022 <- read_csv("input/data/lead_distance/2022.csv")
+lead_2023 <- read_csv("input/data/lead_distance/2023.csv")
+
+pitch_2022 <- read_csv("input/data/pitch/2022.csv") |>
+  select(play_id, description)
+pitch_2023 <- read_csv("input/data/pitch/2023.csv") |>
+  select(play_id, description)
+
+play_2022 <- read_csv("input/data/play/2022.csv")
+play_2023 <- read_csv("input/data/play/2023.csv")
+
+event_map <- read_csv("input/data/batter_event.csv")
+pitch_map <- read_csv("input/data/batter_pitch.csv")
+
+arm_strength_2023 <- read_csv("input/data/arm_strength/2023.csv") |>
+  select(player_id, player_name, arm_strength, sb_attempts)
+arm_strength_2022 <- read_csv("input/data/arm_strength/2022.csv") |>
+  select(player_id, player_name, arm_strength, sb_attempts)
+
+sprint_speed_2023 <- read_csv("input/data/sprint_speed/2023.csv") |>
+  select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
+sprint_speed_2022 <- read_csv("input/data/sprint_speed/2022.csv") |>
+  select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
+
 
 # Remove Duplicate Lead Distances
-no_duplicate_leads <- lead23[duplicated(lead23) == FALSE,]
+no_duplicate_leads <- lead_2023[duplicated(lead_2023) == FALSE,]
 
 # Join lead distances with rest of data
 baserunners <- no_duplicate_leads %>% pivot_wider(names_from = base, values_from = c(lead_distance, runner_id))
-with_leads <- play23 %>% left_join(baserunners, by = "play_id")
+with_leads <- play_2023 %>% left_join(baserunners, by = "play_id")
 with_leads$run1b <- as.factor(with_leads$pre_runner_1b_id)
 with_leads$run2b <- as.factor(with_leads$pre_runner_2b_id)
 with_leads$run3b <- as.factor(with_leads$pre_runner_3b_id)
@@ -28,19 +44,19 @@ with_leads$lead1b <- with_leads$`lead_distance_1st Base`
 with_leads$lead2b <- with_leads$`lead_distance_2nd Base`
 with_leads$lead3b <-with_leads$`lead_distance_3rd Base`
 
-pitcher_batter_catcher <- event23 %>% select(game_id, event_index, batter_id, bat_side, pitcher_id, pitch_hand, fielder_2_id, inning, half_inning, post_outs, event)
+pitcher_batter_catcher <- event_2023 %>% select(game_id, event_index, batter_id, bat_side, pitcher_id, pitch_hand, fielder_2_id, inning, half_inning, post_outs, event)
 
 # Join players involved in with data
-with_pitcher_batter_catcher <- with_leads %>% left_join(pitcher_batter_catcher, by = c("game_id", "event_index")) %>% left_join(arm_strength, by = c("fielder_2_id" = "player_id")) %>% left_join(sprint_speed, by = c("runner_id_1st Base" = "player_id"))
+with_pitcher_batter_catcher <- with_leads %>% left_join(pitcher_batter_catcher, by = c("game_id", "event_index")) %>% left_join(arm_strength_2023, by = c("fielder_2_id" = "player_id")) %>% left_join(sprint_speed_2023, by = c("runner_id_1st Base" = "player_id"))
 
 # Replace NA values with mean for sprint speed and arm strength
-mean_ss <- weighted.mean(sprint_speed$sprint_speed, w = sprint_speed$competitive_runs)
-mean_as <- weighted.mean(arm_strength$arm_strength, w = arm_strength$sb_attempts)
+mean_ss <- weighted.mean(sprint_speed_2023$sprint_speed, w = sprint_speed_2023$competitive_runs)
+mean_as <- weighted.mean(arm_strength_2023$arm_strength, w = arm_strength_2023$sb_attempts)
 with_pitcher_batter_catcher$sprint_speed <- coalesce(with_pitcher_batter_catcher$sprint_speed, mean_ss)
 with_pitcher_batter_catcher$arm_strength <- coalesce(with_pitcher_batter_catcher$arm_strength, mean_as)
 
 # Map events to more general descriptions
-mapped_events <- with_pitcher_batter_catcher %>% left_join(event_map, by = "event") %>% left_join(pitch23, by = "play_id") %>% left_join(pitch_map, by = "description") %>% mutate(pitch_event = ifelse(batter_description == "In Play", batter_event, batter_description)) %>% mutate(pitch_event = ifelse(is.na(pitch_event), "Not Batter Event", pitch_event))
+mapped_events <- with_pitcher_batter_catcher %>% left_join(event_map, by = "event") %>% left_join(pitch_2023, by = "play_id") %>% left_join(pitch_map, by = "description") %>% mutate(pitch_event = ifelse(batter_description == "In Play", batter_event, batter_description)) %>% mutate(pitch_event = ifelse(is.na(pitch_event), "Not Batter Event", pitch_event))
 
 # Replace rarely-occuring players with generic id
 counts <- mapped_events %>% group_by(batter_id) %>% mutate(batterCount = n()) %>% ungroup() %>% group_by(pitcher_id) %>% mutate(pitcherCount = n()) %>% ungroup() %>% group_by(fielder_2_id) %>% mutate(fielderCount = n()) %>% ungroup() %>% group_by(run1b) %>% mutate(runnerCount = n()) %>% ungroup()
@@ -252,16 +268,13 @@ prob_transition <- rbind(P_N, P_SP, P_UP, P_SS, P_US) %>% select(State, runner_o
 
 
 # PREPARING 2022 LEAD DATA FOR COMPARISON ----
-play22 <- read_csv("data/play/2022.csv")
-
-lead22 <- read_csv("data/lead_distance/2022.csv")
 
 # Remove Duplicate Lead Distances
-no_duplicate_leads <- lead22[duplicated(lead22) == FALSE,]
+no_duplicate_leads <- lead_2022[duplicated(lead_2022) == FALSE,]
 
 baserunners_22 <- no_duplicate_leads %>% pivot_wider(names_from = base, values_from = c(lead_distance, runner_id)) 
 
-with_leads22 <- play22 %>% left_join(baserunners_22, by = "play_id")
+with_leads22 <- play_2022 %>% left_join(baserunners_22, by = "play_id")
 with_leads22$run1b <- as.factor(with_leads22$pre_runner_1b_id)
 with_leads22$run2b <- as.factor(with_leads22$pre_runner_2b_id)
 with_leads22$run3b <- as.factor(with_leads22$pre_runner_3b_id)
@@ -271,62 +284,8 @@ with_leads22$lead3b <-with_leads22$`lead_distance_3rd Base`
 
 
 
-second_open_22 <- baserunners_22 %>% left_join(play22, by = "play_id") %>% filter(is.na(`lead_distance_2nd Base`), is.na(`lead_distance_3rd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`, pre_disengagements) %>% mutate(year = "2022")
 
-second_open_23 <- baserunners %>% left_join(play23, by = "play_id") %>% filter(is.na(`lead_distance_2nd Base`), is.na(`lead_distance_3rd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`, pre_disengagements) %>% mutate(year = "2023")
-
-lead_distance_1b <- rbind(second_open_22, second_open_23) |>
-  dplyr::mutate(
-    year_dis = case_when(
-      year == 2022 ~ "2022 - All Situations",
-      year == 2023 & pre_disengagements == 0 ~ "2023 - 0 Disengagements",
-      year == 2023 & pre_disengagements == 1 ~ "2023 - 1 Disengagements",
-      year == 2023 & pre_disengagements == 2 ~ "2023 - 2 Disengagements"
-    )
-  ) |>
-  dplyr::filter(!is.na(year_dis))
-
-mean_leads <- lead_distance_1b %>% group_by(year_dis) %>% summarize(meanlead = mean(`lead_distance_1st Base`))
-mean_lead22 <- mean_leads[1,2]$meanlead
-mean_lead23_0 <- mean_leads[2,2]$meanlead
-mean_lead23_1 <- mean_leads[3,2]$meanlead
-mean_lead23_2 <- mean_leads[4,2]$meanlead
-
-# Overal 2022 vs 2023 lead distance density plot
-leads_overall <- lead_distance_1b |>
-  ggplot2::ggplot() +
-  ggplot2::aes(`lead_distance_1st Base`, col = year_dis, group = year_dis) +
-  ggplot2::geom_density() +
-  ggplot2::xlim(3, 16) +
-  ggplot2::theme_classic() +
-  ggplot2::labs(
-    x = "Lead Distance",
-    y = "Density",
-    title = "Lead Distance at 1st Base - 2022/2023",
-    color = "Year and Prior Disengagements"
-  ) +
-  ggplot2::scale_colour_manual(values = c("red", "skyblue", "dodgerblue3", "darkblue")) +
-  ggplot2::theme(legend.position = "bottom") +
-  ggplot2::guides(color = guide_legend(nrow = 2)) +
-  ggplot2::geom_vline(xintercept = mean_lead22, col = "red") +
-  ggplot2::geom_vline(xintercept = mean_lead23_0, col = "skyblue") +
-  ggplot2::geom_vline(xintercept = mean_lead23_1, col = "dodgerblue3") +
-  ggplot2::geom_vline(xintercept = mean_lead23_2, col = "darkblue")
-
-ppi <- 300
-png("figures/leads_overall.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
-print(leads_overall)
-dev.off()
-
-
-pitch22 <- read_csv("data/pitch/2022.csv") %>% select(play_id, description)
-event22 <- read_csv("data/event/2022.csv")
-arm_strength_2022 <- read_csv("data/catcher_throwing22.csv") %>% select(player_id, player_name, arm_strength, sb_attempts)
-sprint_speed_2022 <- read_csv("data/sprint_speed22.csv") %>% select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
-
-
-
-pitcher_batter_catcher22 <- event22 %>% select(game_id, event_index, batter_id, bat_side, pitcher_id, pitch_hand, fielder_2_id, inning, half_inning, post_outs, event)
+pitcher_batter_catcher22 <- event_2022 %>% select(game_id, event_index, batter_id, bat_side, pitcher_id, pitch_hand, fielder_2_id, inning, half_inning, post_outs, event)
 
 # Join players involved in with data
 with_pitcher_batter_catcher22 <- with_leads22 %>% left_join(pitcher_batter_catcher22, by = c("game_id", "event_index")) %>% left_join(arm_strength_2022, by = c("fielder_2_id" = "player_id")) %>% left_join(sprint_speed_2022, by = c("runner_id_1st Base" = "player_id"))
@@ -339,7 +298,7 @@ with_pitcher_batter_catcher22$sprint_speed <- coalesce(with_pitcher_batter_catch
 with_pitcher_batter_catcher22$arm_strength <- coalesce(with_pitcher_batter_catcher22$arm_strength, mean_as22)
 
 # Map events to more general descriptions
-mapped_events22 <- with_pitcher_batter_catcher22 %>% left_join(event_map, by = "event") %>% left_join(pitch22, by = "play_id") %>% left_join(pitch_map, by = "description") %>% mutate(pitch_event = ifelse(batter_description == "In Play", batter_event, batter_description)) %>% mutate(pitch_event = ifelse(is.na(pitch_event), "Not Batter Event", pitch_event))
+mapped_events22 <- with_pitcher_batter_catcher22 %>% left_join(event_map, by = "event") %>% left_join(pitch_2022, by = "play_id") %>% left_join(pitch_map, by = "description") %>% mutate(pitch_event = ifelse(batter_description == "In Play", batter_event, batter_description)) %>% mutate(pitch_event = ifelse(is.na(pitch_event), "Not Batter Event", pitch_event))
 
 # Replace rarely-occuring players with generic id
 counts22 <- mapped_events22 %>% group_by(batter_id) %>% mutate(batterCount = n()) %>% ungroup() %>% group_by(pitcher_id) %>% mutate(pitcherCount = n()) %>% ungroup() %>% group_by(fielder_2_id) %>% mutate(fielderCount = n()) %>% ungroup() %>% group_by(run1b) %>% mutate(runnerCount = n()) %>% ungroup()
@@ -401,15 +360,15 @@ all_pickoff_var1b$pre_disengagements <- as.factor(all_pickoff_var1b$pre_disengag
 #m4 <- glmer(isSBAttempt ~ pre_balls + pre_strikes + pre_outs + pre_disengagements + (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength, data = sb_var_1b_threats, family = binomial)
 #summary(m4)
 
-#saveRDS(fit_po_success, "models/fit_po_success.rds")
-#saveRDS(fit_po_attempt, "models/fit_po_attempt.rds")
-#saveRDS(fit_sb_success, "models/fit_sb_success.rds")
+#saveRDS(fit_po_success, "output/models/fit_po_success.rds")
+#saveRDS(fit_po_attempt, "output/models/fit_po_attempt.rds")
+#saveRDS(fit_sb_success, "output/models/fit_sb_success.rds")
 #saveRDS(m4, "m4model")
 
-fit_po_success <- readRDS("models/fit_po_success.rds")
-fit_po_attempt <- readRDS("models/fit_po_attempt.rds")
-fit_sb_success <- readRDS("models/fit_sb_success.rds")
-m4 <- readRDS("models/m4.rds")
+fit_po_success <- readRDS("output/models/fit_po_success.rds")
+fit_po_attempt <- readRDS("output/models/fit_po_attempt.rds")
+fit_sb_success <- readRDS("output/models/fit_sb_success.rds")
+m4 <- readRDS("output/models/m4.rds")
 
 # 
 # # Pitcher Pickoff Ratio vs Effect
@@ -485,7 +444,7 @@ runner_effects <- ranef(fit_sb_success)$run1b %>%
 sprint_speed_coef <- fixef(fit_sb_success)[3]
 runner_combined <- runner_effects %>%
   mutate(player_id = as.numeric(rownames(runner_effects))) %>%
-  left_join(sprint_speed, by = "player_id") %>%
+  left_join(sprint_speed_2023, by = "player_id") %>%
   mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>%
   arrange(combined_effect) %>%
   filter(!is.na(sprint_speed))
@@ -503,7 +462,7 @@ catcher_effects <- ranef(fit_sb_success)$fielder_2_id %>%
 arm_strength_coef <- fixef(fit_sb_success)[4]
 catcher_combined <- catcher_effects %>%
   mutate(player_id = as.numeric(rownames(catcher_effects))) %>%
-  left_join(arm_strength, by = "player_id") %>%
+  left_join(arm_strength_2023, by = "player_id") %>%
   mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept)`) %>%
   arrange(combined_effect) %>%
   filter(!is.na(arm_strength))
@@ -518,7 +477,7 @@ pct90_as_m3 <- catcher_combined[0.1 * nrow(catcher_combined),"arm_strength"]
 # M3 combined battery effects
 battery_combined <- catcher_effects %>%
   mutate(player_id = as.numeric(rownames(catcher_effects))) %>%
-  left_join(arm_strength, by = "player_id") %>%
+  left_join(arm_strength_2023, by = "player_id") %>%
   cross_join(pitcher_effects) %>%
   mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>%
   arrange(combined_effect) %>%
@@ -539,7 +498,7 @@ pitcher_id <- c(pct10_pitcher_m4, median_pitcher_m4, pct90_pitcher_m4)
 runner_effects <- ranef(m4)$run1b
 runner_effects <- runner_effects %>% arrange(`(Intercept)`)
 sprint_speed_coef <- fixef(m4)[6]
-runner_combined <- runner_effects %>% mutate(player_id = as.numeric(rownames(runner_effects))) %>% left_join(sprint_speed, by = "player_id") %>% mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(sprint_speed))
+runner_combined <- runner_effects %>% mutate(player_id = as.numeric(rownames(runner_effects))) %>% left_join(sprint_speed_2023, by = "player_id") %>% mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(sprint_speed))
 median_runner_m4 <- runner_combined[0.5 * nrow(runner_combined),"player_id"]
 median_ss_m4 <- runner_combined[0.5 * nrow(runner_combined),"sprint_speed"]
 pct90_runner_m4 <- runner_combined[0.9 * nrow(runner_combined),"player_id"]
@@ -552,7 +511,7 @@ run1b_m4 <- c(pct10_runner_m4, median_runner_m4, pct90_runner_m4)
 catcher_effects <- ranef(m4)$fielder_2_id
 catcher_effects <- catcher_effects %>% arrange(`(Intercept)`)
 arm_strength_coef <- fixef(m4)[7]
-catcher_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(arm_strength, by = "player_id") %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(arm_strength))
+catcher_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(arm_strength_2023, by = "player_id") %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(arm_strength))
 median_catcher_m4 <- catcher_combined[0.5 * nrow(catcher_combined),"player_id"]
 median_as_m4 <- catcher_combined[0.5 * nrow(catcher_combined),"arm_strength"]
 pct90_catcher_m4 <-  catcher_combined[0.1 * nrow(catcher_combined),"player_id"]
@@ -562,7 +521,7 @@ pct10_as_m4 <- catcher_combined[0.9 * nrow(catcher_combined),"arm_strength"]
 fielder_2_id_m4 <- c(pct10_catcher_m4, median_catcher_m4, pct90_catcher_m4)
 
 ## M4 BATTERY COMBINED
-battery_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(arm_strength, by = "player_id") %>% cross_join(pitcher_effects) %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>% arrange(combined_effect)  %>% filter(!is.na(arm_strength))
+battery_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(arm_strength_2023, by = "player_id") %>% cross_join(pitcher_effects) %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept).x` + `(Intercept).y`) %>% arrange(combined_effect)  %>% filter(!is.na(arm_strength))
 median_battery_m4_catcher <- battery_combined[0.5 * nrow(battery_combined),"player_id.x"]
 median_battery_m4_pitcher <- battery_combined[0.5 * nrow(battery_combined),"player_id.y"]
 median_as_bat_m4 <- battery_combined[0.5 * nrow(battery_combined),"arm_strength"]
@@ -886,7 +845,7 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "figures/lead_by_runners_outs.tex"
+  file = "output/figures/lead_by_runners_outs.tex"
 )
 
 ## How well do runners select lead distance?
@@ -934,9 +893,6 @@ while(change > threshold || iterations < 2) {
   print(old_re_table_two[1,2])
 }     
 
-sorted_two <- old_run_1b_two %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
-
-table1_twoagent <- sorted_two %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% mutate(Runners = ifelse(bases == "100", "Man on 1st", "Men on 1st and 3rd"), Outs = substr(countouts,3,3)) %>% select(Runners, Outs, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_")
 
 
 
@@ -968,15 +924,6 @@ mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 5.0%
 old_re_table_two
 
 
-
-print(
-  xtable::xtable(table1_twoagent, digits = 1),
-  hline.after = NULL,
-  include.colnames = FALSE,
-  include.rownames = FALSE,
-  only.contents = TRUE,
-  file = "figures/runners_outs_two_agent.tex"
-)
 
 
 # MONOTONICITY CHECKS ----

@@ -201,7 +201,7 @@
         \end{align*}
         Finally, we estimate the full-state transition probabilities as
         \begin{align*}
-          \hat{\mathbb{P}}(S_{i+1} = (b', c', d', o') \mid S_i = (b, c, d, o), R_i = r) = Q\left\big((b, c, \cdot, o),\, r,\, (b', c', \cdot, o'),\, d' - d\right\big).
+          \hat{\mathbb{P}}(S_{i+1} = (b', c', d', o') \mid S_i = (b, c, d, o), R_i = r) = Q\big((b, c, \cdot, o),\, r,\, (b', c', \cdot, o'),\, d' - d\big).
         \end{align*}
 
 % NOTE (SP): I don't think we need the paragraph below, but I'm holding onto it for now in case we decide we do need it.
@@ -317,7 +317,7 @@
  
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{figures/leads_overall.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/leads_overall.png}
         \caption{
           \it The league-wide distribution of lead distance from first base when second base is unoccupied, comparing 2022 with 2023. The 2023 data are split by prior disengagements because, beginning in 2023, pitchers were limited to three disengagements, influencing pitcher and runner behavior. In 2022, there was no limit on the number of disengagements. The vertical lines mark the means of the distributions.
         }
@@ -332,7 +332,7 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{figures/prob_pickoff_attempt.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_pickoff_attempt.png}
         \caption{
           \it Pickoff attempt probability modeled as function of lead distance, split by season and number of prior disengagements. This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-po-attempt}, assuming 0 balls, 0 strikes, 0 outs and a median pitcher random effect.
         }
@@ -343,7 +343,7 @@
   
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{figures/prob_pickoff_success.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_pickoff_success.png}
         \caption{
           \it Pickoff success probability modeled as function of lead distance, split by pitcher random effect. This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-po-success}, which includes only an intercept, a fixed effect for lead distance and a random effect for pitcher identity.
         }
@@ -356,7 +356,7 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{figures/prob_sb_success.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_sb_success.png}
         \caption{
           \it Stolen base success probability modeled as function of lead distance, split by season and runner effect (combining the fixed effect of runner sprint speed and the random effect of runner identity). This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-sb-success}, assuming 0 balls, 0 strikes, 0 outs and a median value for the combined effect of pitcher identity (random effect), catcher arm strength (fixed effect) and catcher identity (random effect).
         }
@@ -369,8 +369,8 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.49\textwidth]{figures/catcher_effect.png}
-        \includegraphics[width = 0.49\textwidth]{figures/runner_effect.png}
+        \includegraphics[width = 0.49\textwidth]{../../output/figures/catcher_effect.png}
+        \includegraphics[width = 0.49\textwidth]{../../output/figures/runner_effect.png}
         \caption{
           \it
           (Left) The relationship between arm strength and catcher combined effect on stolen base success probability (relative to average, on the log-odds scale). The combined effect is the sum of the fixed effect due to arm strength and the catcher random effect.
@@ -387,7 +387,7 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.8\textwidth]{figures/finding_optimal_lead.png}
+        \includegraphics[width = 0.8\textwidth]{../../output/figures/finding_optimal_lead.png}
         \caption{
           \it Rest-of-inning run expectancy for different choices of lead distance. Three separate curves show the run expectancy for differing numbers of prior disengagements, assuming 0 balls; 0 strikes; 0 outs; third base unoccupied; and median player effects for pitcher, catcher and runner. Run expectancy is defined as the expectation of the value function $V_{\pi^*}$ (evaluated at the resulting state) corresponding to the optimal policy $\pi^*$ defined by (\ref{eqn:run-expectancy}). The vertical line corresponding to each curve marks the value at which the curve is maximized.
         }
@@ -404,7 +404,7 @@
           Count & \multicolumn{3}{c}{Disengagements}\\
                 & 0 & 1 & 2\\
           \hline
-          \input{tables/lead_by_count.tex}
+          \input{../../output/tables/lead_by_count.tex}
         \end{tabular}
         \caption{
           \it The optimal lead distance policy (in feet) for an average runner facing an average battery (pitcher and catcher) with no outs.
@@ -422,7 +422,7 @@
           Outs  & \multicolumn{3}{c}{Disengagements}\\
                 & 0 & 1 & 2 \\
           \hline
-          \input{tables/lead_by_runners_outs.tex}
+          \input{../../output/tables/lead_by_runners_outs.tex}
         \end{tabular}
         \caption{
           \it Based on the number of outs in each row, each entry shows the optimal lead distance (in feet) for a runner on first depending on the number of disengagements.
@@ -440,7 +440,7 @@
         \begin{tabular}{cc|ccc}
           Battery Skill  & Runner Skill & 0 Disengagements & 1 Disengagements & 2 Disengagements\\
           \hline
-          \input{tables/lead_by_players.tex}
+          \input{../../output/tables/lead_by_players.tex}
         \end{tabular}
         \caption{
           \it Based on the skill of the battery (pitcher and catcher) and the skill of the runner in each row, each entry shows the optimal lead distance for a runner on first base depending on the number of disengagements.
@@ -457,7 +457,7 @@
         \begin{tabular}{c|ccc}
           Disengagements & Average Actual Lead & Average Recommended Lead & Actual Exceeds Recommendation\\
           \hline
-          \input{tables/actual_vs_rec_lead.tex}
+          \input{../../output/tables/actual_vs_rec_lead.tex}
         \end{tabular}
         \caption{
           \it Each entry shows the average lead at 1st base based on the number of disengagements prior to the pitch. The recommended leads in the final column are based on our single-agent model. The final column shows the percent of pitches where the actual lead exceeds our recommendation.
@@ -478,7 +478,7 @@
         \begin{tabular}{c|ccc}
           Count & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
           \hline
-          \input{tables/count_two_agent.tex}
+          \input{../../output/tables/count_two_agent.tex}
         \end{tabular}
         \caption{
           \it Based on the count in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements for our two-agent model.
@@ -516,6 +516,6 @@
 
     Major League Baseball trademarks and copyrights are used with permission of MLB Advanced Media, L.P. All rights reserved.
 
-  \bibliography{arxiv}
+  \bibliography{../pickoff-game-theory}
 
 \end{document}
