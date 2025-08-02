@@ -406,12 +406,7 @@
  
       \begin{table}
         \centering
-        \begin{tabular}{c|ccc}
-          Count & \multicolumn{3}{c}{Disengagements}\\
-                & 0 & 1 & 2\\
-          \hline
-          \input{../../output/tables/lead_by_count.tex}
-        \end{tabular}
+        \input{../../output/tables/lead_by_count.tex}
         \caption{
           \it The optimal lead distance policy (in feet) for an average runner facing an average battery (pitcher and catcher) with no outs.
         }
@@ -443,11 +438,7 @@
     
       \begin{table}
         \centering
-        \begin{tabular}{cc|ccc}
-          Battery Skill  & Runner Skill & 0 Disengagements & 1 Disengagements & 2 Disengagements\\
-          \hline
-          \input{../../output/tables/lead_by_players.tex}
-        \end{tabular}
+        \input{../../output/tables/lead_by_players.tex}
         \caption{
           \it Based on the skill of the battery (pitcher and catcher) and the skill of the runner in each row, each entry shows the optimal lead distance for a runner on first base depending on the number of disengagements.
         }
@@ -460,11 +451,7 @@
 
       \begin{table}
         \centering
-        \begin{tabular}{c|ccc}
-          Disengagements & Average Actual Lead & Average Recommended Lead & Actual Exceeds Recommendation\\
-          \hline
-          \input{../../output/tables/actual_vs_rec_lead.tex}
-        \end{tabular}
+        \input{../../output/tables/actual_vs_rec_lead.tex}
         \caption{
           \it Each entry shows the average lead at 1st base based on the number of disengagements prior to the pitch. The recommended leads in the final column are based on our single-agent model. The final column shows the percent of pitches where the actual lead exceeds our recommendation.
         }
@@ -481,11 +468,7 @@
 
       \begin{table}
         \centering
-        \begin{tabular}{c|ccc}
-          Count & 0 Disengagements & 1 Disengagement & 2 Disengagements\\
-          \hline
-          \input{../../output/tables/count_two_agent.tex}
-        \end{tabular}
+        \input{../../output/tables/count_two_agent.tex}
         \caption{
           \it Based on the count in each row, each entry shows the optimal lead distance (in feet) for a runner on 1B depending on the number of disengagements for our two-agent model.
         }
