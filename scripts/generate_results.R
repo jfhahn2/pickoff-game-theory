@@ -367,6 +367,13 @@ skill_grid |>
     hline.after = c(0, 3, 6)
   )
 
+sorted_two <- old_run_1b_two |>
+  dplyr::mutate(
+    bases = substr(State, 1, 3),
+    dis = substr(State, 5,5), countouts = substr(State, 7, 9)
+  ) |>
+  dplyr::arrange(bases, countouts, dis)
+
 sorted_two |>
   dplyr::ungroup() |>
   dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
@@ -397,6 +404,3 @@ actual_vs_recommended_leads |>
     digits = c(NA, 0, 1, 1, NA)
   )
 
-
-
-#TACOCAT GOAT CHEESE PIZZA
