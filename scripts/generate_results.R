@@ -13,9 +13,25 @@ sprint_speed <- data.table::fread("input/data/sprint_speed/2023.csv") |>
 
 # Plot data summary ----
 
-second_open_22 <- baserunners_22 %>% left_join(play_2022, by = "play_id") %>% filter(is.na(`lead_distance_2nd Base`), is.na(`lead_distance_3rd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`, pre_disengagements) %>% mutate(year = "2022")
+second_open_22 <- baserunners_22 |>
+  dplyr::left_join(play_2022, by = "play_id") |>
+  dplyr::filter(
+    is.na(`lead_distance_2nd Base`),
+    is.na(`lead_distance_3rd Base`),
+    !is.na(`lead_distance_1st Base`)
+  ) |>
+  dplyr::select(`lead_distance_1st Base`, pre_disengagements) |>
+  dplyr::mutate(year = "2022")
 
-second_open_23 <- baserunners %>% left_join(play_2023, by = "play_id") %>% filter(is.na(`lead_distance_2nd Base`), is.na(`lead_distance_3rd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`, pre_disengagements) %>% mutate(year = "2023")
+second_open_23 <- baserunners |>
+  dplyr::left_join(play_2023, by = "play_id") |>
+  dplyr::filter(
+    is.na(`lead_distance_2nd Base`),
+    is.na(`lead_distance_3rd Base`),
+    !is.na(`lead_distance_1st Base`)
+  ) |>
+  dplyr::select(`lead_distance_1st Base`, pre_disengagements) |>
+  dplyr::mutate(year = "2023")
 
 lead_distance_1b <- rbind(second_open_22, second_open_23) |>
   dplyr::mutate(
