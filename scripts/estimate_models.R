@@ -845,7 +845,7 @@ print(
   include.colnames = FALSE,
   include.rownames = FALSE,
   only.contents = TRUE,
-  file = "figures/lead_by_runners_outs.tex"
+  file = "output/figures/lead_by_runners_outs.tex"
 )
 
 ## How well do runners select lead distance?
