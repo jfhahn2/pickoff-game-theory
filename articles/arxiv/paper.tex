@@ -11,7 +11,7 @@
 
 \usepackage[colorlinks, allcolors=blue]{hyperref}
 
-\usepackage{amsfonts, amsmath, graphicx}
+\usepackage{amsfonts, amsmath, float, graphicx}
 
 \title{The Two-Foot Rule: A game theoretic analysis of the pickoff limit in Major League Baseball}
 
@@ -321,7 +321,7 @@
 
       As detailed in Section \ref{sec:introduction}, MLB made several rule changes between the 2022 season and the 2023 season, most notably (for the present work) widening the bases and limiting the number of pickoffs that can be attempted by the pitcher. Figure \ref{fig:leads-overall} illustrates the difference in runner lead distance behavior (from first base) between 2022 and 2023. With zero disengagements in 2023, the distribution of lead distances is very similar to the overall distribution of lead distances in 2022. With each successive disengagement, we observe a positive shift in the distribution of lead distance in the 2023 data. In 2022, the average lead distance was XX feet. In 2023, the average lead distance under 0, 1 and 2 disengagements was XX feet, XX feet and XX feet, respectively.
  
-      \begin{figure}
+      \begin{figure}[H]
         \centering
         \includegraphics[width = 0.8\textwidth]{../../output/figures/leads_overall_light.pdf}
         \caption{
@@ -336,7 +336,7 @@
 
       Figure \ref{fig:prob-pickoff-attempt} shows pickoff attempt probability modeled as a function of lead distance, split by season and number of prior disengagements. We observe that pickoff attempt rates were lower in 2023 than in 2022, especially as the number of prior disengagement increased. The modeled probability remains low even for extremely long leads, such as 20 feet. We have very limited data on lead distances beyond 14 feet, especially with fewer than two prior disengagements, so extrapolation much beyond 14 feet is likely not reliable. The ball-strike count and the identity of the pitcher also influence the pickoff attempt probability, but the primary drivers are lead distance and the number prior disengagements.
       
-      \begin{figure}
+      \begin{figure}[H]
         \centering
         \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_po_attempt_light.pdf}
         \caption{
@@ -347,7 +347,7 @@
       
       Figure \ref{fig:prob-pickoff-success} shows pickoff success probability modeled as a function of lead distance, split by pitcher pickoff skill (based on their random effect from the mixed-effect logistic regression). We observe that, except for the most skilled pitchers, pickoff attempt probability is very low within the range covering the vast majority of lead distances. Toward the high end of this range, the success rate increases quickly as lead distance increases. Interestingly, there is a large gap between the 90$^{th}$-percentile pitcher and the median pitcher but a small gap between the median pitcher and the 10$^{th}$-percentile pitcher, demonstrating a right skew in the distribution of pitcher pickoff skill. Earlier exploration indicated that game state and runner identity did not provide predictive value for pickoff success given lead distance.
   
-      \begin{figure}
+      \begin{figure}[H]
         \centering
         \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_po_success_light.pdf}
         \caption{
@@ -360,7 +360,7 @@
 
       Figure \ref{fig:prob-sb-success} shows stolen base success probability modeled as function of lead distance, split by season and by runner skill (based on sprint speed and runner random effect). We observe that, conditioned on lead distance, even 10$^{th}$-percentile runners in 2023 outperformed the median runner in 2022, which is likely attributable to rule changes making it easier to successfully steal bases in 2023. Within the range covering most lead distances, the difference between the 90$^{th}$-percentile runner and the median runner is just under 5 percentage points of success probability, similar to the difference between the median runner and the 10$^{th}$-percentile runner. Base-out state and {\it battery} (i.e. pitcher and catcher) skill also influence stolen base success probability although they are not shown in this visualization.
       
-      \begin{figure}
+      \begin{figure}[H]
         \centering
         \includegraphics[width = 0.8\textwidth]{../../output/figures/prob_sb_success_light.pdf}
         \caption{
@@ -373,7 +373,7 @@
 
       For the stolen base success probability model, Figure \ref{fig:random-effect} shows the relationship between the combined player effect and the corresponding measurable characteristic, for both catchers and runners. We observe that arm strength explains 65\% of the variance in the catcher combined effect and that sprint speed explains 86\% of the variance in the runner combined effect. In other words, sprint speed tells us more about runner skill than arm strength tells us about catcher skill, with regard to stolen base outcomes. Beyond arm strength, the catcher can reduce stolen base success by releasing the ball more quickly or by throwing it more accurately to the target base. Beyond sprint speed, the runner can increase stolen base success by starting to run earlier (i.e., getting a better jump) or by accelerating more quickly to their top speed.
       
-      \begin{figure}
+      \begin{figure}[H]
         \centering
         \includegraphics[width = 0.49\textwidth]{../../output/figures/effect_catcher_light.pdf}
         \includegraphics[width = 0.49\textwidth]{../../output/figures/effect_runner_light.pdf}
@@ -391,7 +391,7 @@
 
       Figure \ref{fig:finding-optimal-lead} illustrates how the runner would choose an optimal lead distance for different numbers of prior disengagements in an example scenario. Short lead distances have very low pickoff probabilities and low stolen base probabilities. As lead distance increases, stolen base probability increases, but so does pickoff probability. For very long lead distances, the run expectancy drops off sharply as the pickoff probability increases sharply. Between those two extremes, the runner strikes a balance to maximize run expectancy. The optimal lead distances for 0, 1 and 2 disengagements are 10.0 feet, 11.5 feet and 14.1 feet, respectively.
       
-      \begin{figure}
+      \begin{figure}[H]
         \centering
         \includegraphics[width = 0.8\textwidth]{../../output/figures/finding_optimal_lead_light.pdf}
         \caption{
@@ -404,7 +404,7 @@
     
       Table \ref{tab:lead-by-count} shows how optimal lead distance varies by ball-strike count and number of prior disengagements, for an average runner facing an average battery (pitcher and catcher) with no outs. We observe that count has a mild influence on optimal lead distance, and lead distance has a strong influence. As the pitcher nears the disengagement limit, the runner has more incentive to extend their lead distance because pickoff attempts are less likely and a free base advancement (from a third unsuccessful pickoff attempt) is more likely.
  
-      \begin{table}
+      \begin{table}[H]
         \centering
         \input{../../output/tables/lead_by_count.tex}
         \caption{
@@ -417,7 +417,7 @@
     
       Table \ref{tab:lead-by-runners-outs} shows how optimal lead distance varies by number of outs, for an average runner facing an average batter with a 0-0 count, and Table \ref{tab:lead-by-players} shows how optimal lead distance varies by runner and battery skill, with 0 outs and a 0-0 count.
 
-      \begin{table}
+      \begin{table}[H]
         \centering
         \begin{tabular}{c|ccc}
           Outs  & \multicolumn{3}{c}{Disengagements}\\
@@ -436,7 +436,7 @@
     
       Table \ref{tab:players} shows the optimal lead distance for a runner on first base based on the players involved in the play. The runner skill level is based on sprint speed and their ability to steal bases. The battery skill level includes the pitcher and catcher's abilities to pick runners off and throw out potential basestealers, as well as the catcher's arm strength. This table assumes a 0-0 count, 0 outs, and nobody else on base:
     
-      \begin{table}
+      \begin{table}[H]
         \centering
         \input{../../output/tables/lead_by_players.tex}
         \caption{
@@ -449,7 +449,7 @@
 
       Currently, MLB runners are not doing a great job of putting pressure on the defense by maximizing their lead distances. Table \ref{tab:actual-vs-rec} compares the average actual and recommended leads for runners at 1st base with 2nd base open. With 0 disengagements, runners' actual leads come close to our recommendation, but they could often be adding an extra foot. As disengagements increase, we recommend about a 2 foot increase, but runners only tend to increase their leads by 0.6-0.7 feet. Runners overestimate the danger of a pickoff attempt under these situations, and could be increasing their team's run expectancy by adding a few feet to their lead distances here. Runners rarely meet or exceed the lead distance we recommend, especially with 1 or 2 disengagements.
 
-      \begin{table}
+      \begin{table}[H]
         \centering
         \input{../../output/tables/actual_vs_rec_lead.tex}
         \caption{
@@ -466,7 +466,7 @@
 
       Table \ref{tab:count-twoagent} shows the optimal lead by count under the two-agent model:
 
-      \begin{table}
+      \begin{table}[H]
         \centering
         \input{../../output/tables/count_two_agent.tex}
         \caption{
