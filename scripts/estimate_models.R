@@ -284,54 +284,6 @@ with_leads22$lead3b <-with_leads22$`lead_distance_3rd Base`
 
 
 
-second_open_22 <- baserunners_22 %>% left_join(play_2022, by = "play_id") %>% filter(is.na(`lead_distance_2nd Base`), is.na(`lead_distance_3rd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`, pre_disengagements) %>% mutate(year = "2022")
-
-second_open_23 <- baserunners %>% left_join(play_2023, by = "play_id") %>% filter(is.na(`lead_distance_2nd Base`), is.na(`lead_distance_3rd Base`), !is.na(`lead_distance_1st Base`)) %>% select(`lead_distance_1st Base`, pre_disengagements) %>% mutate(year = "2023")
-
-lead_distance_1b <- rbind(second_open_22, second_open_23) |>
-  dplyr::mutate(
-    year_dis = case_when(
-      year == 2022 ~ "2022 - All Situations",
-      year == 2023 & pre_disengagements == 0 ~ "2023 - 0 Disengagements",
-      year == 2023 & pre_disengagements == 1 ~ "2023 - 1 Disengagements",
-      year == 2023 & pre_disengagements == 2 ~ "2023 - 2 Disengagements"
-    )
-  ) |>
-  dplyr::filter(!is.na(year_dis))
-
-mean_leads <- lead_distance_1b %>% group_by(year_dis) %>% summarize(meanlead = mean(`lead_distance_1st Base`))
-mean_lead22 <- mean_leads[1,2]$meanlead
-mean_lead23_0 <- mean_leads[2,2]$meanlead
-mean_lead23_1 <- mean_leads[3,2]$meanlead
-mean_lead23_2 <- mean_leads[4,2]$meanlead
-
-# Overal 2022 vs 2023 lead distance density plot
-leads_overall <- lead_distance_1b |>
-  ggplot2::ggplot() +
-  ggplot2::aes(`lead_distance_1st Base`, col = year_dis, group = year_dis) +
-  ggplot2::geom_density() +
-  ggplot2::xlim(3, 16) +
-  ggplot2::theme_classic() +
-  ggplot2::labs(
-    x = "Lead Distance",
-    y = "Density",
-    title = "Lead Distance at 1st Base - 2022/2023",
-    color = "Year and Prior Disengagements"
-  ) +
-  ggplot2::scale_colour_manual(values = c("red", "skyblue", "dodgerblue3", "darkblue")) +
-  ggplot2::theme(legend.position = "bottom") +
-  ggplot2::guides(color = guide_legend(nrow = 2)) +
-  ggplot2::geom_vline(xintercept = mean_lead22, col = "red") +
-  ggplot2::geom_vline(xintercept = mean_lead23_0, col = "skyblue") +
-  ggplot2::geom_vline(xintercept = mean_lead23_1, col = "dodgerblue3") +
-  ggplot2::geom_vline(xintercept = mean_lead23_2, col = "darkblue")
-
-ppi <- 300
-png("figures/leads_overall.png", width = 7 * ppi, height = 5 * ppi, res = ppi)
-print(leads_overall)
-dev.off()
-
-
 
 pitcher_batter_catcher22 <- event_2022 %>% select(game_id, event_index, batter_id, bat_side, pitcher_id, pitch_hand, fielder_2_id, inning, half_inning, post_outs, event)
 
