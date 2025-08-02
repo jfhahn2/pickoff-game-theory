@@ -360,15 +360,15 @@ all_pickoff_var1b$pre_disengagements <- as.factor(all_pickoff_var1b$pre_disengag
 #m4 <- glmer(isSBAttempt ~ pre_balls + pre_strikes + pre_outs + pre_disengagements + (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength, data = sb_var_1b_threats, family = binomial)
 #summary(m4)
 
-#saveRDS(fit_po_success, "models/fit_po_success.rds")
-#saveRDS(fit_po_attempt, "models/fit_po_attempt.rds")
-#saveRDS(fit_sb_success, "models/fit_sb_success.rds")
+#saveRDS(fit_po_success, "output/models/fit_po_success.rds")
+#saveRDS(fit_po_attempt, "output/models/fit_po_attempt.rds")
+#saveRDS(fit_sb_success, "output/models/fit_sb_success.rds")
 #saveRDS(m4, "m4model")
 
-fit_po_success <- readRDS("models/fit_po_success.rds")
-fit_po_attempt <- readRDS("models/fit_po_attempt.rds")
-fit_sb_success <- readRDS("models/fit_sb_success.rds")
-m4 <- readRDS("models/m4.rds")
+fit_po_success <- readRDS("output/models/fit_po_success.rds")
+fit_po_attempt <- readRDS("output/models/fit_po_attempt.rds")
+fit_sb_success <- readRDS("output/models/fit_sb_success.rds")
+m4 <- readRDS("output/models/m4.rds")
 
 # 
 # # Pitcher Pickoff Ratio vs Effect
