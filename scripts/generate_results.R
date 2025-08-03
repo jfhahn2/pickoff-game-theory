@@ -44,6 +44,10 @@ lead_distance_1b <- rbind(second_open_22, second_open_23) |>
   ) |>
   dplyr::filter(!is.na(year_dis))
 
+lead_distance_1b |>
+  dplyr::group_by(year_dis) |>
+  dplyr::summarize(mean(`lead_distance_1st Base`))
+
 breaks <- seq(from = 4, to = 16, by = 2)
 
 if (fig_make) {
