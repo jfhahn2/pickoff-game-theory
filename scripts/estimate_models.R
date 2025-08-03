@@ -160,21 +160,6 @@ succesful_pick <- function(State) {
   return(paste0("00", substr(State, 3, 3), " 0 ", substr(State, 7, 8), as.numeric(outs)+1))
 }
 
-# Function for what happens on unsuccesful pickoff
-# Assumes no pickoff errors or other runners moving
-unsuccesful_pick <- function(State) {
-  if (substr(State, 1, 2) != "10") {
-    return(State)
-  }
-  dis <- substr(State, 5, 5) 
-  if (dis == 2) {
-    return(paste0("010 0 ", substr(State, 7, 9)))
-  } else {
-    return(paste0(substr(State, 1, 4), as.numeric(dis) + 1, substr(State, 6, 9)))
-  }
-  
-}
-
 # Call function on all states
 all_states <- data.frame(State = all_possible_states)
 T_sp <- all_states %>% mutate(New_State = sapply(State, succesful_pick), Freq = 1)
@@ -185,19 +170,6 @@ all_transitions_tsp <- state_grid %>% left_join(T_sp, by = c("State", "New_State
 # Create final transition prob matrix
 P_SP <-  all_transitions_tsp %>% group_by(State) %>% mutate(Total = sum(Freq)) %>% ungroup() %>% mutate(Prob = Freq / Total)
 P_SP <- P_SP %>% mutate(Prob = ifelse(is.na(Prob), ifelse(New_State == State, 1, 0), Prob)) 
-
-
-# P^UP MATRIX (Failed Pick)
-
-# Call function on all states
-T_up <- all_states %>% mutate(New_State = sapply(State, unsuccesful_pick), Freq = 1)
-
-# join state grid with transition probs
-all_transitions_tup <- state_grid %>% left_join(T_up, by = c("State", "New_State")) %>% mutate(Freq = ifelse(is.na(Freq), 0 , Freq))
-
-# Create final transition prob matrix
-P_UP <-  all_transitions_tup %>% group_by(State) %>% mutate(Total = sum(Freq)) %>% ungroup() %>% mutate(Prob = Freq / Total)
-P_UP <- P_UP %>% mutate(Prob = ifelse(is.na(Prob), ifelse(New_State == State, 1, 0), Prob)) 
 
 
 # P^UP MATRIX (Failed Pick)
@@ -831,22 +803,6 @@ for (i in 1:nrow(skill_grid)) {
 }
 
 
-# SUMMARY TABLES ----
-
-
-sorted <- old_run_1b %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
-
-
-table1 <- sorted %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% mutate(Runners = ifelse(bases == "100", "Man on 1st", "Men on 1st and 3rd"), Outs = substr(countouts,3,3)) %>% select(Outs, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_")
-
-print(
-  xtable::xtable(table1, digits = 1),
-  hline.after = NULL,
-  include.colnames = FALSE,
-  include.rownames = FALSE,
-  only.contents = TRUE,
-  file = "output/figures/lead_by_runners_outs.tex"
-)
 
 ## How well do runners select lead distance?
 

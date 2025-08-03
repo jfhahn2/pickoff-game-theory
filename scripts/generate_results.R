@@ -1,6 +1,6 @@
 
 fig_make <- TRUE
-fig_mode <- "dark"
+fig_mode <- "light"
 
 
 # Read data ----
@@ -44,6 +44,10 @@ lead_distance_1b <- rbind(second_open_22, second_open_23) |>
   ) |>
   dplyr::filter(!is.na(year_dis))
 
+lead_distance_1b |>
+  dplyr::group_by(year_dis) |>
+  dplyr::summarize(mean(`lead_distance_1st Base`))
+
 breaks <- seq(from = 4, to = 16, by = 2)
 
 if (fig_make) {
@@ -63,7 +67,7 @@ if (fig_make) {
     ) +
     ggplot2::labs(x = "Lead Distance", y = "Density") +
     ggplot2::coord_cartesian(xlim = c(3, 16)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.2, 0.8))
   print(plot)
   dev.off()
@@ -126,7 +130,7 @@ if (fig_make) {
     ) +
     ggplot2::labs(title = "Pickoff Attempt", x = "Lead Distance", y = "Probability") +
     ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.7)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.4, 0.7))
   print(plot)
   dev.off()
@@ -177,7 +181,7 @@ if (fig_make) {
     ) +
     ggplot2::labs(title = "Pickoff Success", x = "Lead Distance", y = "Probability") +
     ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.7)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.3, 0.7))
   print(plot)
   dev.off()
@@ -204,7 +208,7 @@ if (fig_make) {
       y = "Effect on SB Success (log-odds)"
     ) +
     ggplot2::coord_cartesian(ylim = c(-0.6, 0.6)) +
-    sputil::theme_sleek()
+    sputil::theme_sleek(mode = fig_mode)
   print(plot)
   dev.off()
 }
@@ -230,7 +234,7 @@ if (fig_make) {
       y = "Effect on SB Success (log-odds)"
     ) +
     ggplot2::coord_cartesian(ylim = c(-0.6, 0.6)) +
-    sputil::theme_sleek()
+    sputil::theme_sleek(mode = fig_mode)
   print(plot)
   dev.off()
 }
@@ -281,7 +285,7 @@ if (fig_make) {
     ) +
     ggplot2::labs(x = "Lead Distance", y = "Probability") +
     ggplot2::coord_cartesian(xlim = c(3, 16)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.85, 0.25))
   print(plot)
   dev.off()
@@ -319,7 +323,7 @@ if (fig_make) {
       values = c("dotted", "dashed", "solid")
     ) +
     ggplot2::coord_cartesian(xlim = c(0, 20), ylim = c(0.9, 0.96)) +
-    sputil::theme_sleek() +
+    sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.2, 0.25))
   print(plot)
   dev.off()
@@ -328,17 +332,43 @@ if (fig_make) {
 
 # Write results tables ----
 
+sorted <- old_run_1b |>
+  dplyr::mutate(
+    bases = substr(State, 1, 3),
+    dis = substr(State, 5,5),
+    countouts = substr(State, 7, 9)
+  ) |>
+  arrange(bases, countouts, dis)
+
 sorted |>
   dplyr::ungroup() |>
   dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
+  dplyr::arrange(substr(countouts, 2, 2), substr(countouts, 1, 1)) |>   # sort by strikes then balls
   dplyr::mutate(count = paste0(substr(countouts, 1, 1), "-", substr(countouts, 2, 2))) |>
   dplyr::select(count, dis, lead1b) |>
-  tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "disengagements_") |>
+  tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
   sputil::write_latex_table(
     file = "output/tables/lead_by_count.tex",
+    prefix_rows = "Prior & \\multicolumn{12}{c}{Count}",
+    colnames = c(
+      "Disengagements",
+      "0-0", "1-0", "2-0", "3-0", "0-1", "1-1", "2-1", "3-1", "0-2", "1-2", "2-2", "3-2"
+    ),
+    align = "r|cccc|cccc|cccc",
+    digits = 1
+  )
+
+sorted |>
+  dplyr::ungroup() |>
+  dplyr::filter(substr(countouts, 1,2) == "00") |>
+  dplyr::mutate(outs = substr(countouts, 3, 3)) |>
+  dplyr::select(outs, dis, lead1b) |>
+  tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "dis_") |>
+  sputil::write_latex_table(
+    file = "output/tables/lead_by_outs.tex",
     prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
-    colnames = c("Count", "0", "1", "2"),
-    align = "c|rrr",
+    colnames = c("Outs", "0", "1", "2"),
+    align = "r|ccc",
     digits = 1
   )
 
@@ -367,17 +397,28 @@ skill_grid |>
     hline.after = c(0, 3, 6)
   )
 
+sorted_two <- old_run_1b_two |>
+  dplyr::mutate(
+    bases = substr(State, 1, 3),
+    dis = substr(State, 5,5), countouts = substr(State, 7, 9)
+  ) |>
+  dplyr::arrange(bases, countouts, dis)
+
 sorted_two |>
   dplyr::ungroup() |>
   dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
-  dplyr::mutate(Count = paste0(substr(countouts, 1, 1), "-", substring(countouts, 2, 2))) |>
-  dplyr::select(Count, dis, lead1b) |>
-  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_") |>
+  dplyr::arrange(substr(countouts, 2, 2), substr(countouts, 1, 1)) |>   # sort by strikes then balls
+  dplyr::mutate(count = paste0(substr(countouts, 1, 1), "-", substring(countouts, 2, 2))) |>
+  dplyr::select(count, dis, lead1b) |>
+  tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
   sputil::write_latex_table(
     file = "output/tables/count_two_agent.tex",
-    prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
-    colnames = c("Count", "0", "1", "2"),
-    align = "l|rrr",
+    prefix_rows = "Prior & \\multicolumn{12}{c}{Count}",
+    colnames = c(
+      "Disengagements",
+      "0-0", "1-0", "2-0", "3-0", "0-1", "1-1", "2-1", "3-1", "0-2", "1-2", "2-2", "3-2"
+    ),
+    align = "r|cccc|cccc|cccc",
     digits = 1
   )
 
@@ -397,6 +438,3 @@ actual_vs_recommended_leads |>
     digits = c(NA, 0, 1, 1, NA)
   )
 
-
-
-#TACOCAT GOAT CHEESE PIZZA
