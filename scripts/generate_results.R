@@ -331,14 +331,18 @@ if (fig_make) {
 sorted |>
   dplyr::ungroup() |>
   dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
+  dplyr::arrange(substr(countouts, 2, 2), substr(countouts, 1, 1)) |>   # sort by strikes then balls
   dplyr::mutate(count = paste0(substr(countouts, 1, 1), "-", substr(countouts, 2, 2))) |>
   dplyr::select(count, dis, lead1b) |>
-  tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "disengagements_") |>
+  tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
   sputil::write_latex_table(
     file = "output/tables/lead_by_count.tex",
-    prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
-    colnames = c("Count", "0", "1", "2"),
-    align = "c|rrr",
+    prefix_rows = "Prior & \\multicolumn{12}{c}{Count}",
+    colnames = c(
+      "Disengagements",
+      "0-0", "1-0", "2-0", "3-0", "0-1", "1-1", "2-1", "3-1", "0-2", "1-2", "2-2", "3-2"
+    ),
+    align = "r|cccc|cccc|cccc",
     digits = 1
   )
 
@@ -377,14 +381,18 @@ sorted_two <- old_run_1b_two |>
 sorted_two |>
   dplyr::ungroup() |>
   dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
-  dplyr::mutate(Count = paste0(substr(countouts, 1, 1), "-", substring(countouts, 2, 2))) |>
-  dplyr::select(Count, dis, lead1b) |>
-  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_") |>
+  dplyr::arrange(substr(countouts, 2, 2), substr(countouts, 1, 1)) |>   # sort by strikes then balls
+  dplyr::mutate(count = paste0(substr(countouts, 1, 1), "-", substring(countouts, 2, 2))) |>
+  dplyr::select(count, dis, lead1b) |>
+  tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
   sputil::write_latex_table(
     file = "output/tables/count_two_agent.tex",
-    prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
-    colnames = c("Count", "0", "1", "2"),
-    align = "l|rrr",
+    prefix_rows = "Prior & \\multicolumn{12}{c}{Count}",
+    colnames = c(
+      "Disengagements",
+      "0-0", "1-0", "2-0", "3-0", "0-1", "1-1", "2-1", "3-1", "0-2", "1-2", "2-2", "3-2"
+    ),
+    align = "r|cccc|cccc|cccc",
     digits = 1
   )
 
