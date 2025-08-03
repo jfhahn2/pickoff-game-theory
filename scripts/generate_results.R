@@ -338,20 +338,6 @@ sorted <- old_run_1b |>
 
 sorted |>
   dplyr::ungroup() |>
-  dplyr::filter(substr(countouts, 1,2) == "00") |>
-  dplyr::mutate(outs = substr(countouts, 3, 3)) |>
-  dplyr::select(outs, dis, lead1b) |>
-  tidyr::pivot_wider(names_from = outs, values_from = lead1b, names_prefix = "outs_") |>
-  sputil::write_latex_table(
-    file = "output/tables/lead_by_outs.tex",
-    prefix_rows = "Prior & \\multicolumn{3}{c}{Outs}",
-    colnames = c("Disengagements", "0", "1", "2"),
-    align = "r|ccc",
-    digits = 1
-  )
-
-sorted |>
-  dplyr::ungroup() |>
   dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
   dplyr::arrange(substr(countouts, 2, 2), substr(countouts, 1, 1)) |>   # sort by strikes then balls
   dplyr::mutate(count = paste0(substr(countouts, 1, 1), "-", substr(countouts, 2, 2))) |>
@@ -365,6 +351,20 @@ sorted |>
       "0-0", "1-0", "2-0", "3-0", "0-1", "1-1", "2-1", "3-1", "0-2", "1-2", "2-2", "3-2"
     ),
     align = "r|cccc|cccc|cccc",
+    digits = 1
+  )
+
+sorted |>
+  dplyr::ungroup() |>
+  dplyr::filter(substr(countouts, 1,2) == "00") |>
+  dplyr::mutate(outs = substr(countouts, 3, 3)) |>
+  dplyr::select(outs, dis, lead1b) |>
+  tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "dis_") |>
+  sputil::write_latex_table(
+    file = "output/tables/lead_by_outs.tex",
+    prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
+    colnames = c("Outs", "0", "1", "2"),
+    align = "r|ccc",
     digits = 1
   )
 
