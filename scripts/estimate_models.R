@@ -831,22 +831,6 @@ for (i in 1:nrow(skill_grid)) {
 }
 
 
-# SUMMARY TABLES ----
-
-
-sorted <- old_run_1b %>% mutate(bases = substr(State, 1, 3), dis = substr(State, 5,5), countouts = substr(State, 7, 9)) %>% arrange(bases, countouts, dis)
-
-
-table1 <- sorted %>% ungroup() %>%  filter(substr(countouts, 1,2) == "00") %>% mutate(Runners = ifelse(bases == "100", "Man on 1st", "Men on 1st and 3rd"), Outs = substr(countouts,3,3)) %>% select(Outs, dis, lead1b) %>%  pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "Disengagements_")
-
-print(
-  xtable::xtable(table1, digits = 1),
-  hline.after = NULL,
-  include.colnames = FALSE,
-  include.rownames = FALSE,
-  only.contents = TRUE,
-  file = "output/figures/lead_by_runners_outs.tex"
-)
 
 ## How well do runners select lead distance?
 

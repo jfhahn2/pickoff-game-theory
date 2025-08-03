@@ -328,6 +328,28 @@ if (fig_make) {
 
 # Write results tables ----
 
+sorted <- old_run_1b |>
+  dplyr::mutate(
+    bases = substr(State, 1, 3),
+    dis = substr(State, 5,5),
+    countouts = substr(State, 7, 9)
+  ) |>
+  arrange(bases, countouts, dis)
+
+sorted |>
+  dplyr::ungroup() |>
+  dplyr::filter(substr(countouts, 1,2) == "00") |>
+  dplyr::mutate(outs = substr(countouts, 3, 3)) |>
+  dplyr::select(outs, dis, lead1b) |>
+  tidyr::pivot_wider(names_from = outs, values_from = lead1b, names_prefix = "outs_") |>
+  sputil::write_latex_table(
+    file = "output/tables/lead_by_outs.tex",
+    prefix_rows = "Prior & \\multicolumn{3}{c}{Outs}",
+    colnames = c("Disengagements", "0", "1", "2"),
+    align = "r|ccc",
+    digits = 1
+  )
+
 sorted |>
   dplyr::ungroup() |>
   dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
