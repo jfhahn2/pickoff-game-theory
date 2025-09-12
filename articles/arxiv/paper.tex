@@ -1,6 +1,5 @@
 
-
-\documentclass{article}
+\documentclass[11pt]{article}
 
 \usepackage[alldates=year, block=space, style=apa]{biblatex}
 \setlength\bibitemsep{0.5\baselineskip}
@@ -11,9 +10,29 @@
 
 \usepackage[colorlinks, allcolors=blue]{hyperref}
 
-\usepackage{amsfonts, amsmath, float, graphicx}
+\usepackage{amsmath, amssymb, amsthm, amsfonts, color, enumerate, framed, graphicx, mathrsfs, mathtools, mdframed, natbib, subcaption, tabularx, theoremref, titlesec, verbatim, xfrac, soul, mathtools, wrapfig, tikz, float}
 
 \graphicspath {{../../output/figures/}}
+
+\newtheorem*{theorem*}{Theorem}
+\newtheorem{theorem}{Theorem}
+\newtheorem*{lemma*}{Lemma}
+\newtheorem{lemma}{Lemma}
+\newtheorem*{conjecture*}{Conjecture}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{proposition}{Proposition}
+\newtheorem*{assumption*}{Assumption}
+\newtheorem{assumption}{Assumption}
+\newtheorem*{definition*}{Definition}
+\newtheorem{definition}{Definition}
+
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[normalem]{ulem}
+
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+\newcommand{\defeq}{\stackrel{\text{def}}{=}}
+\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
 
 \title{The Two-Foot Rule: A game theoretic analysis of the pickoff limit in Major League Baseball}
 
@@ -322,7 +341,222 @@
         \end{align}
 
         Given this runner policy, the pitcher is indifferent between throwing a pitch and attempting a pickoff.
+    
+    \section{The baseball inning as a two-player stochastic game}
+    \label{sec:sequential_model}
+    We first describe a single-player setup where only the first-base runner has agency. This is modeled as an infinite-horizon Markov decision process (MDP). We then extend this model to a two-player case where the first-base runner and the pitcher have agencies. The two-player case is modeled as an infinite-horizon zero sum stochastic game. \todo{Explain how the single-player case, despite being simple and restrictive than the two-player case, still provides valuable and actionable insights.} Since the state space for the single- and two-player models are the same, we first describe the (common) state space before explaining the specifics of each model. 
 
+    {\bf State space.} The game state is given by $s = (b, c, d, o)$, where:
+    \begin{align*}
+      b &\in \{0, 1\}^3 \mbox{ represents which bases are occupied by runners};\\
+      c &\in \{0, 1, 2, 3\} \times \{0, 1, 2\} \mbox{ represents the ball-strike count};\\
+      d &\in \{0, 1, 2\} \mbox{ represents the number of disengagements already used}; and\\
+      o &\in \{0, 1, 2\} \mbox{ represents the number of outs}.
+    \end{align*}
+    The total number of non-terminal states is $2^3 \times (4 \times 3) \times 3 \times 3 = 864$. There is one terminal state (end of inning), denoted $\Delta$, bringing the total number of states to 865. We use $\mathcal{S}$ to denote the set of all states ( including the terminal state), and $S_t$ the state at play $t$ in a (fixed) innings. Traditionally, the state is defined by the bases occupied and the number of outs (24 non-terminal states) or by those and the ball-strike count (288 non-terminal states) \parencite{bukiet_markov_1997}. Our construction of the state extends them by further including the number of disengagements as a component of the state, thereby allowing us to analyze the game under the new pickoff limit rule. 
+
+    \subsection{Single-player Markov decision process}
+    \label{sec:mdp_model}
+    This section considers the setup where agency is allowed only for the first-base runner. We model this scenario as a MDP. The other components of this MDP are as follows.
+
+    {\bf State space.} The state space for the MDP is the one described in the beginning of Section \ref{sec:sequential_model}.
+
+    {\bf Action space.} We limit the agency to states in which first base is occupied and the other bases are unoccupied. For such states, the action is the lead distance in feet chosen by the first-base runner from the first base. We formally describe it as follows. Define ${\cal L} \defeq [0,20]$. The action space of the runner, $A_\text{R}(s) \ \forall s \in {\cal S}$, is then defined as
+    \begin{align}
+    \label{eqn:runner_action_sapce}
+        A_\text{R}(s) \defeq \begin{cases}
+            {\cal L} \text{ if } s = (b,c,d,o) \text{ and } b = (1,0,0)\\
+            \{\delta\} \text{ if } s = (b,c,d,o) \text{ and } b \neq (1,0,0), \text{ or } s = \Delta.        \end{cases}
+    \end{align}    
+     Restricting the agency to states in which first base is occupied and the other bases are unoccupied, i.e., $b = (1, 0, 0)$, limits our scope to situations in which the runner might steal second base (encompassing 71\% of stolen base attempts in 2023). This obviously excludes the first-and-third scenario ($b = (1, 0, 1)$) in which the first-base runner will often attempt a stolen base to lure a throw from the catcher, giving the third-base runner a chance to steal home.
+
+     {\bf Single-stage reward function.} The single-stage reward function for transitioning from state $s$ to state $s'$ is given by the number of runs scored in the transition. This reward function does not depend on the action taken by the runner, and is given as
+     \begin{align}
+         \label{eqn:runner_reward}
+         r(s'|s,a) \defeq r(s'|s) \ \forall s,s' \in {\cal S}, a \in A_\text{R}(s),
+     \end{align}
+     where
+        \begin{align}
+          \label{eqn:common_reward}
+          r(s'|s) \defeq  \begin{cases}
+              (g(b) + o) - (g(b') + o') + \mathbb{I}\{c' = (0, 0),\, d' = 0\} \ \forall s,s' \in {\cal S} - \{\Delta\}\\
+              0 \text{ if } s = \Delta,
+          \end{cases} 
+        \end{align}
+        where $g: \{0, 1\}^3 \rightarrow \{0, 1, 2, 3\}$ counts the number of runners on base. This expression for the single-stage reward function counts the total number of baserunners and outs before and after the transition and subtracts one if the transition corresponds to the end of a plate appearance. For transitions to the terminal end-of-inning state, the number of runs scored may not be uniquely determined by the starting state. To handle this case, we introduce intermediary states which track the number of runs scored on the last play, only for transitions to the terminal end-of-inning state. These intermediary states transition to the terminal end-of-inning state with probability 1.
+        
+    {\bf Transition probabilities.} \todo[inline]{Since the derivation of transition probabilities is involved, write it in a separate section and point to that section. Describe here in at most a couple of sentences how those probabilities are computed. Highlight which states transition to the absorbing state with positive probability.}
+
+    The MDP is then defined by the tuple ${\cal M} \defeq \langle {\cal S}, \{A_\text{R}(s)\}_{s \in {\cal S}}, \{r(s'|s,a)\}_{s \in {\cal S}, a \in A_\text{R}(s)}^{s' \in {\cal S}}, \\  \{p(s'|s,a)\}_{s \in {\cal S}, a \in A_\text{R}(s)}^{s' \in {\cal S}}\rangle$. Using this MDP, the progression of an inning can be captured as follows. At the beginning of a play, the game is in state $s \in {\cal S}$. Upon observing this state, an action $a \in A_\text{R}(s)$ is picked. The game then transitions to state $s'$ with probability $p(s'|s,a)$ and the batting team collects a reward $r(s'|s,a)$. A play then begins from $s'$ and the process repeats. The goal of the batting team is to maximize the expected total rewards collected over the plays in the inning.
+
+   A (deterministic stationary Markovian) policy $\pi$ for the runner is a mapping ${\cal S} \mapsto \cup_{s \in {\cal S}}A_\text{R}(s)$ such that $\pi(s) \in A_\text{R}(s)$. That is, $\pi(s)$ is the action chosen in state $s$. \sout{In other words, a policy is a contingency plan (in this specific context) employed by the batting team.} Denote the set of all policies by $\Pi_\text{R}$. Note that $\Pi_\text{R}$ is uncountable but compact. It is intuitive that an inning in a baseball eventually halts. The following assumption formalizes this intuition.
+   \begin{assumption}\label{assum:mdp_halts}
+       \normalfont
+      The MDP ${\cal M}$ satisfies
+      $
+      \lim_{t \to \infty}\sup_{\pi \in \Pi, s \in {\cal S}}\mathbb{P}^\pi[S_t = \Delta | S_0 = s] = 1.
+      $
+   \end{assumption}   
+  \noindent The above assumption states that there exists a natural number $T < \infty$ such that every inning halts within $T$ plays with arbitrarily high probability regardless of the policy employed or the starting state of the inning. 
+   
+   The value of a policy $\pi$ when starting from state $s \in {\cal S}$ equals  
+   \begin{equation}
+       \label{eqn:mdp_pol_val}
+       V^{\pi}(s) \defeq \mathbb{E}^\pi\left[\sum_{t=0}^\infty r(S_{t+1}|S_t) \Big| S_0 = s\right] \ \forall s \in {\cal S}.
+   \end{equation}
+  That is, the value of the policy is the the expected total runs scored in an inning.  Under Assumption \ref{assum:mdp_halts}, $V^\pi(s)$ exists for all $\pi \in \Pi$ and $s \in {\cal S}$. To see that, since $r(s'|s) \geq 0$ for all $s,s' \in {\cal S}$, we have by the monotone convergence theorem 
+  \[
+  V^\pi(s) = \mathbb{E}^\pi\left[\sum_{t=0}^\infty r(S_{t+1}|S_t) \Big| S_0 = s\right] = \lim_{T \to \infty} \mathbb{E}^\pi\left[\sum_{t=0}^T r(S_{t+1}|S_t) \Big| S_0 = s\right] \ \forall \pi \in \Pi, s \in {\cal S}.
+  \]
+   Using Assumption \ref{assum:mdp_halts} and the fact that $\sup_{s,s' \in {\cal S}}\abs{r(s'|s)} < \infty$ (due to finiteness of ${\cal S}$), it is easy to establish that $\lim_{T \to \infty} \mathbb{E}^\pi\left[\sum_{t=0}^T r(S_{t+1}|S_t) \Big| S_0 = s\right]$ exists for all $\pi \in \Pi, s \in {\cal S}$. Furthermore, the limit is uniformly bounded over $\Pi \times {\cal S}$. The value of the MDP is defined as 
+   \begin{equation}
+        \label{eqn:mdp_val}
+       V^*(s) \defeq \max_{\pi \in \Pi_\text{R}}V^\pi(s) \ \forall s \in S.
+   \end{equation}
+   The function $V^*$, known as the optimal value function, is the maximum expected runs scored starting from state $s \in {\cal S}$. A policy $\pi^*$ such that $V^{\pi^*}(s) = V^*(s) \ \forall s \in {\cal S}$ is called the optimal policy.
+
+   We present the following definitions that will be needed to characterize the optimal value function and the optimal policy.
+
+   \begin{definition}\label{defn:mdp_operators}
+    \normalfont
+    \begin{enumerate}
+        \item For any $\pi \in \Pi_\text{R}$, the evaluation operator $\Phi_\pi:\mathbb{R}^{\abs{{\cal S}}} \to \mathbb{R}^{\abs{{\cal S}}}$ is defined as
+        \[
+        (\Phi_\pi V)(s) \defeq \mathbb{E}_{s' \sim p(\cdot|s,\pi(s))}\left[r(s'|s) + V(s')\right] \ \forall s \in {\cal S}.
+        \]
+        \item The optimality operator $\Phi: \mathbb{R}^{\abs{{\cal S}}} \to \mathbb{R}^{\abs{{\cal S}}}$ is defined as
+        \[
+        (\Phi V)(s) \defeq \max_{a \in A_\text{R}(s)}\mathbb{E}_{s' \sim p(\cdot|s,a)}\left[r(s'|s) + V(s')\right] \ \forall s \in {\cal S}.
+        \]
+    \end{enumerate}       
+   \end{definition}
+
+   \begin{theorem}[\parencite{bertsekas1991analysis}]\label{thm:mdp_optimality_condition}
+       \normalfont
+      Suppose Assumption \ref{assum:mdp_halts} holds. Then
+      \begin{enumerate}
+          \item For any policy $\pi$, its value $V^\pi$ is the unique fixed point of the operator $\Phi_\pi$.
+          \item The optimal value function $V^*$ is the unique fixed point of the operator $\Phi$. Furthermore, $\pi^*$ is an optimal policy if and only if $\Phi_{\pi^*}V^* = \Phi V^*$.
+      \end{enumerate}
+   \end{theorem}
+% \todo[inline]{The above theorem also requires $p(s'|s,a)$ to be continuous in $a$ for any $s,s' \in S$. This is true for fixed-effects model since $x \mapsto e^x/1+e^x$ is continuous. I do not know about random-effects model. [[SP: $a$ comes into the model as a fixed effect (the random effects are for player identities), so, yes, $p(s'|s,a)$ is continuous in $a$.]]}
+
+The above theorem enables the characterization of $V^*(s)$ as in the following lemma.
+
+\begin{lemma}\label{lem:mdp_value_function_characterization}
+    \normalfont
+    Suppose Assumption \ref{assum:mdp_halts} holds. Then $V^*$ is the unique solution to the following system of equations.
+    \begin{align*}
+        V(s) &= \max_{\ell \in {\cal L}}\sum_{s' \in {\cal S}}\left[r(s'|s) + V(s')\right]p(s'|s,\ell) \quad  \text{ if } s = (b,c,d,o) \text{ and } b = (1,0,0)\\
+        V(s) &= \sum_{s' \in {\cal S}}\left[r(s'|s) + V(s')\right]p(s'|s,\delta) \quad \text{ if } s = (b,c,d,o) \text{ and } b \neq (1,0,0)\\
+        V(s) &= 0 \quad \text{ if } s = \Delta.
+    \end{align*}
+    \begin{proof}
+        Immediate from Theorem \ref{thm:mdp_optimality_condition}.
+    \end{proof}
+\end{lemma}
+
+An algorithmic device to obtain the optimal policy is value iteration or policy iteration \parencite{bertsekas1991analysis}. We use policy iteration  in this work to compute the optimal policy which is as follows.  Initialize $V^0 \in \mathbb{R}^{\abs{{\cal S}}}$ and $\pi^0 \in \Pi_\text{R}$, and then iteratively obtain $V^k$ and $\pi^k$ by applying the updates
+        \begin{align}
+          \label{eqn:update-value-single-agent}
+          V^{k+1}(s) &= \sum_{s' \in \mathcal{S}} p(s' | s,\, \pi^k(s)) [r(s, s') + V^k(s')] && \forall s \in \mathcal{S}, \mbox{ and}\\
+          \label{eqn:update-policy-single-agent}
+          \pi^{k+1}(s) &= \argmax_{a \in A_\text{R}(s)} \sum_{s' \in \mathcal{S}} p(s' | s,\, a) [r(s, s') + V^{k+1}(s')] && \forall s \in \mathcal{S}.
+        \end{align}
+    The iterates generated by the policy iteration satisfy $V^k \uparrow V^*$ and every limit point of $\pi^k$ is an optimal policy \parencite{bertsekas1991analysis}. 
+
+    \subsection{Two-player Stochastic Game}
+    \label{sec:stochastic_game}
+    In this section, we extend the single-agent model by allowing the pitcher to choose whether to attempt a pickoff. This is modeled as a two-player zero sum stochastic game, where the runner first chooses a lead distance, and then the pitcher decides whether to attempt a pickoff after observing the runner's lead distance. The components of this stochastic game are as follows.
+
+    {\bf State space.} The state space  is the same as described in the beginning of Section \ref{sec:sequential_model}.
+
+    {\bf Action space.} As in the single-player model of Section \ref{sec:mdp_model}, we limit actions (of runner as well as pitcher) to states in which only the first base is occupied. The (first-base) runner chooses a lead distance, and then the pitcher chooses a pickoff action $p \in \mathcal{P} \defeq \{0,1\}$, where $p = 1$ corresponds to a pickoff attempt and $0$ otherwise. The action space of the runner, $A_\text{R}(s) \ \forall s \in {\cal S}$, is the same as \eqref{eqn:runner_action_sapce}. The pitcher's action space $A_{\text{P}}(s,a_\text{R}) \ \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s)$ is defined as
+    \begin{align}
+    \label{eqn:pitcher_action_sapce}
+        A_{\text{P}}(s,a_\text{R}) \defeq \begin{cases}
+            {\cal P} \text{ if } s = (b,c,d,o) \text{ and } b = (1,0,0), \ a_\text{R} \in A_\text{R}(s) \\
+            \{\delta\} \text{ if } s = (b,c,d,o) \text{ and } b \neq (1,0,0), \text{ or } s = \Delta, \ a_\text{R} \in A_\text{R}(s).        \end{cases}
+    \end{align} 
+
+    {\bf Single-stage reward function.} The single-stage reward function for transitioning from state $s$ to state $s'$ is given by the number of runs scored in the transition. Like in the single-player model, this reward function does not depend on the action taken by the runner, and is given
+     \begin{align}
+         \label{eqn:runner_pitcher_reward}
+         r(s'|s,a_\text{R},a_\text{P}) \defeq r(s'|s) \ \forall s,s' \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s,a_\text{R})
+     \end{align}
+     where $r(s'|s) \forall s,s' \in {\cal S}$ is as defined in \eqref{eqn:common_reward}. For transitions to the terminal end-of-inning state, the number of runs scored may not be uniquely determined by the starting state. To handle this case, we introduce intermediary states which track the number of runs scored on the last play, only for transitions to the terminal end-of-inning state. These intermediary states transition to the terminal end-of-inning state with probability 1.
+
+     {\bf Transition probabilities.} \todo[inline]{Since the derivation of transition probabilities is involved, write it in a separate section and point to that section. Describe here in at most a couple of sentences how those probabilities are computed. Highlight which states transition to the absorbing state with positive probability.}
+
+     The stochastic game is then defined by the tuple ${\cal G} \defeq \langle {\cal S}, \{A_\text{R}(s)\}_{s \in {\cal S}}, \{A_\text{P}(s,a_\text{R})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s)},\\ \{r(s'|s,a_\text{R},a_\text{P})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s,a_\text{R})}^{s' \in {\cal S}}, \{p(s'|s,a_\text{R},a_\text{P})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s, a_\text{R})}^{s' \in {\cal S}}\rangle$. The progression of an inning is then modeled as follows. At the beginning of a play, the game is in state $s \in {\cal S}$. Upon observing this state, the batting team picks action $a_\text{R} \in A_\text{R}(s)$. The pitcher then picks an action $a_\text{P} \in A_\text{P}(s,a_\text{R})$. The game then transitions to state $s'$ with probability $p(s'|s,a_\text{R},a_\text{P})$ and the batting team collects a reward $r(s'|s,a_\text{R},a_\text{P})$. A play then begins from $s'$ and the process repeats. The goal of the batting team is to maximize the expected total rewards collected over the plays in the inning while the goal of the pitcher is to minimize the expected total rewards obtained by the batting team.
+
+   A (deterministic stationary Markovian) policy $\pi_\text{R}$ for the runner is a mapping ${\cal S} \mapsto \cup_{s \in {\cal S}}A_\text{R}(s)$ such that $\pi_\text{R}(s) \in A_\text{R}(s)$. That is, $\pi_\text{R}(s)$ is the action chosen in state $s$. Similarly, a (deterministic stationary Markovian) policy $\pi_\text{P}$ for the pitcher is a mapping of the form $\{(s,a) \in {\cal S} \times \cup_{s \in {\cal S}}A_\text{R}(s) \vert a \in A_\text{R}(s)\} \ni (x,a) \mapsto A_\text{P}(x,a)$ with the interpretation that $\pi_\text{P}(x,a_\text{R})$ is the action chosen by the pitcher when the state is $s$ and the runner picks the action $a_\text{R}$. Denote the set of all policies for the runner and pitcher by $\Pi_\text{R}$ and $\Pi_\text{P}$, respectively. 
+   Note that $\Pi_\text{R}$ and $\Pi_\text{P}$ are uncountable but compact. It is intuitive that an innings in a baseball eventually halts. The following assumption formalizes this intuition.
+   \begin{assumption}\label{assum:game_halts}
+       \normalfont
+      The stochastic game ${\cal G}$ satisfies
+      $
+      \lim_{t \to \infty}\sup_{\pi_\text{R} \in \Pi_\text{R}, \pi_\text{P} \in \Pi_\text{P}, s \in {\cal S}}\mathbb{P}^{\pi_\text{R}, \pi_\text{P}}[S_t = \Delta | S_0 = s] = 1.$
+   \end{assumption}
+
+   The value of the policy pair $(\pi_\text{R},\pi_\text{P}) \in \Pi_\text{R} \times \Pi_\text{P}$ is given by
+    \begin{equation}
+       \label{eqn:sg_pol_val}
+       \widetilde V^{\pi_\text{R},\pi_\text{P}}(s) \defeq \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=0}^\infty r(S_{t+1}|S_t) \Big| S_0 = s\right] \ \forall s \in {\cal S}.
+   \end{equation}
+   Similar to the single-player case, it follows that Assumption \ref{assum:game_halts} along with the finiteness of $\cal S$ implies that $\widetilde V^{\pi_\text{R},\pi_\text{P}}(s)$ exists for all $(\pi_\text{R},\pi_\text{P}) \in \Pi_\text{R} \times \Pi_\text{P}, s \in {\cal S}$ and is uniformly bounded over $\Pi_\text{R} \times \Pi_\text{P} \times {\cal S}$. The value of the stochastic game is then defined as 
+   \begin{equation}
+        \label{eqn:sg_val}
+       \widetilde V^*(s) \defeq \max_{\pi_\text{R} \in \Pi_\text{R}}\min_{\pi_\text{P} \in \Pi_\text{P}}\widetilde V^{\pi_\text{R},\pi_\text{P}}(s) \ \forall s \in S.
+   \end{equation}
+   The function $\widetilde V^*$ will be referred to as the value of the game. A policy pair $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ such that $\widetilde V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) = \widetilde V^*(s) \ \forall s \in {\cal S}$ is called the optimal strategy or equilibrium strategy. Note that $(\pi_\text{R}^*,\pi_\text{P}^*)$ is an optimal strategy if and only if $\widetilde V^{\pi_\text{R},\pi_\text{P}^*}(s) \leq \widetilde V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) \leq \widetilde V^{\pi_\text{R}^*,\pi_\text{P}}(s) \ \forall \pi_\text{R} \in \Pi_\text{R}, \pi_\text{P} \in \Pi_\text{P}, s \in {\cal S}$.
+
+   We present the following definitions that will be needed to characterize the optimal value function and the optimal policy.
+
+   \begin{definition}\label{defn:sg_operators}
+    \normalfont
+    \begin{enumerate}
+        \item For any $\pi_\text{R} \in \Pi_\text{R}$ and $\pi_\text{P} \in \Pi_\text{P}$, the evaluation operators $\widetilde\Phi_{\pi_\text{R}}:\mathbb{R}^{\abs{{\cal S}}} \to \mathbb{R}^{\abs{{\cal S}}}$ and $\widetilde\Phi_{\pi_\text{P}}:\mathbb{R}^{\abs{{\cal S}}} \to \mathbb{R}^{\abs{{\cal S}}}$ are defined as
+        \begin{align*}
+        (\widetilde\Phi_{\pi_\text{R}} V)(s) &\defeq \min_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}(s))}\mathbb{E}_{s' \sim p(\cdot|s,\pi_\text{R}(s),a_\text{P})}\left[r(s'|s) + V(s')\right] \ \forall s \in {\cal S}\\
+        (\widetilde\Phi_{\pi_\text{P}} V)(s) &\defeq \max_{a_\text{R} \in A_\text{R}(s)}\mathbb{E}_{s' \sim p(\cdot|s,a_\text{R},\pi_\text{P}(s,a_\text{R}))}\left[r(s'|s) + V(s')\right] \ \forall s \in {\cal S}.
+        \end{align*}
+        \item The optimality operator $\widetilde\Phi: \mathbb{R}^{\abs{{\cal S}}} \to \mathbb{R}^{\abs{{\cal S}}}$ is defined as
+        \[
+        (\widetilde\Phi V)(s) \defeq \max_{a_\text{R} \in A_\text{R}(s)}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\mathbb{E}_{s' \sim p(\cdot|s,a_\text{R},a_\text{P})}\left[r(s'|s) + V(s')\right] \ \forall s \in {\cal S}.
+        \]
+    \end{enumerate}       
+   \end{definition}
+
+   \begin{theorem}[\parencite{patek1999stochastic}]\label{thm:sg_optimality_condition}
+       \normalfont
+      Suppose Assumption \ref{assum:game_halts} holds. Then the value of the game $\widetilde V^*$ is the unique fixed point of the operator $\widetilde \Phi$. Furthermore, $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ is an optimal strategy if and only if $\widetilde\Phi_{\pi_\text{R}^*}\widetilde V^* = \widetilde\Phi \widetilde V^* = \widetilde\Phi_{\pi_\text{P}^*}\widetilde V^*$.
+   \end{theorem}
+
+   The above theorem enables the characterization of $\widetilde V^*(s)$ as in the following lemma.
+
+\begin{lemma}\label{lem:sg_value_characterization}
+    \normalfont
+    Suppose Assumption \ref{assum:game_halts} holds. Then $\widetilde V^*$ is the unique solution to the following system of equations.
+    \begin{align*}
+        V(s) &= \max_{\ell \in {\cal L}}\min_{a \in {\cal P}}\sum_{s' \in {\cal S}}\left[r(s'|s) + V(s')\right]p(s'|s,\ell,a) \quad  \text{ if } s = (b,c,d,o) \text{ and } b = (1,0,0)\\
+        V(s) &= \sum_{s' \in {\cal      S}}\left[r(s'|s) + V(s')\right]p(s'|s,\delta,\delta) \quad \text{ if } s = (b,c,d,o) \text{ and } b \neq (1,0,0)\\
+        V(s) &=  0 \quad \text{ if } s = \Delta.
+    \end{align*}
+    \begin{proof}
+        Immediate from Theorem \ref{thm:sg_optimality_condition}.
+    \end{proof}
+\end{lemma}
+
+   An algorithmic device to obtain the optimal policy is value iteration or policy iteration \parencite{patek1999stochastic}. We use policy iteration  in this work to compute the optimal policy which is as follows.  Initialize $V^0 \in \mathbb{R}^{\abs{{\cal S}}}$ and $\pi_\text{R}^0 \in \Pi_\text{R}$, and then iteratively obtain $V^k$ and $\pi_\text{R}^k$ by applying the updates
+        \begin{align}
+          \label{eqn:update-value-two-agent}
+          V^{k+1}(s) &= \min_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}^k(s))} \sum_{s' \in \mathcal{S}} [r(s, s') +  V^k(s')]p(s'|s,\pi_\text{R}^k(s),a_\text{P}) && \forall s \in \mathcal{S}, \mbox{ and}\\
+          \label{eqn:update-policy-two-agent}
+          \pi_\text{R}^{k+1}(s) &= \argmax_{a_\text{R} \in A_\text{R}(s)} \left\{\min_{a_\text{p} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in \mathcal{S}}[r(s, s') + V^{k+1}(s')] p(s'|s,a_\text{R},a_\text{P})\right\} && \forall s \in \mathcal{S}.
+        \end{align}
+    The iterates generated by the policy iteration satisfy $V^k \uparrow \widetilde V^*$\parencite{patek1999stochastic}.
+   
   \section{Results}
   
     \subsection{Observed runner behavior}
