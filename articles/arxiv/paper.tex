@@ -68,283 +68,10 @@
     The Markov process is a very popular model in sports analytics, particularly in baseball, where the game's highly structured progression lends it well to a state space model \parencite{bukiet_markov_1997}. \textcite{hirotsu_using_2002} used a four-state Markov model for soccer to inform substitution decision-making based on how substitutions impact transition probabilities between states. \textcite{hirotsu_markov_2003} used similar methodology to inform substitution (pinch hitting) decision-making in baseball. Recently, \textcite{chan_points_2021} used a Markov model to evaluate team performance in football. More specifically, the MDP has become particularly popular model in recent years for analyzing decision-making in sports, with applications in tennis \parencite{nadimpalli_when_2013}, baseball \parencite{hirotsu_using_2019}, basketball \parencite{sandholtz_markov_2020}, darts \parencite{baird_optimising_2020} and football \parencite{biro_reinforcement_2022}.
 
     An intermediate result of the present work is a probability model for stolen base attempts and successes (as well as an analysis how those probabilities changed with the 2023 MLB rule changes), a topic which has not received much attention. \textcite{loughin_assessing_2008} estimated linear mixed-effects models for stolen base attempts and successes, using random effects for pitcher and catcher (not the runner, notably) and fixed effects for balls, strikes, outs, score, venue and pitcher hand. They showed that the spread of pitcher effects is slightly greater than the spread of catcher effects. That analysis did not have data on runner sprint speed and catcher arm strength. More recently, \textcite{stanley_modeling_2023} modeled stolen base success probability using both logistic regression and a random forest, including runner sprint speed and catcher arm strength as features but excluding player identities. That analysis was limited to data prior to the 2023 MLB rule changes that incentivized base stealing.
-
-  \section{Data}
-
-    \subsection{MLB Stats API}
-    \label{sec:statsapi}
-
-      Most of the data used for this article were downloaded from the publicly available MLB Stats API using the R package sabRmetrics \parencite{powers_sabrmetrics_2025}. The dataset comprises 722,899 plays from the 2022 MLB regular season and 726,868 plays from the 2023 MLB regular season, where each play is either a pitch or a pickoff attempt (2.0\% pickoff attempts in 2022, 1.2\% in 2023). For each play, we observe the identities of the pitcher, catcher and runners involved. Before and after each play, we observe the state of the game, described by the number of outs in the inning; which bases are occupied by runners; the ball-strike count on the batter; and the number of disengagements already used by the pitcher. On each pickoff attempt, we observe whether it is successful (runner is out) or unsuccessful (runner is safe). On each pitch, we observe whether the runner attempts a stolen base; and if so, we observe whether they are successful (runner is safe) or unsuccessful (runner is out). On each pitch terminating a plate appearance (a batting attempt by a batter), we observe the plate appearance outcome, such as strikeout, groundout, single or home run.
-
-    \subsection{Baseball Savant}
-    \label{sec:baseballsavant}
-
-      In addition to the play-by-play data described in Section \ref{sec:statsapi}, we manually downloaded publicly available player-season level data from Baseball Savant \parencite{baseball_savant_statcast_2024} describing measurable performance characteristics of catchers and runners in each season, both estimated using computer vision on video data from several camera angles. For each catcher-season, we observe {\it arm strength} (miles per hour), which measures how hard the catcher throws the ball. This is defined as the average of the top 10 percent of throw speeds when the catcher is attempting to catch a base stealer. For each runner-season, we observe {\it sprint speed} (feet per second), which measures the runner's top running speed in their fastest one-second window. This is defined as the average of the top 67 percent of peak running speeds on qualified runs: (1) home-to-first runs on weakly hit batted balls and (2) runs of two or more bases on balls hit into play (excluding runs from second base on extra-base hits).
-
-    \subsection{Proprietary Statcast Data}
-
-      In addition to the publicly available data described in Sections \ref{sec:statsapi} and \ref{sec:baseballsavant}, this article relies on one key piece of proprietary information provided by MLB Advanced Media, estimated using computer vision on video data from several camera angles. For each play, observe each runner's {\it lead distance} (feet), which is how far they are ranging from their base at the time of the pitcher's first movement. This is defined as the distance between the runner's center of mass (projected onto the line between the runner's current base and their next base) and the nearest edge of the runner's current base. When the pitcher throws a pitch, runners will typically extend their lead by several feet from the time of the pitcher's first movement to the time of pitch release (known as taking a {\it secondary lead}), which is relevant for runner advancement on batted balls but not on stolen base attempts. Our data include only the lead distance at the time of the pitcher's first movement, not the secondary lead.
-
-  \section{Methods}
-
-    \subsection{Notation}
-
-    Throughout this section, we use the following notation to describe the data observed at the beginning of each play $i \in \{1, ..., n\}$ (which can be a pitch or a pickoff attempt):
-    \begin{align*}
-      b_i & \in \{0, 1\}^3 \mbox{ denotes which bases (1B, 2B, 3B, respectively) are occupied;}\\
-      (c_i^B, c_i^S) \equiv c_i & \in \{0, 1, 2, 3\} \times \{0, 1, 2\} \mbox{ denotes the ball-strike count;}\\
-      d_i & \in \{0, 1, 2\} \mbox{ denotes the number of disengagements already used; and}\\
-      o_i & \in \{0, 1, 2\} \mbox{ denotes the number of outs.}
-    \end{align*}
-    We use $\mathcal{H}^R$, $\mathcal{H}^P$, and $\mathcal{H}^C$ to denote the sets of runners, pitchers and catchers, respectively. On play $i$:
-    \begin{align*}
-      h_i^R & \in \mathcal{H}^R \mbox{ is the runner;}\\
-      h_i^P & \in \mathcal{H}^P \mbox{ is the pitcher;}\\
-      h_i^C & \in \mathcal{H}^C \mbox{ is the catcher;}\\
-      z_i^R & \in \mathbb{R^+} \mbox{ is the sprint speed of runner $h_i^R$; and}\\
-      z_i^C & \in \mathbb{R^+} \mbox{ is the arm strength of catcher $h_i^C$.}
-    \end{align*}
-    When the play begins, we use the following notation to describe the actions taken by the players:
-    \begin{align}
-    \label{eqn:runner-outcome}
-      \begin{split}
-        \ell_i  \in &~ \mathbb{R}^+ \mbox{ denotes the lead distance (in feet) taken by the first-base runner;}\\
-        p_i \in &~ \{0, 1\} \mbox{ denotes whether the pitcher attempts (1) or does not attempt (0) a pickoff; and}\\
-        r_i \in &~ \{\mbox{P}^+,\, \mbox{P}^-,\, \mbox{S}^+,\, \mbox{S}^-,\, \mbox{N}\} \equiv \mathcal{R} \mbox{ denotes the runner outcome, where}\\
-          & \mbox{P}^+  \mbox{ represents a successful pickoff attempt (runner is out);}\\
-          & \mbox{P}^-  \mbox{ represents an unsuccessful pickoff attempt (runner is safe);}\\
-          & \mbox{S}^+  \mbox{ represents a successful stolen base attempt (runner is safe);}\\
-          & \mbox{S}^-  \mbox{ represents an usuccessful stolen base attempt (runner is out); and}\\
-          & \mbox{N}~   \mbox{ represents no runner action (a pitch with no stolen base attempt).}
-%        p_i & \in \{0, 1\} \mbox{ indicates whether the pitcher attempts a pickoff on the first-base runner; and}\\
-%        s_i & \in \{0, 1\} \mbox{ indicates whether the first-base runner attempts a stolen base.}
-      \end{split}
-    \end{align}
-    If there is no runner on first base, then $\ell_i$ and $r_i$ are undefined.% We use a superscript to denote the success/failure of pickoff and stolen base attempts: 
-%    \begin{align*}
-%      p_i^+ & \in \{0, 1\} \mbox{ denotes whether the pickoff attempt is successful (i.e. the runner is tagged out); and}\\
-%      s_i^+ & \in \{0, 1\} \mbox{ denotes whether the stolen base attempt is successful.}
-%    \end{align*}
-
-    \subsection{Probability model for runner outcomes}
-    \label{sec:prob-runner-outcome}
-
-      As itemized in (\ref{eqn:runner-outcome}), there are five possible outcomes for the runner with respect to the run game. To estimate each of these probabilities conditional on player identities, count and lead distance, we model four probabilities. Using $R_i$ to denote the random variable governing the probability distribution over $r_i$,
-      \begin{align*}
-        \pi_i    &= \mathbb{P}(R_i \in \{\mbox{P}^+,\, \mbox{P}^-\}) \mbox{ is the pickoff attempt probability;}\\
-        \pi_i^+  &= \mathbb{P}(R_i \in \{\mbox{P}^+\} \mid R_i \in \{\mbox{P}^+,\, \mbox{P}^-\}) \mbox{ is the pickoff success probability;}\\
-        \psi_i   &= \mathbb{P}(R_i \in \{\mbox{S}^+,\, \mbox{S}^-\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-, N\}) \mbox{ is the stolen base attempt probability; and}\\
-        \psi_i^+ &= \mathbb{P}(R_i \in \{\mbox{S}^+\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-\}) \mbox{ is the stolen base success probability.}
-      \end{align*}
-      We estimate each of these probabilities with generalized linear mixed-effects models, implemented in R using the package lme4 \parencite{bates_fitting_2015}.
-
-      \subsubsection{Pickoff attempt probability}
-      \label{sec:prob-po-attempt}
-
-        We model $\pi_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements (as a categorical), and lead distance; and with a random effect for the pitcher.
-        \begin{align}
-          \label{eqn:prob-po-attempt}
-          \begin{split}
-            \log\left(\frac{\pi_i}{1 - \pi_i}\right) &= \alpha + \beta^B c_i^B + \beta^S c_i^S + \beta^O o_i + \beta^D_{d_i} + \beta^L \ell_i + \gamma^P_{h_i^P}\\
-            \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P.
-          \end{split}
-        \end{align}
-        This model has eight fixed, unknown parameters: the intercept $\alpha$; the five slopes $\beta^B$, $\beta^S$, $\beta^O$, $\beta^D$ and $\beta^L$; and the two variance parameters $\sigma^2_R$ and $\sigma^2_P$. The number of random effects is $|\mathcal{H}^R| + |\mathcal{H}^P|$.
-        
-      \subsubsection{Pickoff success probability}
-      \label{sec:prob-po-success}
-
-        We model $\pi_i^+$ using a mixed-effects logistic regression with a fixed effect for lead distance and a random effect for pitcher. These were the only variables for which we found substantive effects.
-        \begin{align}
-          \label{eqn:prob-po-success}
-          \begin{split}
-            \log\left(\frac{\pi_i^+}{1 - \pi_i^+}\right) &= \alpha + \beta^L \ell_i + \gamma^P_{h_i^P},\\
-            \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P.
-          \end{split}
-        \end{align}
-        This model has three fixed, unknown parameters: the intercept $\alpha$, the slope $\beta^L$, and the variance parameters $\sigma^2_P$. The number of random effects is $|\mathcal{H}^P|$.
-
-      \subsubsection{Stolen base attempt probability}
-      \label{sec:prob-sb-attempt}
-
-        Modeling the runner's decision to attempt a stolen base is complicated. One may think of this as a deterministic decision made by the runner based on the expected run value with and without attempting a steal. Such a model aligns very poorly with real decisions made by runners. We posit that the runner's ability to attempt a stolen base is influenced by external factors such as the runner's perception of the pitcher's body language timing between pitches. For this reason, we model stolen base attempts as a stochastic process rather than a deterministic decision.
-
-        Deliberately, we exclude lead distance from the stolen base attempt model. While lead distance does help explain the probability of a stolen base attempt, this can cause problems with the framing of the runner's decision. When including lead distance, we find situations in which the expected value of a stolen base attempt is negative, and the optimal lead distance is zero feet to minimize the probability of a stolen base attempt. This is a poor reflection of reality because the runner always has the power to choose not to attempt a stolen base. We obtain a more fit-for-purpose model by excluding lead distance.
-
-        We model $\psi_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements (as a categorical), runner sprint speed, and catcher arm strength; and with random effects for runner, pitcher and catcher.
-        \begin{align}
-          \label{eqn:prob-sb-attempt}
-          \begin{split}
-            \log\left(\frac{\psi_i}{1 - \psi_i}\right) &= \alpha + \beta^B c_i^B + \beta^S c_i^S + \beta^O o_i + \beta^D_{d_i} + (\beta^R z_i^R + \gamma^R_{h_i^R}) + \gamma^P_{h_i^P} + (\beta^C z_i^C + \gamma^C_{h_i^C}),\\
-            \gamma^R_{h} &\sim \mathcal{N}(0, \sigma^2_R) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^R,\\
-            \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P,\\
-            \gamma^C_{h} &\sim \mathcal{N}(0, \sigma^2_C) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^C.
-          \end{split}
-        \end{align}
- 
-        We interpret $(\beta^R z_i^R + \gamma^R_{h_i^R})$ as the effect of runner $h_i^R$ on the attempt probability, combining the fixed effect of the runner's sprint speed with the random effect of their identity. By including a fixed effect for sprint speed, we are effectively regularizing the runner effects toward priors based on their sprint speeds. The interpretation of $(\beta^C z_i^C + \gamma^C_{h_i^C})$ for catchers is similar: Each catcher has an estimated effect regularized toward a prior based on their arm strength.
-      
-      \subsubsection{Stolen base success probability}
-      \label{sec:prob-sb-success}
-
-        We model $\psi_i^+$ using a mixed-effects logistic regression with fixed effects for lead distance, runner sprint speed, and catcher arm strength; and with random effects for runner, pitcher and catcher.
-        \begin{align}
-          \label{eqn:prob-sb-success}
-          \begin{split}
-            \log\left(\frac{\psi_i^+}{1 - \psi_i^+}\right) &= \alpha + \beta^L \ell_i + (\beta^R z_i^R + \gamma^R_{h_i^R}) + \gamma^P_{h_i^P} + (\beta^C z_i^C + \gamma^C_{h_i^C}),\\
-            \gamma^R_{h} &\sim \mathcal{N}(0, \sigma^2_R) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^R,\\
-            \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P,\\
-            \gamma^C_{h} &\sim \mathcal{N}(0, \sigma^2_C) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^C.
-          \end{split}
-        \end{align}
-        As in (\ref{eqn:prob-sb-attempt}), we interpret $(\beta^R z_i^R + \gamma^R_{h_i^R})$ as the runner effect regularized toward a prior based on sprint speed and $(\beta^C z_i^C + \gamma^C_{h_i^C})$ as the catcher effect regularized toward a prior based on arm strength.
-
-    \subsection{The baseball inning as a Markov decision process}
-
-      \subsubsection{Markov chain model}
-
-        Modeling the progression of a baseball inning is a well-trodden application of Markov chains in sports \parencite{bukiet_markov_1997}. Traditionally, the state space is defined by the bases occupied and the number of outs (24 non-terminal states) or by those and the ball-strike count (288 non-terminal states). To understand the game theory under the new pickoff limit rule, we take this a step further and include the number of disengagements in the state space.
-      
-        {\it State space.} The game state is given by $s = (b, c, d, o)$, where:
-        \begin{align*}
-          b &\in \{0, 1\}^3 \mbox{ represents which bases are occupied by runners};\\
-          c &\in \{0, 1, 2, 3\} \times \{0, 1, 2\} \mbox{ represents the ball-strike count};\\
-          d &\in \{0, 1, 2\} \mbox{ represents the number of disengagements already used}; and\\
-          o &\in \{0, 1, 2\} \mbox{ represents the number of outs}.
-        \end{align*}
-        The total number of non-terminal states is $2^3 \times (4 \times 3) \times 3 \times 3 = 864$. There is one terminal state (end of inning), bringing the total number of states to 865. We use $\mathcal{S}$ to denote the set of all states, including the terminal state; we use $s_i = (b_i, c_i, d_i, o_i)$ to denote the starting state for play $i$; and we use $S_i$ to denote the random variable governing the probability distribution over $s_i$.
-  
-        {\it Transition probabilities.} The probability of transition to state $s'$ from starting state $s$ is given by the transition probability function $\mathbb{P}(S_{i+1} = s' \mid S_i = s)$. Because the present work focuses on the consequences of decisions surrounding the runner on first base, it is helpful to break down these transition probabilities by conditioning on the runner outcome:
-        \begin{align}
-          \label{eqn:transition-prob}
-          \mathbb{P}(S_{i+1} = s' \mid S_i = s) = \sum_{r \in \mathcal{R}} \mathbb{P}(R_i = r \mid S_i = s) \cdot \mathbb{P}(S_{i+1} = s' \mid S_i = s, R_i = r).
-        \end{align}
-
-        To estimate $\mathbb{P}(R_i = r \mid S_i = s)$, we may use the empirical frequency of each runner outcome $r$ in each state $s$. In Section \ref{sec:single-agent-mdp} below, we will replace these empirical frequencies with the probabilities estimated in Section \ref{sec:prob-runner-outcome}.
-        
-        To estimate $\mathbb{P}(S_{i+1} = s' \mid S_i = s, R_i = r)$, we use conditional empirical frequencies of the ending state $s'$ given the starting state $s$ and the runner outcome $r$. However, we pool across the starting disengagements $d$ when calculating these empirical frequencies. Our assumption is that, given the runner event, the starting disengagements $d$ does not impact the transition probabilities between the reduced states $\tilde s \equiv (b, c, \cdot, o)$ and $\tilde s' \equiv (b', c', \cdot, o')$. By pooling data across different values of $d$, we mitigate small sample size issues when estimating transition probabilities from rare states, such as having a runner on third base with an 0-0 count, two disengagements and zero outs.
-        
-        The pooled empirical transition probability conditions on $e = d' - d$ instead of conditioning on $d$ and $d'$. Using $E_{i}$ to denote the random variable governing the probability distribution over $d_{i + 1} - d_i$,
-        \begin{align*}
-          Q(\tilde s, r, \tilde s', e)
-            &= \hat{\mathbb{P}}\left(\tilde S_{i+1} = \tilde s',\, E_i = e \mid \tilde S_i = \tilde s,\, R_i = r\right)\\
-            &= \frac
-              {\sum_{i=1}^n\mathbb{I}\left\{\tilde s_i = \tilde s,\, r_i = r\right\} \cdot \mathbb{I}\left\{\tilde s_{i+1} = \tilde s',\, d_{i+1} - d_i = e\right\}}
-              {\sum_{i=1}^n\mathbb{I}\left\{\tilde s_i = \tilde s,\, r_i = r\right\}}.
-        \end{align*}
-        Finally, we estimate the full-state transition probabilities as
-        \begin{align*}
-          \hat{\mathbb{P}}(S_{i+1} = (b', c', d', o') \mid S_i = (b, c, d, o), R_i = r) = Q\big((b, c, \cdot, o),\, r,\, (b', c', \cdot, o'),\, d' - d\big).
-        \end{align*}
-
-% NOTE (SP): I don't think we need the paragraph below, but I'm holding onto it for now in case we decide we do need it.
-%        To convert the reduced-state estimated transition probabilities to full-state transition probabilities, we leverage the fact that the number of disengagements $d'$ in the ending state is a deterministic function of the starting disengagements $d$, the runner outcome $r$ and  the ending count $c'$:
-%        \begin{align}
-%          \label{eqn:disengagement-transition}
-%          d' = D(d, c', r)
-%            \equiv \begin{cases}
-%            \hfil d & \mbox{if } r \in \{\mbox{N}\} \mbox{ and } c' \ne (0, 0)\\
-%            \hfil 0 & \mbox{if } r \in \{\mbox{N}\} \mbox{ and } c' = (0, 0)\\
-%            d + 1   & \mbox{if } r \in \{\mbox{P}^-\} \mbox{ and } d < 2\\
-%            \hfil 0 & \mbox{if } r \in \{\mbox{P}^-\} \mbox{ and } d = 2\\
-%            \hfil 0 & \mbox{if } r \in \{\mbox{P}^+,\, \mbox{S}^+,\, \mbox{S}^-\}\\
-%          \end{cases}.
-%        \end{align}
- 
-      \subsubsection{Single-agent Markov decision process}
-      \label{sec:single-agent-mdp}
-
-        The MDP is an extension of the Markov chain model that allows for deterministic actions which change transition probabilities between states. In this section we allow for the runner to choose a lead distance $\ell$, and we model the pitcher's decision whether to attempt a pickoff as a stochastic process (see Section \ref{sec:prob-po-attempt}). We call this the {\it single-agent} model because only the runner has agency in this model of the game. We limit this action to states in which first base is occupied and the other bases are unoccupied, i.e. $b = (1, 0, 0)$. This limits our scope to situations in which the runner might steal second base (encompassing 71\% of stolen base attempts in 2023) and excludes the first-and-third scenario $b = (1, 0, 1)$, in which the first-base runner will often attempt a stolen base to lure a throw from the catcher, giving the third-base runner a chance to steal home.
-     
-        {\it Action space.} In states for which $b = (1, 0, 0)$, the first-base runner must choose a lead distance $\ell \in [0, 20] \equiv \mathcal{L}$, representing distance in feet from first base. For computational purposes, we discretize this action space by rounding $\ell$ to the nearest tenth of a foot, meaning that there are 201 possible actions.
-  
-        {\it Transition probabilities.} The probability of transition to ending state $s'$ from starting state $s$ given lead distance $\ell$ is $P(s' \mid s,\, \ell) = \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, \ell_i = \ell)$. To estimate state transition probabilities that depend on lead distance, we modify (\ref{eqn:transition-prob}) by conditioning on the lead distance:
-        \begin{align}
-          \label{eqn:transition-prob-lead}
-          P(s' \mid s,\, \ell) = \sum_{r \in \mathcal{R}} \mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = \ell) \cdot \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r).
-        \end{align}
-        In this equation, the runner outcome depends on the lead distance, but we assume that given the runner outcome, the state transition is independent of the lead distance. The procedure for estimating $\mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r)$ is described in Section \ref{sec:single-agent-mdp}. To estimate $\mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = \ell)$, we use the models from Section \ref{sec:prob-runner-outcome}. Specifically, $\mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = \ell,\, p_i = p)$ is given by
-        \begin{align*}
-          \begin{cases}
-              \hfil \pi_i(\ell) \cdot \pi_i^+(\ell)                             & \mbox{if } r = \mbox{P}^+\\
-              \hfil \pi_i(\ell) \cdot (1 - \pi_i^+(\ell))                       & \mbox{if } r = \mbox{P}^-\\
-              \hfil (1 - \pi_i(\ell)) \cdot \psi_i \cdot \psi_i^+(\ell)         & \mbox{if } r = \mbox{S}^+\\
-              \hfil (1 - \pi_i(\ell)) \cdot \psi_i \cdot (1 - \psi_i^+(\ell))   & \mbox{if } r = \mbox{S}^-\\
-              \hfil (1 - \pi_i(\ell)) \cdot (1 - \psi_i)                        & \mbox{if } r = \mbox{N}\\
-          \end{cases}.
-        \end{align*}
-        Recall that the stolen base attempt probability $\psi_i$ does not depend on $\ell$, as described in Section \ref{eqn:prob-sb-attempt}.
-  
-        {\it Reward function.} The reward function for transitioning from state $s$ to state $s'$ is given by the number of runs scored in the transition. Note that this reward function does not depend on the action taken by the runner, so we can write $R(s, \ell, s') = R(s, s')$. If $s = (b, c, d, o)$ and $s' = (b', c', d', o')$, then:
-        \begin{align}
-          \label{eqn:reward}
-          R(s, s') = (g(b') + o') - (g(b) + o) - \mathbb{I}\{c' = (0, 0),\, d' = 0\},
-        \end{align}
-        where $g: \{0, 1\}^3 \rightarrow \{0, 1, 2, 3\}$ counts the number of runners on base. This expression for the reward function counts the total number of baserunners and outs before and after the transition and subtracts one if the transition corresponds to the end of a plate appearance. For transitions to the terminal end-of-inning state, the number of runs scored may not be uniquely determined by the starting state. To handle this case, we introduce intermediary states which track the number of runs scored on the last play, only for transitions to the terminal end-of-inning state. These intermediary states transition to the terminal end-of-inning state with probability 1.
-
-        {\it Policy iteration.} A policy function $\pi : \mathcal{S} \rightarrow \mathcal{L}$ maps the state space to the action space, defining the lead distance to be taken by the runner in each state. The policy function $\pi$ specifies transition probabilities $P(s' \mid s,\, \ell = \pi(s))$ and induces a probability distribution over the sequence of states $\{S_t\}_{t=1}^\infty$. The value function $V_\pi : \mathcal{S} \rightarrow \mathbb{R}^+$ is the expected sum of rewards with respect to this probability distribution, which we interpret as the expected number of runs scored in the inning, starting from state $s$:
-        \begin{align}
-          \label{eqn:run-expectancy}
-          V_\pi(s) = \mathbb{E}_\pi\left[\left.\sum_{t = 0}^\infty R(S_{t}, S_{t+1})~\right|~S_0 = s\right].
-        \end{align}
-        
-        The relevant question for the runner is, ``What lead distance should I choose in each situation to maximize run scoring overall?'' We find the policy function $\pi^*$ which maximizes (\ref{eqn:run-expectancy}) via policy iteration \parencite{bellman_dynamic_1957} by initializing $\hat V_0(s) = 0$ and $\hat \pi_0(s) = 0$ for all $s \in \mathcal{S}$, and then iteratively applying the updates
-        \begin{align}
-          \label{eqn:update-value-single-agent}
-          \hat V_{i+1}(s) &= \sum_{s' \in \mathcal{S}} P(s' | s,\, \hat\pi_i(s)) [R(s, s') + \hat V_i(s')] && \forall s \in \mathcal{S}, \mbox{ and}\\
-          \label{eqn:update-policy-single-agent}
-          \hat\pi_{i+1}(s) &= \arg\max_{\ell \in \mathcal{L}} \sum_{s' \in \mathcal{S}} P(s' | s,\, \ell) [R(s, s') + \hat V_{i+1}(s')] && \forall s \in \mathcal{S},
-        \end{align}
-        until $\max_{s\in\mathcal{S}}|\pi_{i+1}(s) - \pi_i(s)|$ converges to zero.\footnote{Do we need to prove that this will converge to the globally optimal policy?}
-    
-      \subsubsection{Two-agent Markov decision process}
-      \label{sec:two-agent-mdp}
-
-        In this section we extend the single-agent model by allowing the pitcher to choose whether to attempt a pickoff. We call this the {\it two-agent} model because both the runner and the pitcher have agency in this model of the game. Specifically, we model this as a two-stage game, where the runner first chooses a lead distance, and then the pitcher decides whether to attempt a pickoff after observing the runner's lead distance.
-
-        {\it Action space.} As in the single-agent model, we limit actions to states in which only first base is occupied. The runner chooses a lead distance $\ell \in \mathcal{L}$, and then the pitcher chooses a pickoff action $p \in \{0, 1\} \equiv \mathcal{P}$, where $p = 1$ corresponds to a pickoff attempt.
-
-        {\it Transition probabilities.} The probability of transition to ending state $s'$ from starting state $s$ given lead distance $\ell$ and pickoff decision $p$ is $P(s' \mid s,\, \ell,\, p) = \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, \ell_i = \ell,\, p_i = p)$. We modify (\ref{eqn:transition-prob-lead}) by conditioning additionally on the pickoff decision:
-        \begin{align}
-          \label{eqn:transition-prob-lead-pickoff}
-          P(s' \mid s, \ell, p) = \sum_{r \in \mathcal{R}} \mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = \ell,\, p_i = p) \cdot \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r),
-        \end{align}
-        where $\mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = \ell,\, p_i = p)$ is given by
-        \begin{align*}
-            \begin{cases}
-                \hfil p \cdot \pi_i^+(\ell)                             & \mbox{if } r = \mbox{P}^+\\
-                \hfil p \cdot (1 - \pi_i^+(\ell))                       & \mbox{if } r = \mbox{P}^-\\
-                \hfil (1 - p) \cdot \psi_i \cdot \psi_i^+(\ell)         & \mbox{if } r = \mbox{S}^+\\
-                \hfil (1 - p) \cdot \psi_i \cdot (1 - \psi_i^+(\ell))   & \mbox{if } r = \mbox{S}^-\\
-                \hfil (1 - p) \cdot (1 - \psi_i)                        & \mbox{if } r = \mbox{N}\\
-            \end{cases}.
-        \end{align*}
-
-        {\it Reward function.} The reward function (\ref{eqn:reward}) is the same for the two-agent model as for the single-agent model. In this game, however, the runner wants to maximize the reward, and the pitcher wants to minimize the reward.
-
-        {\it Policy iteration.} In the policy update step (\ref{eqn:update-policy-single-agent}) of policy iteration for the single-agent model, we seek the policy which maximizes the expected one-step sum of reward and resulting value, given an estimated value function. In the two-agent model, there are game theoretic considerations. Given the estimated value function $\hat V$ and the runner's chosen lead distance $\ell$, the pitcher chooses $p$ to minimize the expected one-step sum of reward and resulting value:
-        \begin{align*}
-          \arg\min_{p\in\mathcal{P}} \sum_{s' \in \mathcal{S}} P(s' \mid s,\, \ell,\, p) [R(s, s') + \hat V(s')].
-        \end{align*}
-        Knowing that this is the optimal behavior for the pitcher, the runner chooses their lead distance to maximize the resulting run value:
-        \begin{align*}
-          \arg\max_{\ell \in \mathcal{L}}\left\{\min_{p\in\mathcal{P}} \sum_{s' \in \mathcal{S}} P(s' \mid s,\, \ell,\, p) [R(s, s') + \hat V(s')]\right\}.
-        \end{align*}
-
-        The optimal policy for the pitcher is clear: between the choices of attempting a pickoff or not, make the choice that results in the lower run expectation. To find the optimal policy $\pi^* : \mathcal{S} \rightarrow \mathcal{L}$ for the runner, we again apply policy iteration. Starting with $\hat V_0(s) = 0$ and $\hat \pi_0(s) = 0$ for all $s \in \mathcal{S}$, we iteratively apply the updates below until the policy converges.\footnote{TODO: Are we guaranteed convergence to the optimal policy in the two-agent case?}
-        
-        \begin{align}
-          \label{eqn:update-value-two-agent}
-          \hat V_{i+1}(s) &= \min_{p \in \mathcal{P}} \sum_{s' \in \mathcal{S}} P(s' | s,\, \hat\pi_i(s)) [R(s, s') + \hat V_i(s')] && \forall s \in \mathcal{S}, \mbox{ and}\\
-          \label{eqn:update-policy-two-agent}
-          \hat\pi_{i+1}(s) &= \arg\max_{\ell \in \mathcal{L}} \left\{\min_{p \in \mathcal{P}}\sum_{s' \in \mathcal{S}} P(s' | s,\, \ell,\, p) [R(s, s') + \hat V_{i+1}(s')]\right\} && \forall s \in \mathcal{S}.
-        \end{align}
-
-        Given this runner policy, the pitcher is indifferent between throwing a pitch and attempting a pickoff.
-    
+   
     \section{The baseball inning as a two-player stochastic game}
-    \label{sec:sequential_model}
-    We first describe a single-player setup where only the first-base runner has agency. This is modeled as an infinite-horizon Markov decision process (MDP). We then extend this model to a two-player case where the first-base runner and the pitcher have agencies. The two-player case is modeled as an infinite-horizon zero sum stochastic game. \todo{Explain how the single-player case, despite being simple and restrictive than the two-player case, still provides valuable and actionable insights.} Since the state space for the single- and two-player models are the same, we first describe the (common) state space before explaining the specifics of each model. 
+    \label{sec:sequential-model}
+    We first describe a single-player setup where only the first-base runner has agency. This is modeled as an infinite-horizon Markov decision process (MDP). We then extend this model to a two-player case where the first-base runner and the pitcher have agencies. The two-player case is modeled as an infinite-horizon zero sum stochastic game. While the single-player case is more simple and restrictive than the two-player case, it still provides valuable and actionable insights for runners because pitchers are unlikely to adopt an optimal policy in the short term. Since the state space for the single- and two-player models are the same, we first describe the (common) state space before explaining the specifics of each model. 
 
     {\bf State space.} The game state is given by $s = (b, c, d, o)$, where:
     \begin{align*}
@@ -356,10 +83,10 @@
     The total number of non-terminal states is $2^3 \times (4 \times 3) \times 3 \times 3 = 864$. There is one terminal state (end of inning), denoted $\Delta$, bringing the total number of states to 865. We use $\mathcal{S}$ to denote the set of all states ( including the terminal state), and $S_t$ the state at play $t$ in a (fixed) innings. Traditionally, the state is defined by the bases occupied and the number of outs (24 non-terminal states) or by those and the ball-strike count (288 non-terminal states) \parencite{bukiet_markov_1997}. Our construction of the state extends them by further including the number of disengagements as a component of the state, thereby allowing us to analyze the game under the new pickoff limit rule. 
 
     \subsection{Single-player Markov decision process}
-    \label{sec:mdp_model}
+    \label{sec:mdp-model}
     This section considers the setup where agency is allowed only for the first-base runner. We model this scenario as a MDP. The other components of this MDP are as follows.
 
-    {\bf State space.} The state space for the MDP is the one described in the beginning of Section \ref{sec:sequential_model}.
+    {\bf State space.} The state space for the MDP is the one described in the beginning of Section \ref{sec:sequential-model}.
 
     {\bf Action space.} We limit the agency to states in which first base is occupied and the other bases are unoccupied. For such states, the action is the lead distance in feet chosen by the first-base runner from the first base. We formally describe it as follows. Define ${\cal L} \defeq [0,20]$. The action space of the runner, $A_\text{R}(s) \ \forall s \in {\cal S}$, is then defined as
     \begin{align}
@@ -384,8 +111,8 @@
           \end{cases} 
         \end{align}
         where $g: \{0, 1\}^3 \rightarrow \{0, 1, 2, 3\}$ counts the number of runners on base. This expression for the single-stage reward function counts the total number of baserunners and outs before and after the transition and subtracts one if the transition corresponds to the end of a plate appearance. For transitions to the terminal end-of-inning state, the number of runs scored may not be uniquely determined by the starting state. To handle this case, we introduce intermediary states which track the number of runs scored on the last play, only for transitions to the terminal end-of-inning state. These intermediary states transition to the terminal end-of-inning state with probability 1.
-        
-    {\bf Transition probabilities.} \todo[inline]{Since the derivation of transition probabilities is involved, write it in a separate section and point to that section. Describe here in at most a couple of sentences how those probabilities are computed. Highlight which states transition to the absorbing state with positive probability.}
+    
+    {\bf Transition probabilities.} The transition probability function $p(s'|s,a)$ depends on the action taken by the runner. We describe in detail our derivation of transition probabilities for the single-player Markov decision process in Section \ref{sec:transition-mdp-model}. In summary form, we use generalized linear mixed-effects models to estimate runner outcome (e.g., unsuccessful pickoff attempt or successful stolen base attempt) probabilities which depend on lead distance, and we use empirical frequencies to estimate state transition probabilities conditional on runner outcome probabilities. The state transition probabilities depend on lead distance only through the runner outcome probabilities. Any state for which the number of baserunners plus the number of outs is at least three (i.e., $g(b) + o \ge 3$) may transition to the absorbing state with positive probability because there is always the possibility of recording enough outs on a single play to end the inning.
 
     The MDP is then defined by the tuple ${\cal M} \defeq \langle {\cal S}, \{A_\text{R}(s)\}_{s \in {\cal S}}, \{r(s'|s,a)\}_{s \in {\cal S}, a \in A_\text{R}(s)}^{s' \in {\cal S}}, \\  \{p(s'|s,a)\}_{s \in {\cal S}, a \in A_\text{R}(s)}^{s' \in {\cal S}}\rangle$. Using this MDP, the progression of an inning can be captured as follows. At the beginning of a play, the game is in state $s \in {\cal S}$. Upon observing this state, an action $a \in A_\text{R}(s)$ is picked. The game then transitions to state $s'$ with probability $p(s'|s,a)$ and the batting team collects a reward $r(s'|s,a)$. A play then begins from $s'$ and the process repeats. The goal of the batting team is to maximize the expected total rewards collected over the plays in the inning.
 
@@ -465,13 +192,13 @@ An algorithmic device to obtain the optimal policy is value iteration or policy 
         \end{align}
     The iterates generated by the policy iteration satisfy $V^k \uparrow V^*$ and every limit point of $\pi^k$ is an optimal policy \parencite{bertsekas1991analysis}. 
 
-    \subsection{Two-player Stochastic Game}
-    \label{sec:stochastic_game}
+    \subsection{Two-player stochastic game}
+    \label{sec:stochastic-game}
     In this section, we extend the single-agent model by allowing the pitcher to choose whether to attempt a pickoff. This is modeled as a two-player zero sum stochastic game, where the runner first chooses a lead distance, and then the pitcher decides whether to attempt a pickoff after observing the runner's lead distance. The components of this stochastic game are as follows.
 
-    {\bf State space.} The state space  is the same as described in the beginning of Section \ref{sec:sequential_model}.
+    {\bf State space.} The state space  is the same as described in the beginning of Section \ref{sec:sequential-model}.
 
-    {\bf Action space.} As in the single-player model of Section \ref{sec:mdp_model}, we limit actions (of runner as well as pitcher) to states in which only the first base is occupied. The (first-base) runner chooses a lead distance, and then the pitcher chooses a pickoff action $p \in \mathcal{P} \defeq \{0,1\}$, where $p = 1$ corresponds to a pickoff attempt and $0$ otherwise. The action space of the runner, $A_\text{R}(s) \ \forall s \in {\cal S}$, is the same as \eqref{eqn:runner_action_sapce}. The pitcher's action space $A_{\text{P}}(s,a_\text{R}) \ \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s)$ is defined as
+    {\bf Action space.} As in the single-player model of Section \ref{sec:mdp-model}, we limit actions (of runner as well as pitcher) to states in which only the first base is occupied. The (first-base) runner chooses a lead distance, and then the pitcher chooses a pickoff action $p \in \mathcal{P} \defeq \{0,1\}$, where $p = 1$ corresponds to a pickoff attempt and $0$ otherwise. The action space of the runner, $A_\text{R}(s) \ \forall s \in {\cal S}$, is the same as \eqref{eqn:runner_action_sapce}. The pitcher's action space $A_{\text{P}}(s,a_\text{R}) \ \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s)$ is defined as
     \begin{align}
     \label{eqn:pitcher_action_sapce}
         A_{\text{P}}(s,a_\text{R}) \defeq \begin{cases}
@@ -486,9 +213,9 @@ An algorithmic device to obtain the optimal policy is value iteration or policy 
      \end{align}
      where $r(s'|s) \forall s,s' \in {\cal S}$ is as defined in \eqref{eqn:common_reward}. For transitions to the terminal end-of-inning state, the number of runs scored may not be uniquely determined by the starting state. To handle this case, we introduce intermediary states which track the number of runs scored on the last play, only for transitions to the terminal end-of-inning state. These intermediary states transition to the terminal end-of-inning state with probability 1.
 
-     {\bf Transition probabilities.} \todo[inline]{Since the derivation of transition probabilities is involved, write it in a separate section and point to that section. Describe here in at most a couple of sentences how those probabilities are computed. Highlight which states transition to the absorbing state with positive probability.}
+    {\bf Transition probabilities.} The transition probability function $p(s'|s,a_\text{R},a_\text{P})$ depends on the actions taken by the pitcher and runner. We describe in detail our derivation of transition probabilities for the two-player stochastic game in Section \ref{sec:transition-stochastic-game}. These transition probabilities are the same as for the single-player Markov decision process, except that the runner outcome probabilities are conditioned on the pitcher's pickoff attempt decision, as well as the lead distance. For example, if the pitcher does not attempt a pickoff, then the successful pickoff outcome and the unsuccessful pickoff outcome have probability zero. Any state for which the number of baserunners plus the number of outs is at least three (i.e., $g(b) + o \ge 3$) may transition to the absorbing state with positive probability because there is always the possibility of recording enough outs on a single play to end the inning.
 
-     The stochastic game is then defined by the tuple ${\cal G} \defeq \langle {\cal S}, \{A_\text{R}(s)\}_{s \in {\cal S}}, \{A_\text{P}(s,a_\text{R})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s)},\\ \{r(s'|s,a_\text{R},a_\text{P})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s,a_\text{R})}^{s' \in {\cal S}}, \{p(s'|s,a_\text{R},a_\text{P})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s, a_\text{R})}^{s' \in {\cal S}}\rangle$. The progression of an inning is then modeled as follows. At the beginning of a play, the game is in state $s \in {\cal S}$. Upon observing this state, the batting team picks action $a_\text{R} \in A_\text{R}(s)$. The pitcher then picks an action $a_\text{P} \in A_\text{P}(s,a_\text{R})$. The game then transitions to state $s'$ with probability $p(s'|s,a_\text{R},a_\text{P})$ and the batting team collects a reward $r(s'|s,a_\text{R},a_\text{P})$. A play then begins from $s'$ and the process repeats. The goal of the batting team is to maximize the expected total rewards collected over the plays in the inning while the goal of the pitcher is to minimize the expected total rewards obtained by the batting team.
+    The stochastic game is then defined by the tuple ${\cal G} \defeq \langle {\cal S}, \{A_\text{R}(s)\}_{s \in {\cal S}}, \{A_\text{P}(s,a_\text{R})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s)},\\ \{r(s'|s,a_\text{R},a_\text{P})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s,a_\text{R})}^{s' \in {\cal S}}, \{p(s'|s,a_\text{R},a_\text{P})\}_{s \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s, a_\text{R})}^{s' \in {\cal S}}\rangle$. The progression of an inning is then modeled as follows. At the beginning of a play, the game is in state $s \in {\cal S}$. Upon observing this state, the batting team picks action $a_\text{R} \in A_\text{R}(s)$. The pitcher then picks an action $a_\text{P} \in A_\text{P}(s,a_\text{R})$. The game then transitions to state $s'$ with probability $p(s'|s,a_\text{R},a_\text{P})$ and the batting team collects a reward $r(s'|s,a_\text{R},a_\text{P})$. A play then begins from $s'$ and the process repeats. The goal of the batting team is to maximize the expected total rewards collected over the plays in the inning while the goal of the pitcher is to minimize the expected total rewards obtained by the batting team.
 
    A (deterministic stationary Markovian) policy $\pi_\text{R}$ for the runner is a mapping ${\cal S} \mapsto \cup_{s \in {\cal S}}A_\text{R}(s)$ such that $\pi_\text{R}(s) \in A_\text{R}(s)$. That is, $\pi_\text{R}(s)$ is the action chosen in state $s$. Similarly, a (deterministic stationary Markovian) policy $\pi_\text{P}$ for the pitcher is a mapping of the form $\{(s,a) \in {\cal S} \times \cup_{s \in {\cal S}}A_\text{R}(s) \vert a \in A_\text{R}(s)\} \ni (x,a) \mapsto A_\text{P}(x,a)$ with the interpretation that $\pi_\text{P}(x,a_\text{R})$ is the action chosen by the pitcher when the state is $s$ and the runner picks the action $a_\text{R}$. Denote the set of all policies for the runner and pitcher by $\Pi_\text{R}$ and $\Pi_\text{P}$, respectively. 
    Note that $\Pi_\text{R}$ and $\Pi_\text{P}$ are uncountable but compact. It is intuitive that an innings in a baseball eventually halts. The following assumption formalizes this intuition.
@@ -556,23 +283,191 @@ An algorithmic device to obtain the optimal policy is value iteration or policy 
           \pi_\text{R}^{k+1}(s) &= \argmax_{a_\text{R} \in A_\text{R}(s)} \left\{\min_{a_\text{p} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in \mathcal{S}}[r(s, s') + V^{k+1}(s')] p(s'|s,a_\text{R},a_\text{P})\right\} && \forall s \in \mathcal{S}.
         \end{align}
     The iterates generated by the policy iteration satisfy $V^k \uparrow \widetilde V^*$\parencite{patek1999stochastic}.
-   
-  \section{Results}
-  
-    \subsection{Observed runner behavior}
 
-      As detailed in Section \ref{sec:introduction}, MLB made several rule changes between the 2022 season and the 2023 season, most notably (for the present work) widening the bases and limiting the number of pickoffs that can be attempted by the pitcher. Figure \ref{fig:leads-overall} illustrates the difference in runner lead distance behavior (from first base) between 2022 and 2023. With zero disengagements in 2023, the distribution of lead distances is very similar to the overall distribution of lead distances in 2022. With each successive disengagement, we observe a positive shift in the distribution of lead distance in the 2023 data. In 2022, the average lead distance was 9.6 feet. In 2023, the average lead distance under zero, one, and two disengagements was 9.6 feet, 10.3 feet and 11.0 feet, respectively.
- 
-      \begin{figure}[H]
-        \centering
-        \includegraphics[width = 0.8\textwidth]{leads_overall_light.pdf}
-        \caption{
-          \it The league-wide distribution of lead distance from first base when second base is unoccupied, comparing 2022 with 2023. The 2023 data are split by prior disengagements because, beginning in 2023, pitchers were limited to three disengagements, influencing pitcher and runner behavior. In 2022, there was no limit on the number of disengagements. The vertical lines mark the means of the distributions.
-        }
-        \label{fig:leads-overall}
-      \end{figure}
-      
+  \section{Transition probability model}
+  \label{sec:transition-probability-model}
+
+    In this section, we describe how we use empirical data to estimate state transition probabilities which we use for the single-player Markov decision process and the two-player stochastic game described in Section \ref{sec:sequential-model}. Throughou, we use the following notation to describe the data observed at the beginning of each play $i \in \{1, ..., n\}$ (which can be a pitch or a pickoff attempt):
+    \begin{align*}
+      b_i & \in \{0, 1\}^3 \mbox{ denotes which bases (1B, 2B, 3B, respectively) are occupied;}\\
+      (c_i^B, c_i^S) \equiv c_i & \in \{0, 1, 2, 3\} \times \{0, 1, 2\} \mbox{ denotes the ball-strike count;}\\
+      d_i & \in \{0, 1, 2\} \mbox{ denotes the number of disengagements already used; and}\\
+      o_i & \in \{0, 1, 2\} \mbox{ denotes the number of outs.}
+    \end{align*}
+    We use $\mathcal{H}^R$, $\mathcal{H}^P$, and $\mathcal{H}^C$ to denote the sets of runners, pitchers and catchers, respectively. On play $i$:
+    \begin{align*}
+      h_i^R & \in \mathcal{H}^R \mbox{ is the runner;}\\
+      h_i^P & \in \mathcal{H}^P \mbox{ is the pitcher;}\\
+      h_i^C & \in \mathcal{H}^C \mbox{ is the catcher;}\\
+      z_i^R & \in \mathbb{R^+} \mbox{ is the sprint speed of runner $h_i^R$; and}\\
+      z_i^C & \in \mathbb{R^+} \mbox{ is the arm strength of catcher $h_i^C$.}
+    \end{align*}
+    When the play begins, we use the following notation to describe the actions taken by the players:
+    \begin{align}
+    \label{eqn:runner-outcome}
+      \begin{split}
+        \ell_i  \in &~ \mathbb{R}^+ \mbox{ denotes the lead distance (in feet) taken by the first-base runner;}\\
+        p_i \in &~ \{0, 1\} \mbox{ denotes whether the pitcher attempts (1) or does not attempt (0) a pickoff; and}\\
+        r_i \in &~ \{\mbox{P}^+,\, \mbox{P}^-,\, \mbox{S}^+,\, \mbox{S}^-,\, \mbox{N}\} \equiv \mathcal{R} \mbox{ denotes the runner outcome, where}\\
+          & \mbox{P}^+  \mbox{ represents a successful pickoff attempt (runner is out);}\\
+          & \mbox{P}^-  \mbox{ represents an unsuccessful pickoff attempt (runner is safe);}\\
+          & \mbox{S}^+  \mbox{ represents a successful stolen base attempt (runner is safe);}\\
+          & \mbox{S}^-  \mbox{ represents an usuccessful stolen base attempt (runner is out); and}\\
+          & \mbox{N}~   \mbox{ represents no runner action (a pitch with no stolen base attempt).}
+      \end{split}
+    \end{align}
+    If there is no runner on first base, then $\ell_i$ and $r_i$ are undefined.
+
     \subsection{Probability model for runner outcomes}
+    \label{sec:prob-runner-outcome}
+
+      As itemized in (\ref{eqn:runner-outcome}), there are five possible outcomes for the runner with respect to the run game. To estimate each of these probabilities conditional on player identities, count and lead distance, we model four probabilities. Using $R_i$ to denote the random variable governing the probability distribution over $r_i$,
+      \begin{align*}
+        \pi_i    &= \mathbb{P}(R_i \in \{\mbox{P}^+,\, \mbox{P}^-\}) \mbox{ is the pickoff attempt probability;}\\
+        \pi_i^+  &= \mathbb{P}(R_i \in \{\mbox{P}^+\} \mid R_i \in \{\mbox{P}^+,\, \mbox{P}^-\}) \mbox{ is the pickoff success probability;}\\
+        \psi_i   &= \mathbb{P}(R_i \in \{\mbox{S}^+,\, \mbox{S}^-\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-, N\}) \mbox{ is the stolen base attempt probability; and}\\
+        \psi_i^+ &= \mathbb{P}(R_i \in \{\mbox{S}^+\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-\}) \mbox{ is the stolen base success probability.}
+      \end{align*}
+      We estimate each of these probabilities with generalized linear mixed-effects models, implemented in R using the package lme4 \parencite{bates_fitting_2015}.
+
+      \subsubsection{Pickoff attempt probability}
+      \label{sec:prob-po-attempt}
+
+        We model $\pi_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements (as a categorical), and lead distance; and with a random effect for the pitcher.
+        \begin{align}
+          \label{eqn:prob-po-attempt}
+          \begin{split}
+            \log\left(\frac{\pi_i}{1 - \pi_i}\right) &= \alpha + \beta^B c_i^B + \beta^S c_i^S + \beta^O o_i + \beta^D_{d_i} + \beta^L \ell_i + \gamma^P_{h_i^P}\\
+            \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P.
+          \end{split}
+        \end{align}
+        This model has eight fixed, unknown parameters: the intercept $\alpha$; the five slopes $\beta^B$, $\beta^S$, $\beta^O$, $\beta^D$ and $\beta^L$; and the two variance parameters $\sigma^2_R$ and $\sigma^2_P$. The number of random effects is $|\mathcal{H}^R| + |\mathcal{H}^P|$.
+        
+      \subsubsection{Pickoff success probability}
+      \label{sec:prob-po-success}
+
+        We model $\pi_i^+$ using a mixed-effects logistic regression with a fixed effect for lead distance and a random effect for pitcher. These were the only variables for which we found substantive effects.
+        \begin{align}
+          \label{eqn:prob-po-success}
+          \begin{split}
+            \log\left(\frac{\pi_i^+}{1 - \pi_i^+}\right) &= \alpha + \beta^L \ell_i + \gamma^P_{h_i^P},\\
+            \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P.
+          \end{split}
+        \end{align}
+        This model has three fixed, unknown parameters: the intercept $\alpha$, the slope $\beta^L$, and the variance parameters $\sigma^2_P$. The number of random effects is $|\mathcal{H}^P|$.
+
+      \subsubsection{Stolen base attempt probability}
+      \label{sec:prob-sb-attempt}
+
+        Modeling the runner's decision to attempt a stolen base is complicated. One may think of this as a deterministic decision made by the runner based on the expected run value with and without attempting a steal. Such a model aligns very poorly with real decisions made by runners. We posit that the runner's ability to attempt a stolen base is influenced by external factors such as the runner's perception of the pitcher's body language timing between pitches. For this reason, we model stolen base attempts as a stochastic process rather than a deterministic decision.
+
+        Deliberately, we exclude lead distance from the stolen base attempt model. While lead distance does help explain the probability of a stolen base attempt, this can cause problems with the framing of the runner's decision. When including lead distance, we find situations in which the expected value of a stolen base attempt is negative, and the optimal lead distance is zero feet to minimize the probability of a stolen base attempt. This is a poor reflection of reality because the runner always has the power to choose not to attempt a stolen base. We obtain a more fit-for-purpose model by excluding lead distance.
+
+        We model $\psi_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements (as a categorical), runner sprint speed, and catcher arm strength; and with random effects for runner, pitcher and catcher.
+        \begin{align}
+          \label{eqn:prob-sb-attempt}
+          \begin{split}
+            \log\left(\frac{\psi_i}{1 - \psi_i}\right) &= \alpha + \beta^B c_i^B + \beta^S c_i^S + \beta^O o_i + \beta^D_{d_i} + (\beta^R z_i^R + \gamma^R_{h_i^R}) + \gamma^P_{h_i^P} + (\beta^C z_i^C + \gamma^C_{h_i^C}),\\
+            \gamma^R_{h} &\sim \mathcal{N}(0, \sigma^2_R) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^R,\\
+            \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P,\\
+            \gamma^C_{h} &\sim \mathcal{N}(0, \sigma^2_C) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^C.
+          \end{split}
+        \end{align}
+ 
+        We interpret $(\beta^R z_i^R + \gamma^R_{h_i^R})$ as the effect of runner $h_i^R$ on the attempt probability, combining the fixed effect of the runner's sprint speed with the random effect of their identity. By including a fixed effect for sprint speed, we are effectively regularizing the runner effects toward priors based on their sprint speeds. The interpretation of $(\beta^C z_i^C + \gamma^C_{h_i^C})$ for catchers is similar: Each catcher has an estimated effect regularized toward a prior based on their arm strength.
+      
+      \subsubsection{Stolen base success probability}
+      \label{sec:prob-sb-success}
+
+        We model $\psi_i^+$ using a mixed-effects logistic regression with fixed effects for lead distance, runner sprint speed, and catcher arm strength; and with random effects for runner, pitcher and catcher.
+        \begin{align}
+          \label{eqn:prob-sb-success}
+          \begin{split}
+            \log\left(\frac{\psi_i^+}{1 - \psi_i^+}\right) &= \alpha + \beta^L \ell_i + (\beta^R z_i^R + \gamma^R_{h_i^R}) + \gamma^P_{h_i^P} + (\beta^C z_i^C + \gamma^C_{h_i^C}),\\
+            \gamma^R_{h} &\sim \mathcal{N}(0, \sigma^2_R) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^R,\\
+            \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P,\\
+            \gamma^C_{h} &\sim \mathcal{N}(0, \sigma^2_C) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^C.
+          \end{split}
+        \end{align}
+        As in (\ref{eqn:prob-sb-attempt}), we interpret $(\beta^R z_i^R + \gamma^R_{h_i^R})$ as the runner effect regularized toward a prior based on sprint speed and $(\beta^C z_i^C + \gamma^C_{h_i^C})$ as the catcher effect regularized toward a prior based on arm strength.
+
+    \subsection{Transition probabilities for the single-player Markov decision process}
+    \label{sec:transition-mdp-model}
+
+      To derive the transition probability function $p(s'|s,a)$, we use the law of total probability to combine the runner outcome probabilities estimated in this section with the conditional transition probability given the runner outcome:
+      \begin{align}
+        \label{eqn:transition-mdp-model}
+        p(s'|s,\, a) = \sum_{r \in \mathcal{R}} \mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a) \cdot \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r).
+      \end{align}
+      In this equation, the runner outcome depends on the lead distance, but we assume that given the runner outcome, the state transition is independent of the lead distance.
+      
+      To estimate the first probability inside the summation of equation (\ref{eqn:transition-mdp-model}), we use the models from Section \ref{sec:prob-runner-outcome}. Specifically, $\mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a)$ is given by
+      \begin{align*}
+        \begin{cases}
+            \hfil \pi_i(a) \cdot \pi_i^+(a)                             & \mbox{if } r = \mbox{P}^+\\
+            \hfil \pi_i(a) \cdot (1 - \pi_i^+(a))                       & \mbox{if } r = \mbox{P}^-\\
+            \hfil (1 - \pi_i(a)) \cdot \psi_i \cdot \psi_i^+(a)         & \mbox{if } r = \mbox{S}^+\\
+            \hfil (1 - \pi_i(a)) \cdot \psi_i \cdot (1 - \psi_i^+(a))   & \mbox{if } r = \mbox{S}^-\\
+            \hfil (1 - \pi_i(a)) \cdot (1 - \psi_i)                        & \mbox{if } r = \mbox{N}\\
+        \end{cases}.
+      \end{align*}
+      Recall that $\psi_i$ does not depend on $a$, as described in Section \ref{sec:prob-sb-attempt}.
+
+      To estimate $\mathbb{P}(S_{i+1} = s' \mid S_i   = s, R_i = r)$, we use conditional empirical frequencies of the ending state $s'$ given the starting state $s$ and the runner outcome $r$. However, we pool across the starting disengagements $d$ when calculating these empirical frequencies. Our assumption is that, given the runner event, the starting disengagements $d$ does not impact the transition probabilities between the reduced states $\tilde s \equiv (b, c, \cdot, o)$ and $\tilde s' \equiv (b', c', \cdot, o')$. By pooling data across different values of $d$, we mitigate small sample size issues when estimating transition probabilities from rare states, such as having a runner on third base with an 0-0 count, two disengagements and zero outs.
+
+      The pooled empirical transition probability conditions on $e = d' - d$ instead of conditioning on $d$ and $d'$. Using $E_{i}$ to denote the random variable governing the probability distribution over $d_{i + 1} - d_i$,
+      \begin{align*}                                  
+        Q(\tilde s, r, \tilde s', e)                  
+          &= \hat{\mathbb{P}}\left(\tilde S_{i+1} =   \tilde s',\, E_i = e \mid \tilde S_i = \tilde s,\, R_i = r\right)\\
+          &= \frac
+            {\sum_{i=1}^n\mathbb{I}\left\{\tilde s_i = \tilde s,\, r_i = r\right\} \cdot \mathbb{I}\left\{\tilde s_{i+1} = \tilde s',\, d_{i+1} - d_i = e\right\}}
+            {\sum_{i=1}^n\mathbb{I}\left\{\tilde s_i = \tilde s,\, r_i = r\right\}}.
+      \end{align*}
+      Finally, we estimate the full-state transition probabilities as
+      \begin{align*}
+        \hat{\mathbb{P}}(S_{i+1} = (b', c', d', o') \mid S_i = (b, c, d, o), R_i = r) = Q\big((b, c, \cdot, o),\, r,\, (b', c', \cdot, o'),\, d' - d\big).
+      \end{align*}
+   
+    \subsection{Transition probabilities for the two-player stochastic game}
+    \label{sec:transition-stochastic-game}
+ 
+      To derive the transition probability function $p(s'|s,a_\text{R},a_\text{P})$, we modify equation (\ref{eqn:transition-mdp-model}) to condition the runner outcome probabilities on the pitcher's pickoff attempt decision as well as the runner's lead distance decision:
+      \begin{align}
+        \label{eqn:transition-stochastic-game}
+        p(s'|s,\, a) = \sum_{r \in \mathcal{R}} \mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a_\text{R}, p_i = a_\text{P}) \cdot \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r),
+      \end{align}
+      where $\mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a_\text{R},\, p_i = a_\text{P})$ is given by
+      \begin{align*}
+          \begin{cases}
+              \hfil a_\text{P} \cdot \pi_i^+(a_\text{R})                             & \mbox{if } r = \mbox{P}^+\\
+              \hfil a_\text{P} \cdot (1 - \pi_i^+(a_\text{R}))                       & \mbox{if } r = \mbox{P}^-\\
+              \hfil (1 - a_\text{P}) \cdot \psi_i \cdot \psi_i^+(a_\text{R})         & \mbox{if } r = \mbox{S}^+\\
+              \hfil (1 - a_\text{P}) \cdot \psi_i \cdot (1 - \psi_i^+(a_\text{R}))   & \mbox{if } r = \mbox{S}^-\\
+              \hfil (1 - a_\text{P}) \cdot (1 - \psi_i)                        & \mbox{if } r = \mbox{N}\\
+          \end{cases}.
+      \end{align*}
+      The procedure for estimating $\mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r)$ is the same as in Section \ref{sec:transition-mdp-model}.
+
+  \section{Numerical Results}
+
+    In this section, we present the results of applying the single-player Markov decision process model and the two-player stochastic game model to real MLB data. Most of the data were downloaded from the publicly available MLB Stats API using the R package sabRmetrics \parencite{powers_sabrmetrics_2025}. The dataset comprises 722,899 plays from the 2022 MLB regular season and 726,868 plays from the 2023 MLB regular season, where each play is either a pitch or a pickoff attempt (2.0\% pickoff attempts in 2022, 1.2\% in 2023). For each play, we observe the identities of the pitcher, catcher and runners involved. Before and after each play, we observe the state of the game, described by the number of outs in the inning; which bases are occupied by runners; the ball-strike count on the batter; and the number of disengagements already used by the pitcher. On each pickoff attempt, we observe whether it is successful (runner is out) or unsuccessful (runner is safe). On each pitch, we observe whether the runner attempts a stolen base; and if so, we observe whether they are successful (runner is safe) or unsuccessful (runner is out). On each pitch terminating a plate appearance (a batting attempt by a batter), we observe the plate appearance outcome, such as strikeout, groundout, single or home run.
+
+    In addition to the play-by-play data, we manually downloaded publicly available player-season level data from Baseball Savant \parencite{baseball_savant_statcast_2024} describing measurable performance characteristics of catchers and runners in each season, both estimated using computer vision on video data from several camera angles. For each catcher-season, we observe {\it arm strength} (miles per hour), which measures how hard the catcher throws the ball. This is defined as the average of the top 10 percent of throw speeds when the catcher is attempting to catch a base stealer. For each runner-season, we observe {\it sprint speed} (feet per second), which measures the runner's top running speed in their fastest one-second window. This is defined as the average of the top 67 percent of peak running speeds on qualified runs: (1) home-to-first runs on weakly hit batted balls and (2) runs of two or more bases on balls hit into play (excluding runs from second base on extra-base hits).
+
+    In addition to the publicly available data described above, we rely on one key piece of proprietary information provided by MLB Advanced Media, estimated using computer vision on video data from several camera angles. For each play, observe each runner's {\it lead distance} (feet), which is how far they are ranging from their base at the time of the pitcher's first movement. This is defined as the distance between the runner's center of mass (projected onto the line between the runner's current base and their next base) and the nearest edge of the runner's current base. When the pitcher throws a pitch, runners will typically extend their lead by several feet from the time of the pitcher's first movement to the time of pitch release (known as taking a secondary lead), which is relevant for runner advancement on batted balls but not on stolen base attempts. Our data include only the lead distance at the time of the pitcher's first movement, not the secondary lead.
+
+    As detailed in Section \ref{sec:introduction}, MLB made several rule changes between the 2022 season and the 2023 season, most notably (for the present work) widening the bases and limiting the number of pickoffs that can be attempted by the pitcher. Figure \ref{fig:leads-overall} illustrates the difference in runner lead distance behavior (from first base) between 2022 and 2023. With zero disengagements in 2023, the distribution of lead distances is very similar to the overall distribution of lead distances in 2022. With each successive disengagement, we observe a positive shift in the distribution of lead distance in the 2023 data. In 2022, the average lead distance was 9.6 feet. In 2023, the average lead distance under zero, one, and two disengagements was 9.6 feet, 10.3 feet and 11.0 feet, respectively.
+ 
+    \begin{figure}[H]
+      \centering
+      \includegraphics[width = 0.8\textwidth]{leads_overall_light.pdf}
+      \caption{
+        \it The league-wide distribution of lead distance from first base when second base is unoccupied, comparing 2022 with 2023. The 2023 data are split by prior disengagements because, beginning in 2023, pitchers were limited to three disengagements, influencing pitcher and runner behavior. In 2022, there was no limit on the number of disengagements. The vertical lines mark the means of the distributions.
+      }
+      \label{fig:leads-overall}
+    \end{figure}
+      
+    \subsection{Runner outcome probability model}
 
       Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities, as estimated using the mixed-effects logistic regression models detailed in Section \ref{sec:prob-runner-outcome}. For all three models, the direction of the relationship between lead distance and outcome probability is as expected.
       
@@ -617,7 +512,7 @@ An algorithmic device to obtain the optimal policy is value iteration or policy 
         \label{fig:random-effect}
       \end{figure}
 
-    \subsection{Single-agent Markov decision process}
+    \subsection{Single-player Markov decision process}
 
       In the single-agent MDP, the only decision-maker is the runner, and they choose a policy for lead distance as a function of the game state, with the objective of maximizing the expected number of runs in the inning. In practice, the purpose of this MDP is to optimize runner decision-making given current conditions of pitcher behavior, anticipating that pitcher behavior will take some time to react to changes in runner behavior.
 
@@ -682,9 +577,9 @@ An algorithmic device to obtain the optimal policy is value iteration or policy 
 
       Our recommendations differ from runner behavior, and we can approximate the difference in run value between runner behavior and our recommendations. In 2023, the scoring expectation was 0.516 runs per inning. Under the optimal lead distance policy $\pi^*$, the corresponding value of the start-of-inning state is 0.528 runs, an increase of 0.012 runs per inning. While that may seem insigificant at first, it adds up to approximately 17 runs over 162 games of nine innings each. To add that many expected runs in free agency would cost roughly \$17 million \parencite{clemens_what_2021}, which speaks to a significant (but not outlandish) impact.
 
-    \subsection{Two-agent Markov decision process}
+    \subsection{Two-player stochastic game}
 
-      All of the results shown so far correspond to our single-agent model, in which the runner chooses a lead distance and all other outcomes are probabilistic based on their choice. While the single-agent model is the most immediately useful framework for runner decision-making in the current environment, we also consider how pitchers might respond using the same model to optimize their decision-making. In the two-agent model, the runner first chooses a lead distance, and the pitcher then decides whether to attempt a pickoff, as detailed in Section \ref{sec:two-agent-mdp}. The optimal strategy for the runner is maximin because they choose the lead distance which maximizes the minimum run expectancy across the pitcher's two options (pickoff or pitch).
+      All of the results shown so far correspond to our single-agent model, in which the runner chooses a lead distance and all other outcomes are probabilistic based on their choice. While the single-agent model is the most immediately useful framework for runner decision-making in the current environment, we also consider how pitchers might respond using the same model to optimize their decision-making. In the two-agent model, the runner first chooses a lead distance, and the pitcher then decides whether to attempt a pickoff, as detailed in Section \ref{sec:sequential-model}. The optimal strategy for the runner is maximin because they choose the lead distance which maximizes the minimum run expectancy across the pitcher's two options (pickoff or pitch).
 
       In the two-agent model, pitchers would be more aggressive with attempting pickoffs when runners take long leads. Based on observed lead distances in 2023, we estimate that a pickoff attempt would reduce run expectancy relative to a pitch in 8.3\% of opportunities with only first base occupied. When a pickoff attempt would have been recommended, pitchers attempted pickoffs 10.8\% of the time---this would be 100\% in the two-agent model. When a pickoff attempt would not have been recommended, pitchers attempted pickoffs 5.0\% of the time---this would be 0\% in the two-agend model. Overall, pitchers attempted pickoffs on 5.8\% of opportunities, less than the recommmended 8.3\%.
 
@@ -709,7 +604,7 @@ An algorithmic device to obtain the optimal policy is value iteration or policy 
 
     We go a step further and consider the consequences of granting the pitcher agency to decide whether to attempt a pickoff given the runner's lead distance. We give a game theoretic treatment to this two-agent model in which the runner follows a maximin strategy (with respect to rest-of-inning run expectancy) so that the pitcher is indifferent to attempting a pickoff or throwing a pitch. Under the game theoretic equilibrium, runners are more aggressive with their lead distance and pitchers are more aggressive with their pickoff attempts than the current behavior we observe. While baseball analytics sometimes garners negative attention for diminishing the aesthetic appeal of the game \parencite{sheinin_analytics_2025}, this is an example for which the analytically recommended strategy could be more aesthetically pleasing.
 
-    Our results come with some simplifying assumptions that are necessary limitations given the data available. We assume that observed lead distance fully describes the runner's behavior and that they cannot disguise their aggressiveness by leaning in one direction. In reality, the runner may achieve a greater (or lesser) effective lead distance than we observed by leaning toward second base (or first base). We also assume that lead distance only impacts pickoff and stolen base outcomes, not the outcomes of batted balls. For example, we assume that a greater lead distance does not improve the runner's probability of advancing from first base to third base on a single. Baseball domain knowledge suggests this is a reasonable assumption because while a pitch is being thrown, the runner moves to a ``secondary'' lead distance which is more important for determining advancement outcomes than primary lead distance (at first pitcher movement). Finally, we assume that, other than pickoff attempts, no other disengagements occur. In reality, the pitcher may derive value from stepping off of the pitching rubber if they are short of breath or need to resolve a miscommunication with the catcher.
+    Our results come with some simplifying assumptions that are necessary limitations given the data available. We assume that observed lead distance fully describes the runner's behavior and that they cannot disguise their aggressiveness by leaning in one direction. In reality, the runner may achieve a greater (or lesser) effective lead distance than we observed by leaning toward second base (or first base). We also assume that lead distance only impacts pickoff and stolen base outcomes, not the outcomes of batted balls. For example, we assume that a greater lead distance does not improve the runner's probability of advancing from first base to third base on a single. Baseball domain knowledge suggests this is a reasonable assumption because while a pitch is being thrown, the runner moves to a secondary lead distance which is more important for determining advancement outcomes than primary lead distance (at first pitcher movement). Finally, we assume that, other than pickoff attempts, no other disengagements occur. In reality, the pitcher may derive value from stepping off of the pitching rubber if they are short of breath or need to resolve a miscommunication with the catcher.
 
     In addition to the lead distance data used in the current work, which is based on the runner's center of mass, MLB has begun collecting 18-point pose tracking data on runners and fielders at 50 frames per second \parencite{jedlovec_introducing_2020}. If these data were publicly available, they would enable more granular modeling of the cat-and-mouse game between pitcher and runner. For example, with information about the runner's leaning posture and reaction time, future work might show that a mixed strategy for the pitcher's pickoff attempt decision achieves the best result by forcing a neutral posture for the runner and delaying the runner's reaction. For now, we present the Two-Foot Rule as a simple rule of thumb that provides easily digestible and actionable guidance to runners.
 
