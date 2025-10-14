@@ -10,7 +10,7 @@
 
 \usepackage[colorlinks, allcolors=blue]{hyperref}
 
-\usepackage{amsmath, amssymb, amsthm, amsfonts, color, enumerate, framed, graphicx, mathrsfs, mathtools, mdframed, natbib, subcaption, tabularx, theoremref, titlesec, verbatim, xfrac, soul, mathtools, wrapfig, tikz, float}
+\usepackage{amsmath, amssymb, amsthm, amsfonts, color, enumerate, framed, graphicx, mathrsfs, mathtools, mdframed, subcaption, tabularx, theoremref, titlesec, verbatim, xfrac, soul, mathtools, wrapfig, tikz, float}
 
 \graphicspath {{../../output/figures/}}
 
@@ -472,7 +472,14 @@ An algorithmic device to obtain the optimal policy is value iteration or policy 
       
     \subsection{Runner outcome probability model}
 
-      Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities, as estimated using the mixed-effects logistic regression models detailed in Section \ref{sec:prob-runner-outcome}. For all three models, the direction of the relationship between lead distance and outcome probability is as expected.
+      Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected.
+
+      \begin{table}[H]
+        \hspace{-6mm}
+        \input{../../output/tables/model_summary.tex}
+        \caption{\it Summary of estimated runner outcome probability models. We estimated four different generalized (binomial) linear mixed-effects models for pickoff (PO) attempt and success and for stolen base (SB) attempt and success. For fixed effects we report the estimated effect with one standard error, and for random effects we report the estimated standard deviation term. For 2022, we encoded disengagements as always zero to reflect no pickoff limit.}
+        \label{tab:model-summary}
+      \end{table}
       
       Figure \ref{fig:prob-pickoff} illustrates how pickoff attempt probability and success probability vary with distance. We observe that pickoff attempt rates were lower in 2023 than in 2022, especially as the number of prior disengagement increased. The modeled probability remains low even for extremely long leads. We have very limited data on lead distances beyond 14 feet, especially with fewer than two prior disengagements, so extrapolation much beyond 14 feet is likely not reliable. The ball-strike count and the identity of the pitcher also influence the pickoff attempt probability, but the primary drivers are lead distance and the number prior disengagements. We observe that, except for the most skilled pitchers, pickoff success probability is very low within the range covering the vast majority of lead distances. Toward the high end of this range, the success rate increases quickly as lead distance increases. Interestingly, there is a large gap between the 90$^{th}$-percentile pitcher and the median pitcher but a small gap between the median pitcher and the 10$^{th}$-percentile pitcher, demonstrating a right skew in the distribution of pitcher pickoff skill. Earlier exploration indicated that game state and runner identity did not provide predictive value for pickoff success given lead distance.
  
