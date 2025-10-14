@@ -76,9 +76,74 @@ if (fig_make) {
 
 # Plot probability model summaries ----
 
-fit_po_attempt <- readRDS("models/fit_po_attempt.rds")
-fit_po_success <- readRDS("models/fit_po_success.rds")
-fit_sb_success <- readRDS("models/fit_sb_success.rds")
+fit_po_attempt <- readRDS("output/models/fit_po_attempt.rds")
+fit_po_success <- readRDS("output/models/fit_po_success.rds")
+fit_sb_attempt <- readRDS("output/models/fit_sb_attempt.rds")
+fit_sb_success <- readRDS("output/models/fit_sb_success.rds")
+
+# Table
+
+extract_model_fit <- function(model) {
+  ranef <- lme4::VarCorr(model) |>
+    tibble::as_tibble() |>
+    dplyr::mutate(type = "random", variable = grp, `Std. Error` = sdcor) |>
+    dplyr::select(type, variable, `Std. Error`)
+  summary(model)$coefficients |>
+    tibble::as_tibble(rownames = "variable") |>
+    dplyr::mutate(type = "fixed") |>
+    dplyr::bind_rows(ranef) |>
+    dplyr::mutate(
+      estimate = paste(
+        ifelse(type == "random", "", glue::glue("${sprintf('%.3f', Estimate)}$")),
+        glue::glue("$\\pm{sprintf('%.3f', `Std. Error`)}$")
+      )
+    ) |>
+    dplyr::select(type, variable, estimate)
+}
+
+table_po_attempt <- extract_model_fit(fit_po_attempt) |>
+  dplyr::rename(po_attempt = estimate)
+table_po_success <- extract_model_fit(fit_po_success) |>
+  dplyr::rename(po_success = estimate)
+table_sb_attempt <- extract_model_fit(fit_sb_attempt) |>
+  dplyr::rename(sb_attempt = estimate)
+table_sb_success <- extract_model_fit(fit_sb_success) |>
+  dplyr::rename(sb_success = estimate)
+
+table_po_attempt |>
+  dplyr::full_join(table_po_success, by = c("type", "variable")) |>
+  dplyr::full_join(table_sb_attempt, by = c("type", "variable")) |>
+  dplyr::full_join(table_sb_success, by = c("type", "variable")) |>
+  dplyr::arrange(type) |>
+  dplyr::mutate(
+    variable = dplyr::case_when(
+      variable == "(Intercept)" ~ "{\\it Intercept}",
+      variable == "lead1b" ~ "Lead Distance (feet)",
+      variable == "pre_balls" ~ "Balls",
+      variable == "pre_strikes" ~ "Strikes",
+      variable == "pre_outs" ~ "Outs",
+      variable == "year2023" ~ "Year (2023 vs. 2022)",
+      variable == "pre_disengagements1" ~ "Disengagements (1 vs. 0)",
+      variable == "pre_disengagements2" ~ "Disengagements (2 vs. 0)",
+      variable == "sprint_speed" ~ "Sprint Speed (feet per second)",
+      variable == "arm_strength" ~ "Arm Strength (miles per hour)",
+      variable == "pitcher_id" ~ "Pitcher",
+      variable == "run1b" ~ "Runner",
+      variable == "fielder_2_id" ~ "Catcher",
+    )
+  ) |>
+  tibble::add_row(variable = "{\\it Fixed Effects}", .after = 1) |>
+  tibble::add_row(variable = "{\\it Random Effects}", .after = 11) |>
+  dplyr::select(variable, po_attempt, po_success, sb_attempt, sb_success) |>
+  sputil::write_latex_table(
+    file = "output/tables/model_summary.tex",
+    colnames = c("Variable", "PO Attempt", "PO Success", "SB Attempt", "SB Success"),
+    prefix_rows = c("&\\multicolumn{4}{c}{Estimated Effect on Log-Odds}"),
+    align = "l|rrrr",
+    hline.after = c(0, 1, 11)
+  )
+
+# Figures
 
 covariate_baseline <- tibble::tibble(
   pre_balls = 0,
