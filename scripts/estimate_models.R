@@ -1,3 +1,6 @@
+
+fit_glmer_models <- FALSE
+
 # DATA SET UP ----
 
 library(tidyverse)
@@ -79,7 +82,13 @@ sb_att_1b <- sb_attempts %>% filter(!is.na(run1b) & is.na(run2b) & is.na(run3b))
 sb_threats <- sb_att_1b %>% count(pre_runner_1b_id) %>% filter(n >= 3) %>% pull(pre_runner_1b_id)
 pickoff_var_1b_threats <- pickoff_var_1b %>% filter(pre_runner_1b_id %in% sb_threats) %>% filter(pre_balls < 3 | pre_strikes < 2 | pre_outs < 2)
 pickoff_att_1b_threats <- pickoff_att_1b %>% filter(pre_runner_1b_id %in% sb_threats) %>% filter(pre_balls < 3 | pre_strikes < 2 | pre_outs < 2)
-sb_var_1b_threats <- sb_var_1b %>% filter(pre_runner_1b_id %in% sb_threats) %>% filter(pre_balls < 3 | pre_strikes < 2 | pre_outs < 2)
+sb_var_1b_threats <- sb_var_1b |>
+  dplyr::filter(
+    pre_runner_1b_id %in% sb_threats,
+    pre_balls < 3 | pre_strikes < 2 | pre_outs < 2,
+    pre_disengagements < 3
+  ) |>
+  dplyr::mutate(pre_disengagements = as.factor(pre_disengagements))
 sb_att_1b_threats <- sb_att_1b %>% filter(pre_runner_1b_id %in% sb_threats) %>% filter(pre_balls < 3 | pre_strikes < 2 | pre_outs < 2)
 
 
@@ -298,49 +307,71 @@ sb_att_1b_threats22 <- sb_att_1b22 %>% filter(pre_runner_1b_id %in% sb_threats22
 
 
 
-all_sb_att1b <- rbind(sb_att_1b_threats, sb_att_1b_threats22)
+all_sb_att1b <- rbind(sb_att_1b_threats, sb_att_1b_threats22) |>
+  dplyr::mutate(
+    pitcher_id = ifelse(pitcher_id %in% pitchers_in_sample, pitcher_id, "p1"),
+    run1b = ifelse(run1b %in% runners_in_sample & run1b %in% sb_threats, run1b, "r1"),
+    is_stolen_base = ifelse(runner_going == TRUE & post_balls == 4, TRUE, is_stolen_base),
+    year = as.factor(year)
+  )
 pitchers_in_sample <- unique(rep_level$pitcher_id)
 runners_in_sample <- unique(rep_level$run1b)
-all_sb_att1b <- all_sb_att1b %>% mutate(pitcher_id = ifelse(pitcher_id %in% pitchers_in_sample, pitcher_id, "p1")) %>% mutate(run1b = ifelse(run1b %in% runners_in_sample & run1b %in% sb_threats, run1b, "r1")) %>% mutate(is_stolen_base = ifelse(runner_going == TRUE & post_balls == 4, TRUE, is_stolen_base))
-all_pickoff_var1b <- rbind(pickoff_var_1b_threats, pickoff_var_1b_threats22) %>% filter(pre_disengagements < 3)
-all_pickoff_var1b$year <- as.factor(all_pickoff_var1b$year)
-all_pickoff_var1b$pre_disengagements <- as.factor(all_pickoff_var1b$pre_disengagements)
+all_pickoff_var1b <- rbind(pickoff_var_1b_threats, pickoff_var_1b_threats22) |>
+  dplyr::filter(pre_disengagements < 3) |>
+  dplyr::mutate(
+    # Treat pre-disengagements as always 0 in 2022 (no disengagement rule)
+    pre_disengagements = as.factor(ifelse(year == 2023, pre_disengagements, 0)),
+    year = as.factor(year)
+  )
 
 
 
 # MODELS ----
 
+if (fit_glmer_models) {
 
-### PLAYER-SPECIFIC
+  # Probability of Successful Pickoff
+  fit_po_success <- glmer(isSuccess ~ lead1b + (1|pitcher_id) , data = pickoff_att_1b_threats, family = binomial)
+  # Pitcher matters a bit - runner/catcher/batter lead to singular effect
 
-# Probability of Successful Pickoff
-#fit_po_success <- glmer(isSuccess ~ lead1b + (1|pitcher_id) , data = pickoff_att_1b_threats, family = binomial)
-#summary(fit_po_success)
-# Pitcher matters a bit - runner/catcher/batter lead to singular effect
+  # Probability of Pickoff Attempt
+  fit_po_attempt <- lme4::glmer(    # 2 minutes
+    isPickAttempt ~ lead1b + pre_balls + pre_strikes + pre_outs + year + pre_disengagements +
+      (1 | pitcher_id),
+    data = all_pickoff_var1b,
+    family = binomial
+  )
+  # Pitcher and runner matters 
 
-# Probability of Pickoff Attempt
-#fit_po_attempt <- glmer(isPickAttempt ~ lead1b + pre_balls + pre_strikes + pre_outs  + (1|pitcher_id) + as.factor(year) + as.factor(year) * pre_disengagements, data = all_pickoff_var1b, family = binomial)
-#summary(fit_po_attempt)
-# Pitcher and runner matters 
+  # Probability of Successful SB
+  fit_sb_success <- glmer(    # 30 seconds
+    is_stolen_base ~ lead1b + sprint_speed + arm_strength + year +
+      (1|pitcher_id) + (1|fielder_2_id) + (1|run1b),
+    data = all_sb_att1b,
+    family = binomial
+  )
 
-# Probability of Successful SB
-#fit_sb_success <- glmer(is_stolen_base ~ lead1b + (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength + as.factor(year), data = all_sb_att1b, family = binomial)
-#summary(fit_sb_success)
+  # Probability of SB Attempt
+  # Not dependent on lead distance
+  fit_sb_attempt <- lme4::glmer(    # 4 minutes
+    isSBAttempt ~ pre_balls + pre_strikes + pre_outs + pre_disengagements +
+      (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength,
+    data = sb_var_1b_threats,
+    family = binomial
+  )
 
-# Probability of SB Attempt
-# Not dependent on lead distance
-#m4 <- glmer(isSBAttempt ~ pre_balls + pre_strikes + pre_outs + pre_disengagements + (1|pitcher_id) + (1|fielder_2_id) + (1|run1b) + sprint_speed + arm_strength, data = sb_var_1b_threats, family = binomial)
-#summary(m4)
+  saveRDS(fit_po_success, "output/models/fit_po_success.rds")
+  saveRDS(fit_po_attempt, "output/models/fit_po_attempt.rds")
+  saveRDS(fit_sb_success, "output/models/fit_sb_success.rds")
+  saveRDS(fit_sb_attempt, "output/models/fit_sb_attempt.rds")
 
-#saveRDS(fit_po_success, "output/models/fit_po_success.rds")
-#saveRDS(fit_po_attempt, "output/models/fit_po_attempt.rds")
-#saveRDS(fit_sb_success, "output/models/fit_sb_success.rds")
-#saveRDS(m4, "m4model")
+} else {
 
-fit_po_success <- readRDS("output/models/fit_po_success.rds")
-fit_po_attempt <- readRDS("output/models/fit_po_attempt.rds")
-fit_sb_success <- readRDS("output/models/fit_sb_success.rds")
-m4 <- readRDS("output/models/m4.rds")
+  fit_po_success <- readRDS("output/models/fit_po_success.rds")
+  fit_po_attempt <- readRDS("output/models/fit_po_attempt.rds")
+  fit_sb_success <- readRDS("output/models/fit_sb_success.rds")
+  fit_sb_attempt <- readRDS("output/models/fit_sb_attempt.rds")
+}
 
 # 
 # # Pitcher Pickoff Ratio vs Effect
@@ -459,7 +490,7 @@ median_battery_m3_pitcher <- battery_combined[0.5 * nrow(battery_combined),"play
 pct90_battery_m3_pitcher <- battery_combined[0.1 * nrow(battery_combined),"player_id.y"]
 
 ## M4 PITCHER EFFECTS
-pitcher_effects <- ranef(m4)$pitcher_id
+pitcher_effects <- ranef(fit_sb_attempt)$pitcher_id
 pitcher_effects <- pitcher_effects %>% mutate(player_id = as.numeric(rownames(pitcher_effects))) %>% arrange(`(Intercept)`) 
 median_pitcher_m4 <- rownames(pitcher_effects)[0.5 * nrow(pitcher_effects)]
 pct90_pitcher_m4 <- rownames(pitcher_effects)[0.1 * nrow(pitcher_effects)]
@@ -467,9 +498,9 @@ pct10_pitcher_m4 <- rownames(pitcher_effects)[0.9 * nrow(pitcher_effects)]
 pitcher_id <- c(pct10_pitcher_m4, median_pitcher_m4, pct90_pitcher_m4)
 
 ## M4 RUNNER EFFECTS
-runner_effects <- ranef(m4)$run1b
+runner_effects <- ranef(fit_sb_attempt)$run1b
 runner_effects <- runner_effects %>% arrange(`(Intercept)`)
-sprint_speed_coef <- fixef(m4)[6]
+sprint_speed_coef <- fixef(fit_sb_attempt)[6]
 runner_combined <- runner_effects %>% mutate(player_id = as.numeric(rownames(runner_effects))) %>% left_join(sprint_speed_2023, by = "player_id") %>% mutate(combined_effect = sprint_speed_coef * sprint_speed + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(sprint_speed))
 median_runner_m4 <- runner_combined[0.5 * nrow(runner_combined),"player_id"]
 median_ss_m4 <- runner_combined[0.5 * nrow(runner_combined),"sprint_speed"]
@@ -480,9 +511,9 @@ pct10_ss_m4 <- runner_combined[0.1 * nrow(runner_combined),"sprint_speed"]
 run1b_m4 <- c(pct10_runner_m4, median_runner_m4, pct90_runner_m4)
 
 ## M4 CATCHER EFFECT
-catcher_effects <- ranef(m4)$fielder_2_id
+catcher_effects <- ranef(fit_sb_attempt)$fielder_2_id
 catcher_effects <- catcher_effects %>% arrange(`(Intercept)`)
-arm_strength_coef <- fixef(m4)[7]
+arm_strength_coef <- fixef(fit_sb_attempt)[7]
 catcher_combined <- catcher_effects %>% mutate(player_id = as.numeric(rownames(catcher_effects))) %>% left_join(arm_strength_2023, by = "player_id") %>% mutate(combined_effect = arm_strength_coef * arm_strength + `(Intercept)`) %>% arrange(combined_effect) %>% filter(!is.na(arm_strength))
 median_catcher_m4 <- catcher_combined[0.5 * nrow(catcher_combined),"player_id"]
 median_as_m4 <- catcher_combined[0.5 * nrow(catcher_combined),"arm_strength"]
@@ -532,7 +563,7 @@ state_leads_exp$pickoff_prob <- predict(fit_po_attempt, newdata = state_leads_ex
 state_leads_exp$pick_succ <- predict(fit_po_success, newdata = state_leads_exp, type = "response", re.form = NA)
 
 state_leads_exp$pre_disengagements <- as.numeric(state_leads_exp$pre_disengagements) - 2
-state_leads_exp$sb_prob <- predict(m4, newdata = state_leads_exp, type = "response", re.form = NA)
+state_leads_exp$sb_prob <- predict(fit_sb_attempt, newdata = state_leads_exp, type = "response", re.form = NA)
 state_leads_exp$sb_succ <- predict(fit_sb_success, newdata = state_leads_exp, type = "response", re.form = NA)
 
 state_leads_exp$pickoff_prob <- ifelse(state_leads_exp$sb2B == 0, 0, state_leads_exp$pickoff_prob)
@@ -714,7 +745,7 @@ for (i in 1:nrow(skill_grid)) {
   state_leads_it$pitcher_id <-  skill_grid[i,10]
   state_leads_it$arm_strength <- skill_grid[i,12]
   state_leads_it$sprint_speed <- skill_grid[i,11]
-  state_leads_it$sb_prob <- predict(m4, newdata = state_leads_it, type = "response")
+  state_leads_it$sb_prob <- predict(fit_sb_attempt, newdata = state_leads_it, type = "response")
   
   #state_leads_it$run1b <- skill_grid[i,14]
   state_leads_it$pitcher_id <-  skill_grid[i,13]
@@ -861,7 +892,7 @@ pickoff_var_1b$pickoff_prob <- predict(fit_po_attempt, newdata = pickoff_var_1b,
 pickoff_var_1b$pick_succ <- predict(fit_po_success, newdata = pickoff_var_1b, type = "response", re.form = NA)
 
 pickoff_var_1b$pre_disengagements <- as.numeric(pickoff_var_1b$pre_disengagements) - 1
-pickoff_var_1b$sb_prob <- predict(m4, newdata = pickoff_var_1b, type = "response", re.form = NA)
+pickoff_var_1b$sb_prob <- predict(fit_sb_attempt, newdata = pickoff_var_1b, type = "response", re.form = NA)
 pickoff_var_1b$sb_succ <- predict(fit_sb_success, newdata = pickoff_var_1b, type = "response", re.form = NA)
 
 states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0), R2 = ifelse(!is.na(run2b), 1, 0), R3 = ifelse(!is.na(run3b), 1, 0), Runners = paste0(R1, R2, R3)) %>% select(-R1, -R2, -R3) %>% mutate(State = paste0(Runners, " ", pre_disengagements, " ", pre_balls, pre_strikes, pre_outs))
