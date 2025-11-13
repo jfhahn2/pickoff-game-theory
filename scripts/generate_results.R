@@ -382,6 +382,11 @@ if (fig_make) {
     dplyr::mutate(disengagements = factor(disengagements, levels = 2:0)) |>   # re-order for legend
     ggplot2::ggplot(ggplot2::aes(lead1b, y = RE, linetype = disengagements)) +
     ggplot2::geom_line(color = sputil::color("blue", fig_mode)) +
+    ggplot2::geom_vline(
+      xintercept = lead_value_max$lead1b,
+      color = sputil::color("blue", fig_mode),
+      linetype = c("solid", "dashed", "dotted")
+    ) +
     ggplot2::labs(x = "Lead Distance", y = "Expected Runs to End of Inning") +
     ggplot2::scale_linetype_manual(
       name = "Disengagements",
