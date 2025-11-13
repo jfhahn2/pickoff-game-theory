@@ -310,7 +310,7 @@ runner_grid <- sb_success_effect_runner |>
   dplyr::mutate(run1b = as.character(player_id)) |>
   dplyr::select(run1b, sprint_speed) |>
   dplyr::mutate(
-    year = c(rep(2023, 3), 2022),
+    year = factor(c(rep(2023, 3), 2022), levels = 2022:2023),
     legend = factor(
       x = paste0(year, "; ", c(90, 50, 10, 50), "th Pct Runner"),
       levels = paste0(year, "; ", c(90, 50, 10, 50), "th Pct Runner")
@@ -465,15 +465,17 @@ skill_grid |>
 sorted_two <- old_run_1b_two |>
   dplyr::mutate(
     bases = substr(State, 1, 3),
-    dis = substr(State, 5,5), countouts = substr(State, 7, 9)
+    dis = substr(State, 5,5),
+    countouts = substr(State, 7, 9),
+    count = paste0(substr(countouts, 1, 1), "-", substring(countouts, 2, 2)),
+    outs = as.integer(substr(countouts, 3, 3))
   ) |>
-  dplyr::arrange(bases, countouts, dis)
+  dplyr::arrange(bases, countouts, dis) |>
+  dplyr::ungroup()
 
 sorted_two |>
-  dplyr::ungroup() |>
-  dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
+  dplyr::filter(outs == 0, bases == "100") |>
   dplyr::arrange(substr(countouts, 2, 2), substr(countouts, 1, 1)) |>   # sort by strikes then balls
-  dplyr::mutate(count = paste0(substr(countouts, 1, 1), "-", substring(countouts, 2, 2))) |>
   dplyr::select(count, dis, lead1b) |>
   tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
   sputil::write_latex_table(
@@ -484,6 +486,19 @@ sorted_two |>
       "0-0", "1-0", "2-0", "3-0", "0-1", "1-1", "2-1", "3-1", "0-2", "1-2", "2-2", "3-2"
     ),
     align = "r|cccc|cccc|cccc",
+    digits = 1
+  )
+
+sorted_two |>
+  dplyr::filter(count == "0-0", bases == "100") |>
+  dplyr::arrange(outs) |>   # sort by outs
+  dplyr::select(outs, dis, lead1b) |>
+  tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "dis_") |>
+  sputil::write_latex_table(
+    file = "output/tables/lead_by_outs_two.tex",
+    prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
+    colnames = c("Outs", "0", "1", "2"),
+    align = "r|ccc",
     digits = 1
   )
 
