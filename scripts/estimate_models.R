@@ -307,6 +307,8 @@ sb_att_1b_threats22 <- sb_att_1b22 %>% filter(pre_runner_1b_id %in% sb_threats22
 
 
 
+pitchers_in_sample <- unique(rep_level$pitcher_id)
+runners_in_sample <- unique(rep_level$run1b)
 all_sb_att1b <- rbind(sb_att_1b_threats, sb_att_1b_threats22) |>
   dplyr::mutate(
     pitcher_id = ifelse(pitcher_id %in% pitchers_in_sample, pitcher_id, "p1"),
@@ -314,8 +316,6 @@ all_sb_att1b <- rbind(sb_att_1b_threats, sb_att_1b_threats22) |>
     is_stolen_base = ifelse(runner_going == TRUE & post_balls == 4, TRUE, is_stolen_base),
     year = as.factor(year)
   )
-pitchers_in_sample <- unique(rep_level$pitcher_id)
-runners_in_sample <- unique(rep_level$run1b)
 all_pickoff_var1b <- rbind(pickoff_var_1b_threats, pickoff_var_1b_threats22) |>
   dplyr::filter(pre_disengagements < 3) |>
   dplyr::mutate(
@@ -562,7 +562,6 @@ state_leads_exp$pre_disengagements <- as.factor(state_leads_exp$pre_disengagemen
 state_leads_exp$pickoff_prob <- predict(fit_po_attempt, newdata = state_leads_exp, type = "response", re.form = NA)
 state_leads_exp$pick_succ <- predict(fit_po_success, newdata = state_leads_exp, type = "response", re.form = NA)
 
-state_leads_exp$pre_disengagements <- as.numeric(state_leads_exp$pre_disengagements) - 2
 state_leads_exp$sb_prob <- predict(fit_sb_attempt, newdata = state_leads_exp, type = "response", re.form = NA)
 state_leads_exp$sb_succ <- predict(fit_sb_success, newdata = state_leads_exp, type = "response", re.form = NA)
 
@@ -891,7 +890,6 @@ pickoff_var_1b$pre_disengagements <- as.factor(pickoff_var_1b$pre_disengagements
 pickoff_var_1b$pickoff_prob <- predict(fit_po_attempt, newdata = pickoff_var_1b, type = "response", re.form = NA)
 pickoff_var_1b$pick_succ <- predict(fit_po_success, newdata = pickoff_var_1b, type = "response", re.form = NA)
 
-pickoff_var_1b$pre_disengagements <- as.numeric(pickoff_var_1b$pre_disengagements) - 1
 pickoff_var_1b$sb_prob <- predict(fit_sb_attempt, newdata = pickoff_var_1b, type = "response", re.form = NA)
 pickoff_var_1b$sb_succ <- predict(fit_sb_success, newdata = pickoff_var_1b, type = "response", re.form = NA)
 
