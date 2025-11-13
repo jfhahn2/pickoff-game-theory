@@ -59,7 +59,7 @@ if (fig_make) {
     ggplot2::scale_x_continuous(breaks = breaks) +
     ggplot2::scale_color_manual(
       name = "Scenario",
-      values = c(sputil::color("gray", fig_mode), rep(sputil::color("blue", fig_mode), 3))
+      values = c(sputil::color("orange", fig_mode), rep(sputil::color("blue", fig_mode), 3))
     ) +
     ggplot2::scale_linetype_manual(
       name = "Scenario",
@@ -187,7 +187,7 @@ if (fig_make) {
     ) +
     ggplot2::scale_color_manual(
       name = "Scenario",
-      values = c(sputil::color("gray", fig_mode), rep(sputil::color("blue", fig_mode), 3))
+      values = c(sputil::color("orange", fig_mode), rep(sputil::color("blue", fig_mode), 3))
     ) +
     ggplot2::scale_linetype_manual(
       name = "Scenario",
@@ -342,7 +342,7 @@ if (fig_make) {
     ) +
     ggplot2::scale_color_manual(
       name = "Scenario",
-      values = c(rep(sputil::color("blue", fig_mode), 3), sputil::color("gray"))
+      values = c(rep(sputil::color("blue", fig_mode), 3), sputil::color("orange", fig_mode))
     ) +
     ggplot2::scale_linetype_manual(
       name = "Scenario",
