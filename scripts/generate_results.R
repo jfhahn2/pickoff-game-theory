@@ -360,7 +360,7 @@ if (fig_make) {
 # Plot MDP example ----
 
 lead_value <- transition_values |>
-  dplyr::left_join(old_re_table, by = c("New_State" = "State")) |>
+  dplyr::left_join(value_old, by = c("New_State" = "State")) |>
   dplyr::group_by(State, lead1b) |>
   dplyr::summarize(RE = sum(TotalProb * (RunsScored + RE)), n = mean(n), .groups = "drop") |>
   dplyr::filter(State %in% c("100 0 000", "100 1 000", "100 2 000")) |>
@@ -402,7 +402,7 @@ if (fig_make) {
 
 # Write results tables ----
 
-sorted <- old_run_1b |>
+sorted <- policy_old |>
   dplyr::mutate(
     bases = substr(State, 1, 3),
     dis = substr(State, 5,5),
@@ -467,7 +467,7 @@ skill_grid |>
     hline.after = c(0, 3, 6)
   )
 
-sorted_two <- old_run_1b_two |>
+sorted_two <- policy_old_two |>
   dplyr::mutate(
     bases = substr(State, 1, 3),
     dis = substr(State, 5,5),
