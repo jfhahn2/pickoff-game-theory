@@ -118,18 +118,18 @@ table_po_attempt |>
   dplyr::mutate(
     variable = dplyr::case_when(
       variable == "(Intercept)" ~ "{\\it Intercept}",
-      variable == "lead1b" ~ "Lead Distance (feet)",
+      variable == "lead1b" ~ "Lead Distance (ft)",
       variable == "pre_balls" ~ "Balls",
       variable == "pre_strikes" ~ "Strikes",
       variable == "pre_outs" ~ "Outs",
       variable == "year2023" ~ "Year (2023 vs. 2022)",
       variable == "pre_disengagements1" ~ "Disengagements (1 vs. 0)",
       variable == "pre_disengagements2" ~ "Disengagements (2 vs. 0)",
-      variable == "sprint_speed" ~ "Sprint Speed (feet per second)",
-      variable == "arm_strength" ~ "Arm Strength (miles per hour)",
+      variable == "sprint_speed" ~ "Runner Sprint Speed (ft/s)",
+      variable == "arm_strength" ~ "Catcher Arm Strength (mi/h)",
       variable == "pitcher_id" ~ "Pitcher",
-      variable == "run1b" ~ "Runner",
       variable == "fielder_2_id" ~ "Catcher",
+      variable == "run1b" ~ "Runner",
     )
   ) |>
   tibble::add_row(variable = "{\\it Fixed Effects}", .after = 1) |>
@@ -360,7 +360,7 @@ if (fig_make) {
 # Plot MDP example ----
 
 lead_value <- transition_values |>
-  dplyr::left_join(old_re_table, by = c("New_State" = "State")) |>
+  dplyr::left_join(value_old, by = c("New_State" = "State")) |>
   dplyr::group_by(State, lead1b) |>
   dplyr::summarize(RE = sum(TotalProb * (RunsScored + RE)), n = mean(n), .groups = "drop") |>
   dplyr::filter(State %in% c("100 0 000", "100 1 000", "100 2 000")) |>
@@ -402,7 +402,7 @@ if (fig_make) {
 
 # Write results tables ----
 
-sorted <- old_run_1b |>
+sorted <- policy_old |>
   dplyr::mutate(
     bases = substr(State, 1, 3),
     dis = substr(State, 5,5),
@@ -418,7 +418,7 @@ sorted |>
   dplyr::select(count, dis, lead1b) |>
   tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
   sputil::write_latex_table(
-    file = "output/tables/lead_by_count.tex",
+    file = "output/tables/lead_by_count_one_player.tex",
     prefix_rows = "Prior & \\multicolumn{12}{c}{Count}",
     colnames = c(
       "Disengagements",
@@ -435,7 +435,7 @@ sorted |>
   dplyr::select(outs, dis, lead1b) |>
   tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "dis_") |>
   sputil::write_latex_table(
-    file = "output/tables/lead_by_outs.tex",
+    file = "output/tables/lead_by_outs_one_player.tex",
     prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
     colnames = c("Outs", "0", "1", "2"),
     align = "r|ccc",
@@ -467,7 +467,7 @@ skill_grid |>
     hline.after = c(0, 3, 6)
   )
 
-sorted_two <- old_run_1b_two |>
+sorted_two <- policy_old_two |>
   dplyr::mutate(
     bases = substr(State, 1, 3),
     dis = substr(State, 5,5),
@@ -484,7 +484,7 @@ sorted_two |>
   dplyr::select(count, dis, lead1b) |>
   tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
   sputil::write_latex_table(
-    file = "output/tables/count_two_agent.tex",
+    file = "output/tables/lead_by_count_two_player.tex",
     prefix_rows = "Prior & \\multicolumn{12}{c}{Count}",
     colnames = c(
       "Disengagements",
@@ -500,7 +500,7 @@ sorted_two |>
   dplyr::select(outs, dis, lead1b) |>
   tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "dis_") |>
   sputil::write_latex_table(
-    file = "output/tables/lead_by_outs_two.tex",
+    file = "output/tables/lead_by_outs_two_player.tex",
     prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
     colnames = c("Outs", "0", "1", "2"),
     align = "r|ccc",

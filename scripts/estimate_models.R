@@ -1,37 +1,38 @@
 
 fit_glmer_models <- FALSE
+value_iteration_threshold <- 1e-4   # well-accepted default
 
 # DATA SET UP ----
 
 library(tidyverse)
 library(lme4)
 
-event_2022 <- read_csv("input/data/event/2022.csv")
-event_2023 <- read_csv("input/data/event/2023.csv")
+event_2022 <- data.table::fread("input/data/event/2022.csv")
+event_2023 <- data.table::fread("input/data/event/2023.csv")
 
-lead_2022 <- read_csv("input/data/lead_distance/2022.csv")
-lead_2023 <- read_csv("input/data/lead_distance/2023.csv")
+lead_2022 <- data.table::fread("input/data/lead_distance/2022.csv")
+lead_2023 <- data.table::fread("input/data/lead_distance/2023.csv")
 
-pitch_2022 <- read_csv("input/data/pitch/2022.csv") |>
-  select(play_id, description)
-pitch_2023 <- read_csv("input/data/pitch/2023.csv") |>
-  select(play_id, description)
+pitch_2022 <- data.table::fread("input/data/pitch/2022.csv") |>
+  dplyr::select(play_id, description)
+pitch_2023 <- data.table::fread("input/data/pitch/2023.csv") |>
+  dplyr::select(play_id, description)
 
-play_2022 <- read_csv("input/data/play/2022.csv")
-play_2023 <- read_csv("input/data/play/2023.csv")
+play_2022 <- data.table::fread("input/data/play/2022.csv")
+play_2023 <- data.table::fread("input/data/play/2023.csv")
 
-event_map <- read_csv("input/data/batter_event.csv")
-pitch_map <- read_csv("input/data/batter_pitch.csv")
+event_map <- data.table::fread("input/data/batter_event.csv")
+pitch_map <- data.table::fread("input/data/batter_pitch.csv")
 
-arm_strength_2023 <- read_csv("input/data/arm_strength/2023.csv") |>
-  select(player_id, player_name, arm_strength, sb_attempts)
-arm_strength_2022 <- read_csv("input/data/arm_strength/2022.csv") |>
-  select(player_id, player_name, arm_strength, sb_attempts)
+arm_strength_2023 <- data.table::fread("input/data/arm_strength/2023.csv") |>
+  dplyr::select(player_id, player_name, arm_strength, sb_attempts)
+arm_strength_2022 <- data.table::fread("input/data/arm_strength/2022.csv") |>
+  dplyr::select(player_id, player_name, arm_strength, sb_attempts)
 
-sprint_speed_2023 <- read_csv("input/data/sprint_speed/2023.csv") |>
-  select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
-sprint_speed_2022 <- read_csv("input/data/sprint_speed/2022.csv") |>
-  select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
+sprint_speed_2023 <- data.table::fread("input/data/sprint_speed/2023.csv") |>
+  dplyr::select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
+sprint_speed_2022 <- data.table::fread("input/data/sprint_speed/2022.csv") |>
+  dplyr::select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
 
 
 # Remove Duplicate Lead Distances
@@ -633,37 +634,47 @@ val_of_outcomes <- prob_runner_outcome %>% left_join(value_by_ro, by = c("State"
 
 # BELLMAN ITERATION
 
+logger::log_info("Performing value iteration for one-player MDP...")
 
 # Repeat prior steps over and over until no more policy changes
-change <- Inf                                                                                     
-threshold <- 0.01                                                                                
-old_re_table <- full_re_table
-old_run_1b <- runon1b
-old_run_1b$lead1b <- 10
+change <- Inf
+value_old <- full_re_table
+policy_old <- runon1b |>
+  dplyr::mutate(lead1b = 10)  # initiate policy as 10-foot lead always
 iterations <- 0
-while(change > threshold || iterations < 2) {                                                                       
-  re_vals <-  transition_values %>% 
-    left_join(old_re_table, by = c("New_State" = "State")) %>%
-    group_by(State, lead1b) %>% 
-    summarize(RE = sum(TotalProb * (RunsScored + RE)), n = mean(n)) %>% 
-    filter(row_number() == which.max(RE))
+while(change > value_iteration_threshold || iterations < 2) {                                                                       
+  re_vals <- transition_values |>
+    dplyr::left_join(value_old, by = c("New_State" = "State")) |>
+    dplyr::group_by(State, lead1b) |>
+    dplyr::summarize(
+      RE = sum(TotalProb * (RunsScored + RE)),
+      n = mean(n),
+      .groups = "drop_last"
+    ) |>
+    # Keep only the lead distance which maximizes run expectancy for each state
+    dplyr::filter(row_number() == which.max(RE))
   
-  new_run_1b <- re_vals %>% filter(substr(State, 1, 3) == "100")
-  
-  change <- new_run_1b |>                                                                              
-    dplyr::left_join(old_run_1b, by = "State", suffix = c("_old", "_new")) |>                      
-    with(sum(abs(lead1b_new - lead1b_old))) 
-  
-  
-  
-  old_re_table <- re_vals %>% select(-lead1b)     
-  old_run_1b <- new_run_1b
+  value_new <- re_vals |>
+    dplyr::select(State, RE, n)
+
+  policy_new <- re_vals |>
+    dplyr::filter(substr(State, 1, 3) == "100")
+
+  change <- dplyr::full_join(value_old, value_new, by = "State", suffix = c("_old", "_new")) |>
+    with(sum(abs(RE_new - RE_old)))
+
+  value_old <- value_new
+  policy_old <- policy_new
   iterations <- iterations + 1
-  print(change)
-  print(old_re_table[1,2])
 }     
 
-value_of_outcomes <- prob_transition %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) %>% left_join(old_re_table, by = c("New_State" = "State")) %>% group_by(State, runner_outcome) %>% mutate(New_Value = RunsScored + RE)  %>% summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE)) %>% pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
+value_of_outcomes <- prob_transition |>
+  dplyr::left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) |>
+  dplyr::left_join(value_old, by = c("New_State" = "State")) |>
+  dplyr::group_by(State, runner_outcome) |>
+  dplyr::mutate(New_Value = RunsScored + RE) |>
+  dplyr::summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE), .groups = "drop") |>
+  tidyr::pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
 
 
 
@@ -782,54 +793,61 @@ for (i in 1:nrow(skill_grid)) {
   transition_values_it <- prob_trans_adj_it %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) %>% left_join(full_re_table, by = c("State" = "State")) %>% left_join(full_re_table, by = c("New_State" = "State")) %>% mutate(New_Value = RunsScored + RE.y) %>% rename(Old_RE = RE.x, New_RE = RE.y)
   
   # Get the expected value of each lead distance
-  value_of_leads_it <- transition_values_it %>% mutate(WeightedValue = TotalProb * New_Value) %>% group_by(State, lead1b) %>% summarize(RunValue = sum(WeightedValue, na.rm = TRUE))
+  value_of_leads_it <- transition_values_it |>
+    dplyr::mutate(WeightedValue = TotalProb * New_Value) |>
+    dplyr::group_by(State, lead1b) |>
+    dplyr::summarize(RunValue = sum(WeightedValue, na.rm = TRUE), .groups = "drop")
   
   # Step 3
   
   # Find the lead that maximizes EV
-  leads_by_state_it <- value_of_leads_it %>% group_by(State) %>% filter(row_number() == which.max(RunValue))
+  leads_by_state_it <- value_of_leads_it |>
+    dplyr::group_by(State) |>
+    dplyr::filter(row_number() == which.max(RunValue))
   
   # Only want situations where runner on 1b and no runners on other bases
-  runon1b_it <- leads_by_state_it %>% filter(substr(State, 1, 3) == "100")
-  runon1b_it
+  runon1b_it <- leads_by_state_it |>
+    dplyr::filter(substr(State, 1, 3) == "100")
   
   # BELLMAN ITERATION
-  
-  
+  logger::log_info(
+    "Performing value iteration for one-player MDP with variable skill (row {i}/{nrow(skill_grid)})..."
+  )
+
   # Repeat prior steps over and over until no more policy changes
   change <- Inf                                                                                     
-  threshold <- 0.01                                                                               
-  old_re_table_it <- full_re_table
-  old_run_1b_it <- runon1b_it
-  old_run_1b_it$lead1b <- 10
+  value_old_it <- full_re_table
+  policy_old_it <- runon1b_it |>
+    dplyr::mutate(lead1b = 10)
   iterations <- 0
-  while(change > threshold || iterations < 2) {                                                                       
-    re_vals_it <-  transition_values_it %>% 
-      left_join(old_re_table_it, by = c("New_State" = "State")) %>%
-      group_by(State, lead1b) %>% 
-      summarize(RE = sum(TotalProb * (RunsScored + RE))) %>% ungroup() %>%
-      group_by(State) %>% filter(row_number() == which.max(RE))
+  while(change > value_iteration_threshold || iterations < 2) {                                                                       
+    re_vals_it <- transition_values_it |>
+      dplyr::left_join(value_old_it, by = c("New_State" = "State")) |>
+      dplyr::group_by(State, lead1b) |>
+      dplyr::summarize(RE = sum(TotalProb * (RunsScored + RE)), .groups = "drop") |>
+      dplyr::group_by(State) |>
+      dplyr::filter(row_number() == which.max(RE))
     
-    new_run_1b_it <- re_vals_it %>% filter(substr(State, 1, 3) == "100")
+    value_new_it <- re_vals_it |>
+      dplyr::select(State, RE)
     
-    change <- new_run_1b_it |>                                                                              
-      dplyr::left_join(old_run_1b_it, by = "State", suffix = c("_old", "_new")) |>                      
-      with(sum(abs(lead1b_new - lead1b_old))) 
-    
-    print(change)
-    
-    old_re_table_it <- re_vals_it %>% select(-lead1b)     
-    old_run_1b_it <- new_run_1b_it
+    policy_new_it <- re_vals_it |>
+      dplyr::filter(substr(State, 1, 3) == "100")
+
+    change <- dplyr::full_join(value_old_it, value_new_it, by = "State", suffix = c("_old", "_new")) |>
+      with(sum(abs(RE_new - RE_old)))
+
+    value_old_it <- value_new_it
+    policy_old_it <- policy_new_it
     iterations <- iterations + 1
-    
   }     
   
-  print(skill_grid[i,6])
-  print(skill_grid[i,7])
-  print(old_run_1b_it[1,])
-  skill_grid[i, 15] <- old_run_1b_it[1,]$lead1b
-  skill_grid[i, 16] <- old_run_1b_it[37,]$lead1b
-  skill_grid[i, 17] <- old_run_1b_it[73,]$lead1b
+#  print(skill_grid[i,6])
+#  print(skill_grid[i,7])
+#  print(policy_old_it[1,])
+  skill_grid[i, 15] <- policy_old_it[1,]$lead1b
+  skill_grid[i, 16] <- policy_old_it[37,]$lead1b
+  skill_grid[i, 17] <- policy_old_it[73,]$lead1b
 }
 
 
@@ -840,7 +858,7 @@ pickoff_var_1b <- pickoff_var_1b %>% filter(pre_disengagements < 3)
 
 pv1b_states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0), R2 = ifelse(!is.na(run2b), 1, 0), R3 = ifelse(!is.na(run3b), 1, 0), Runners = paste0(R1, R2, R3)) %>% select(-R1, -R2, -R3) %>% mutate(State = paste0(Runners, " ", pre_disengagements, " ", pre_balls, pre_strikes, pre_outs))
 
-actual_vs_recommended_leads <- pv1b_states_added %>% left_join(old_run_1b, by = "State") %>% rename(ActualLead = lead1b.x, RecLead = lead1b.y) %>% mutate(LeadDiff = ActualLead - RecLead)
+actual_vs_recommended_leads <- pv1b_states_added %>% left_join(policy_old, by = "State") %>% rename(ActualLead = lead1b.x, RecLead = lead1b.y) %>% mutate(LeadDiff = ActualLead - RecLead)
 mean(actual_vs_recommended_leads$LeadDiff > 0, na.rm = TRUE) # Actual lead only exceeds recommended lead 20.0% of the team
 
 dis <- actual_vs_recommended_leads %>% mutate(nextLead = lead(ActualLead), nextRec = lead(RecLead)) %>% filter(lead(pre_disengagements) == pre_disengagements + 1, lead(event_index) == event_index) %>% mutate(RecIncrease = nextRec - RecLead, ActualIncrease = nextLead - ActualLead)
@@ -848,35 +866,55 @@ dis <- actual_vs_recommended_leads %>% mutate(nextLead = lead(ActualLead), nextR
 #ggplot(dis) + aes(x = ActualIncrease, color = "red") + geom_density() + geom_density(aes(x = RecIncrease, color = "dodgerblue")) + theme_classic() + xlim(-2,5)
 
 # TWO AGENT MODEL ----
+logger::log_info("Performing value iteration for two-player sequential game...")
 
-change <- Inf                                                                                     
-threshold <- 0.01                                                                               
-old_re_table_two <- full_re_table
-old_run_1b_two <- old_run_1b
+change <- Inf
+value_old_two <- full_re_table
+policy_old_two <- policy_old
 iterations <- 0
-while(change > threshold || iterations < 2) {  
+while(change > value_iteration_threshold || iterations < 2) {
   
-  value_of_outcomes_two <- prob_transition %>% left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) %>% filter(Prob > 0) %>% left_join(old_re_table_two, by = c("New_State" = "State")) %>% mutate(New_Value = RunsScored + RE) %>% group_by(State, runner_outcome)  %>% summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE)) %>% pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
+  value_of_outcomes_two <- prob_transition |>
+    dplyr::left_join(runs_on_transition, by = c("State", "New_State", "runner_outcome")) |>
+    dplyr::filter(Prob > 0) |>
+    dplyr::left_join(value_old_two, by = c("New_State" = "State")) |>
+    dplyr::mutate(New_Value = RunsScored + RE) |>
+    dplyr::group_by(State, runner_outcome) |>
+    dplyr::summarize(Outcome_Value = sum(Prob * New_Value, na.rm = TRUE), .groups = "drop") |>
+    tidyr::pivot_wider(names_from = runner_outcome, values_from = Outcome_Value)
   
-  pitcher_decision <- state_leads_exp %>% left_join(value_of_outcomes_two, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N) %>% mutate(Val_Pick_Attempt = ifelse(sb2B == 0, 10, Val_Pick_Attempt), Val_NoPick = ifelse(sb2B == 0, N, Val_NoPick))
+  pitcher_decision <- state_leads_exp |>
+    dplyr::left_join(value_of_outcomes_two, by = "State") |>
+    dplyr::mutate(
+      Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP,
+      Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N,
+      Val_Pick_Attempt = ifelse(sb2B == 0, 10, Val_Pick_Attempt),
+      Val_NoPick = ifelse(sb2B == 0, N, Val_NoPick)
+    )
   
-  best_lead <- pitcher_decision %>% mutate(Diff = abs(Val_Pick_Attempt - Val_NoPick)) %>% group_by(State) %>% mutate(minDiff = min(Diff)) %>% filter(Diff == minDiff) %>% dplyr::slice(1) %>% ungroup() %>%  mutate(RE = pmin(Val_Pick_Attempt, Val_NoPick))
+  best_lead <- pitcher_decision |>
+    dplyr::mutate(Diff = abs(Val_Pick_Attempt - Val_NoPick)) |>
+    dplyr::group_by(State) |>
+    dplyr::mutate(minDiff = min(Diff)) |>
+    dplyr::filter(Diff == minDiff) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(RE = pmin(Val_Pick_Attempt, Val_NoPick))
   
-  new_re_table_two <- best_lead %>% select(State, RE) 
+  value_new_two <- best_lead |>
+    dplyr::select(State, RE) 
   
-  new_run_1b_two <- best_lead %>% filter(substr(State, 1, 3) == "100") %>% select(State, lead1b, RE)
+  policy_new_two <- best_lead |>
+    dplyr::filter(substr(State, 1, 3) == "100") |>
+    dplyr::select(State, lead1b, RE)
+
+  change <- dplyr::inner_join(value_old_two, value_new_two, by = "State", suffix = c("_old", "_new")) |>
+    with(sum(abs(RE_new - RE_old)))
   
-  change <- new_run_1b_two |>                                                                              
-    dplyr::left_join(old_run_1b_two, by = "State", suffix = c("_old", "_new")) |>                      
-    with(sum(abs(lead1b_new - lead1b_old))) 
- 
-  
-  old_re_table_two <- new_re_table_two
-  old_run_1b_two <- new_run_1b_two
+  value_old_two <- value_new_two
+  policy_old_two <- policy_new_two
   iterations <- iterations + 1
   
-  print(change)
-  print(old_re_table_two[1,2])
 }     
 
 
@@ -897,23 +935,21 @@ states_added <- pickoff_var_1b %>% mutate(R1 = ifelse(!is.na(run1b), 1, 0), R2 =
 
 pitcher_decision_real <- states_added %>% left_join(value_of_outcomes, by = "State") %>% mutate(Val_Pick_Attempt = pick_succ * SP + (1 - pick_succ) * UP, Val_NoPick = sb_prob * sb_succ * SS + sb_prob * (1 - sb_succ) * US + (1 - sb_prob) * N) %>% mutate(PickRecommend = ifelse(Val_Pick_Attempt < Val_NoPick, 1, 0))
 
-mean(pitcher_decision_real$PickRecommend, na.rm = TRUE) # Pitcher should attempt a pickoff 8.3% of the time!
+mean(pitcher_decision_real$PickRecommend, na.rm = TRUE) # Pitcher should attempt a pickoff 11.4% of the time!
 mean(pitcher_decision_real$isPickAttempt) # Actually picks 5.6% of the time
 
 should_pick <- pitcher_decision_real %>% filter(PickRecommend == 1)
-mean(should_pick$isPickAttempt) # When pick recommended, they actually pick 10.8% of the time
+mean(should_pick$isPickAttempt) # When pick recommended, they actually pick 10.4% of the time
 
 no_pick <- pitcher_decision_real %>% filter(PickRecommend == 0)
-mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 5.0% of the time
-
-old_re_table_two
+mean(no_pick$isPickAttempt) # When pick not recommended, they actually pick 4.9% of the time
 
 
 
 
 # MONOTONICITY CHECKS ----
 
-RE_transitions <- T_matrix %>% select(State, New_State, Freq) %>% left_join(old_re_table, by = "State") %>% rename(Old_RE = RE) %>% left_join(old_re_table, by = c("New_State" = "State")) %>% rename(New_RE = RE)  %>% left_join(runs_on_transition, by = c("State", "New_State")) %>% mutate(RE_change = New_RE - Old_RE + RunsScored)
+RE_transitions <- T_matrix %>% select(State, New_State, Freq) %>% left_join(value_old, by = "State") %>% rename(Old_RE = RE) %>% left_join(value_old, by = c("New_State" = "State")) %>% rename(New_RE = RE)  %>% left_join(runs_on_transition, by = c("State", "New_State")) %>% mutate(RE_change = New_RE - Old_RE + RunsScored)
 
 # Situations where a ball is thrown and all else is the same
 all_same_but_balls <- RE_transitions %>% filter(substr(State, 1, 6) == substr(New_State, 1, 6), substr(State, 8, 9) == substr(New_State, 8, 9)) %>% mutate(Pre_Balls = as.numeric(substr(State, 7, 7)), Post_Balls = as.numeric(substr(New_State, 7, 7))) %>% filter(Post_Balls - Pre_Balls == 1)
