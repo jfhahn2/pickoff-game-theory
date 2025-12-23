@@ -55,8 +55,6 @@
     Recently, Major League Baseball (MLB) limited pitchers to three pickoff attempts, creating a cat-and-mouse game between pitcher and runner. Each failed attempt adds pressure on the pitcher to avoid using another, and the runner can intensify this pressure by extending their leadoff toward the next base. We model this dynamic as a two-player zero-sum sequential game in which the runner first chooses a lead distance, and then the pitcher chooses whether to attempt a pickoff. We establish optimality characterizations for the game and present variants of value iteration and policy iteration to solve the game. Using lead distance data, we estimate generalized linear mixed-effects models for pickoff and stolen base outcome probabilities given lead distance, context, and player skill. We compute the game-theoretic equilibria under the two-player model, as well as the optimal runner policy under a simplified one-player Markov decision process (MDP) model. In the one-player setting, our results establish an actionable rule of thumb: the Two-Foot Rule, which recommends that a runner increase their lead by two feet after each pickoff attempt.
   \end{abstract}
 
-% In 2023, Major League Baseball (MLB) introduced several new rule changes to make the game more exciting for fans. Among these changes, the pitcher was limited to three pickoff attempts, creating a cat-and-mouse game between pitcher and runner. Each failed pickoff attempt adds pressure on the pitcher to avoid using another pickoff attempt, and the runner can intensify this pressure by extending their leadoff toward the next base. We model this dynamic as a sequential two-player zero-sum sequential game in which the runner first chooses a lead distance, and then the pitcher chooses whether to attempt a pickoff. We establish optimality characterizations for our sequential game and present variants of value iteration and policy iteration to solve the game. Using MLB lead distance data, we estimate generalized linear mixed-effects models for pickoff and stolen base outcome probabilities given lead distance, context, and player skill. We compute the game-theoretic equilibrium policies under the two-player model using policy iteration, as well as the optimal runner policy under a reduced one-player Markov decision process model. In the one-player setup, our results establish an actionable rule of thumb: the Two-Foot Rule, which recommends that a runner increase their lead by two feet after each pickoff attempt.
-
   \section{Introduction}
   \label{sec:introduction}
 
@@ -77,8 +75,6 @@
     Section \ref{sec:transition-probability-model} uses a two-step procedure that includes the player-specific factors to estimate the transition probabilities. In the first step, we use a mixed-effects logistic regression model that calculates the probability of various runner outcomes taking into account the actions of the players and the player-specific information. Next, we construct an empirical probability distribution over the next state conditioned upon the current state, the runner outcomes, and the actions of the players. Finally, we determine the transition probability as the product of these two probabilities.
 
     Section \ref{sec:results} presents a numerical study on recent real-world data which illustrates that, relative to the optimal policy, observed pitcher and runner decisions are conservative. In current practice, pitchers attempt fewer pickoffs than optimal, and runners take shorter leads than optimal. Relative to observed behavior, optimal play would favor the offense slightly. Moreover, when restricting our model to a single-player setup which allows agency only for the runner, the results reveal an actionable recommendation: the Two-Foot Rule, which recommends that a runner increase their lead by two feet after each pickoff attempt.
-    
-%    We use a two-step process to first estimate runner outcome probabilities and then use empirical transition probabilities conditioned on the runner outcome. For the runner outcome, we improve upon empirical probabilities by using multilevel models\footnote{citation needed} to share information across players using observable as well as unobservable player skills. Our numerical study on recent real-world data illustrates that, under the optimal policy, actions played by pitcher and runner would favor the runner, relative to observed decisions. The results obtained by restricting our model to a single-player setup, that allows agency only for the runner, reveals an actionable recommendation: The Two-Foot Rule, which recommends that a runner increase their lead by two feet after each pickoff attempt. 
 
     \subsection{Related work}
 
@@ -95,7 +91,6 @@
     In this section, we present our two-player zero-sum sequential game that models the dynamic between runner and pitcher under the pickoff limit rule. Though our sequential game describes only a portion of an inning, it captures the vital aspects that enable the generation of valuable and actionable insights for the runner and the pitcher. Before describing the specifics of our model, we note that our model assumes a representative pitcher and a representative runner for the whole inning, rather than capturing full lineups and substitutions of players with varying skills. Without this assumption, we would end up with a nonstationary (infinite-horizon) two-player sequential game, which appears to be significantly more challenging to analyze when compared with the stationary version. The four components of our sequential game are as follows.
 
     {\bf 1. State space.} We use $s=(b,c,d,o) \in {\cal X}$ to capture a play, where     
-    % The mid-inning game state $s \in \mathcal{M}$ is given by $s = (b, c, d, o)$, where:
     \begin{align*}
       b &\in \{0, 1\}^3 \text{ represents which bases are occupied by runners};\\
       c &\in \{0, 1, 2, 3\} \times \{0, 1, 2\} \text{ represents the ball-strike count};\\
@@ -129,8 +124,6 @@
     Here, $\delta$ is a dummy element that captures the lack of agency. We note that the state of our sequential game progresses even when no actions are played by both players. We will model this through appropriate transition probabilities.  
 
     {\bf 3. Transition probabilities.} The uncertainty in our sequential game is modeled through transition probabilities, i.e., the conditional probability of transitioning to a future state given the sequence of previously visited states and the actions played in those states. Our sequential game assumes that the transition probabilities satisfy the Markov property.  Following the convention in the literature, we denote the transition probability as $p(\cdot|s,a_\text{R},a_\text{P}) \ \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s,a_\text{R})$. Section \ref{sec:transition-probability-model} details our specific construction of transition probabilities, which uses generalized linear mixed-effects models to estimate runner outcome (e.g., unsuccessful pickoff attempt or successful stolen base attempt) probabilities which depend on lead distance and the pitcher's pickoff decision, as well as player-specific factors. These, along with appropriate conditional empirical frequencies, will be used to construct the transition probabilities.
-    % SP: We are deleting this sentence because we can't remember why we need it
-    %Any state for which the number of baserunners plus the number of outs is at least three (i.e., $g(b) + o \ge 3$) may transition to the absorbing state with positive probability because there is always the possibility of recording enough outs on a single play to end the inning. \todo{Siva: This last sentence needs to go to the section on transition probabilities.}
 
     {\bf 4. Reward function.} The final component of our sequential game is the reward function, which models the payoff received by the players. Since we use a  zero-sum sequential game, the payoff obtained by one player comes at the expense of the other player. We choose the number of runs scored as the reward function. This design choice is more suitable for the early and middle innings of a game and less suitable for the later innings, particularly the bottom of the ninth or extra innings, when the offense knows how many runs they need to score to win the game. For any state $s \in {\cal S}$, the reward function captures the number of runs scored by the batting team in transitioning from state $s$ to $s'$ given the actions of the first-base runner and the pitcher. Formally,
     \begin{align}
@@ -165,9 +158,6 @@
         V^*(s) \defeq \max_{\pi_\text{R} \in \Pi_\text{R}}\min_{\pi_\text{P} \in \Pi_\text{P}}V^{\pi_\text{R},\pi_\text{P}}(s) \ \forall s \in S.
    \end{equation}
    We call $V^*$ the \emph{optimal value function}. In our context, $V^*$ is the maximum expected total runs scored in an inning by the batting team, which, by the zero-sum property of the game, equals the minimum expected total runs incurred by the fielding team. A policy pair $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ such that $V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) = V^*(s) \ \forall s \in {\cal S}$ is called an equilibrium policy. That is, $\pi_\text{R}^*$ is a policy for the batting team that maximizes the expected total runs scored by them, and $\pi_\text{P}^*$ is a policy for the fielding team that minimizes the expected total runs incurred by them. In other words, $\pi_\text{R}^*$ is a optimal policy for the batting team and $\pi_\text{P}^*$ is an optimal policy for the fielding team. 
-   % Note that any unilateral deviation from $(\pi_\text{R}^*,\pi_\text{P}^*)$ is suboptimal
-   % \todo{AS: Tone this down in case optimal not unique? Or do we have an expansive notion of suboptimal?}
-   % for the respective players.
 
    A characterization of optimality conditions for \eqref{eqn:sg_val} including a dynamic programming equation is presented in the Appendix. In our computational experiments in Section \ref{sec:results}, we use value iteration to solve \eqref{eqn:sg_val}. The value iteration algorithm is as follows. Starting from an arbitrary $V^0 \in \mathbb{R}^{\abs{\cal S}}$ with $V^0(\Delta) = 0$, iteratively obtain $V^k$ via the following updates
         \begin{align}
@@ -468,18 +458,6 @@
         \label{tab:lead-by-outs-one-player}
       \end{table}
   
-% SP: I don't think we need this given the intended OR audience
-%      Figure \ref{fig:finding-optimal-lead} illustrates how the runner would choose an optimal lead distance for different numbers of prior disengagements in an example scenario. Short lead distances have very low pickoff probabilities and low stolen base probabilities. As lead distance increases, stolen base probability increases, but so does pickoff probability. For very long lead distances, the run expectancy drops off sharply as the pickoff probability increases sharply. Between those two extremes, the runner strikes a balance to maximize run expectancy. The optimal lead distances for 0, 1 and 2 disengagements are 10.0 feet, 11.5 feet and 14.1 feet, respectively.
-%      
-%      \begin{figure}[H]
-%        \centering
-%        \includegraphics[width = 0.8\textwidth]{finding_optimal_lead_light.pdf}
-%        \caption{
-%          \it Rest-of-inning run expectancy for different choices of lead distance. Three separate curves show the run expectancy for differing numbers of prior disengagements, assuming 0 balls; 0 strikes; 0 outs; third base unoccupied; and median player effects for pitcher, catcher and runner. Run expectancy is defined as the expectation of the optimal value function $V^*$ (evaluated at the resulting state), defined by (\ref{eqn:mdp_val}). The vertical line corresponding to each curve marks the value at which the curve is maximized.
-%        }
-%        \label{fig:finding-optimal-lead}
-%      \end{figure}
-
       Table \ref{tab:lead-by-players} shows the robustness of the Two-Foot Rule under different assumptions regarding player talent. Against batteries more skilled at controlling the run game, the optimal lead distance is shorter. For more skilled runners, the optimal lead distance is longer. Regardless of the skill levels, the rule of thumb holds up well. The greatest deviation from the Two-Foot Rule is when a 90th-percentile runner faces a 10th-percentile battery after the first disengagement. In this situation, we recommend a long lead before the first disengagement and an increase of only 0.9 feet afterward.
     
       \begin{table}[H]
@@ -490,18 +468,6 @@
         }
         \label{tab:lead-by-players}
       \end{table}
-
-% SP: Remove this result to reduce the imbalance between two-player results and one-player results because we have chosen to emphasizse the two-player model more.
-%      Table \ref{tab:actual-vs-rec} compares observed runner behavior against the optimal policy learned by the MDP. For each pitch with a runner on first base and second base empty, we compare the runner's lead distance with the recommended lead distance for an average runner against an average battery. With zero disengagements, the average lead is slightly less than the average recommended lead, and most leads are shorter than recommended. As the disengagements increase, this gap widens. On average, batters increase their leads by 0.6--0.7 feet afer each disengagement, significantly less than the Two-Foot Rule would recommend.
-%
-%      \begin{table}[H]
-%        \centering
-%        \input{../../output/tables/actual_vs_rec_lead.tex}
-%        \caption{
-%          \it Comparison of actual versus recommended lead distance by number of prior disengagements. The recommended lead distance is based on the one-player MDP model and accounts for count, outs and prior disengagements, assuming average battery and runner skill.
-%        }
-%        \label{tab:actual-vs-rec}
-%      \end{table}
 
   \section{Discussion and strategic insights}
   \label{sec:discussion}
@@ -604,8 +570,6 @@
            thereby establishing the existence of $V^{\pi_\text{R},\pi_\text{P}}(s)$. The uniform bound follows since the above upper bound on $V^{\pi_\text{R},\pi_\text{P}}(s)$ is independent of $\pi_\text{R},\pi_\text{P}$, and $s$.
        \end{proof}
        
-       % The function $\widetilde V^*$ will be referred to as the value of the game. A policy pair $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ such that $\widetilde V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) = \widetilde V^*(s) \ \forall s \in {\cal S}$ is called the optimal strategy or equilibrium strategy. Note that $(\pi_\text{R}^*,\pi_\text{P}^*)$ is an optimal strategy if and only if $\widetilde V^{\pi_\text{R},\pi_\text{P}^*}(s) \leq \widetilde V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) \leq \widetilde V^{\pi_\text{R}^*,\pi_\text{P}}(s) \ \forall \pi_\text{R} \in \Pi_\text{R}, \pi_\text{P} \in \Pi_\text{P}, s \in {\cal S}$.
-    
         We present optimality characterizations in Theorem \ref{lem:vi_convergence} and Propositions \ref{lem:bellman_equations} to  \ref{lem:policy_iteration}. These results and their proofs are similar to the undiscounted problem in the single-player case \parencite[Section 7.2]{bertsekas2012dynamic} and the zero-sum stochastic game with simultaneous moves \parencite{patek_stochastic_1999}. We state and prove our results for completeness and to outline the minor differences. 
       \begin{definition}\label{defn:sg_operators}
         \normalfont
@@ -795,113 +759,4 @@
        \]
        \endgroup
         
-    %    \begin{theorem}[\parencite{patek_stochastic_1999}]\label{thm:sg_optimality_condition}
-    %        \normalfont
-    %       Suppose Assumption \ref{assum:game_halts} holds. Then the value of the game $\widetilde V^*$ is the unique fixed point of the operator $\widetilde \Phi$. Furthermore, $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ is an optimal strategy if and only if $\widetilde\Phi_{\pi_\text{R}^*}\widetilde V^* = \widetilde\Phi \widetilde V^* = \widetilde\Phi_{\pi_\text{P}^*}\widetilde V^*$.
-    %    \end{theorem}
-    
-    %    The above theorem enables the characterization of $\widetilde V^*(s)$ as in the following lemma.
-    
-    % \begin{corollary}\label{corr:sg_value_characterization}
-    %     \normalfont
-    %     Suppose Assumption \ref{assum:game_halts} holds. Then $\widetilde V^*$ is the unique solution to the following system of equations.
-    %     \begin{align*}
-    %         V(s) &= \max_{\ell \in {\cal L}}\min_{a \in {\cal P}}\sum_{s' \in {\cal S}}\left[r(s'|s) + V(s')\right]p(s'|s,\ell,a) \quad  \text{ if } s = (b,c,d,o) \text{ and } b = (1,0,0)\\
-    %         V(s) &= \sum_{s' \in {\cal      S}}\left[r(s'|s) + V(s')\right]p(s'|s,\delta,\delta) \quad \text{ if } s = (b,c,d,o) \text{ and } b \neq (1,0,0)\\
-    %         V(s) &=  0 \quad \text{ if } s = \Delta.
-    %     \end{align*}
-    %     \begin{proof}
-    %         Immediate from Theorem \ref{thm:sg_optimality_condition}.
-    %     \end{proof}
-    % \end{corollary}
-    
-       % An algorithmic device to obtain the optimal policy is value iteration or policy iteration \parencite{patek_stochastic_1999}. We use policy iteration  in this work to compute the optimal policy which is as follows.  Initialize $V^0 \in \mathbb{R}^{\abs{{\cal S}}}$ and $\pi_\text{R}^0 \in \Pi_\text{R}$, and then iteratively obtain $V^k$ and $\pi_\text{R}^k$ by applying the updates
-       %      \begin{align}
-       %        \label{eqn:update-value-two-player}
-       %        V^{k+1}(s) &= \min_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}^k(s))} \sum_{s' \in \mathcal{S}} [r(s, s') +  V^k(s')]p(s'|s,\pi_\text{R}^k(s),a_\text{P}) && \forall s \in \mathcal{S}, \mbox{ and}\\
-       %        \label{eqn:update-policy-two-player}
-       %        \pi_\text{R}^{k+1}(s) &= \argmax_{a_\text{R} \in A_\text{R}(s)} \left\{\min_{a_\text{p} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in \mathcal{S}}[r(s, s') + V^{k+1}(s')] p(s'|s,a_\text{R},a_\text{P})\right\} && \forall s \in \mathcal{S}.
-       %      \end{align}
-       %  The \footnote{Andrew - don't like (13) - argmax is a set, but pi is an element of the set. Can we use $\in$ instead of =? Likely true for other arg maxes} iterates generated by the policy iteration satisfy $V^k \uparrow \widetilde V^*$\parencite{patek_stochastic_1999}.
-    
-          % \subsection{Single-player setup}
-       % For a fixed stationary policy of the pitcher, the stochastic game reduces to a (single-player) MDP. Lemmas \ref{lem:vi_convergence} to \ref{lem:policy_iteration} then reduce to the corresponding MDP versions. We omit stating them for brevity. See \cite[Section 7.2]{bertsekas2012dynamic} for details.
-    
-    %    The MDP is then defined by the tuple ${\cal M} \defeq \langle {\cal S}, \{A_\text{R}(s)\}_{s \in {\cal S}}, \{r(s'|s,a)\}_{s \in {\cal S}, a \in A_\text{R}(s)}^{s' \in {\cal S}}, \\  \{p(s'|s,a)\}_{s \in {\cal S}, a \in A_\text{R}(s)}^{s' \in {\cal S}}\rangle$. Using this MDP, the progression of an inning can be captured as follows. At the beginning of a play, the game is in state $s \in {\cal S}$. Upon observing this state, an action $a \in A_\text{R}(s)$ is picked. The game then transitions to state $s'$ with probability $p(s'|s,a)$ and the batting team collects a reward $r(s'|s,a)$. A play then begins from $s'$ and the process repeats. The goal of the batting team is to maximize the expected total rewards collected over the plays in the inning. In other words, we assume the objective is to maximize runs rather than maximizing the probability of winning the game. The former objective is an approximation of the latter objective which allowed us to simplify the state space. This is a reasonable approximation before the final innings of the game, when it is more important to consider the score.
-    
-    %       \begin{assumption}\label{assum:mdp_halts}
-    %        \normalfont
-    %       The MDP ${\cal M}$ satisfies
-    %       $
-    %       \lim_{t \to \infty}\sup_{\pi \in \Pi, s \in {\cal S}}\mathbb{P}^\pi[S_t = \Delta | S_0 = s] = 1.
-    %       $
-    %    \end{assumption}   
-    %   \noindent  Assumption\footnote{Andrew - can we put the assumption in words, and the formal math in the text below? Similar comment for Assumption 2 later}   \ref{assum:mdp_halts} states that there exists a natural number $T < \infty$ such that every inning halts within $T$ plays with arbitrarily high probability regardless of the policy employed or the starting state of the inning. This is a reasonable assumption because an inning does not continue forever.
-       
-    %    The value of a policy $\pi$ when starting from state $s \in {\cal S}$ equals  
-    %    \begin{equation}
-    %        \label{eqn:mdp_pol_val}
-    %        V^{\pi}(s) \defeq \mathbb{E}^\pi\left[\sum_{t=0}^\infty r(S_{t+1}|S_t) \Big| S_0 = s\right] \ \forall s \in {\cal S}.
-    %    \end{equation}
-    %   That is, the value of the policy is the the expected total runs scored in an inning.  Under Assumption \ref{assum:mdp_halts}, $V^\pi(s)$ exists for all $\pi \in \Pi$ and $s \in {\cal S}$. To see that, since $r(s'|s) \geq 0$ for all $s,s' \in {\cal S}$, we have by the monotone convergence theorem 
-    %   \[
-    %   V^\pi(s) = \mathbb{E}^\pi\left[\sum_{t=0}^\infty r(S_{t+1}|S_t) \Big| S_0 = s\right] = \lim_{T \to \infty} \mathbb{E}^\pi\left[\sum_{t=0}^T r(S_{t+1}|S_t) \Big| S_0 = s\right] \ \forall \pi \in \Pi, s \in {\cal S}.
-    %   \]
-    %    Using Assumption \ref{assum:mdp_halts} and the fact that $\sup_{s,s' \in {\cal S}}\abs{r(s'|s)} < \infty$ (due to finiteness of ${\cal S}$), it is easy to establish that $\lim_{T \to \infty} \mathbb{E}^\pi\left[\sum_{t=0}^T r(S_{t+1}|S_t) \Big| S_0 = s\right]$ exists for all $\pi \in \Pi, s \in {\cal S}$. Furthermore, the limit is uniformly bounded over $\Pi \times {\cal S}$. The value of the MDP is defined as 
-    %    \begin{equation}
-    %         \label{eqn:mdp_val}
-    %        V^*(s) \defeq \max_{\pi \in \Pi_\text{R}}V^\pi(s) \ \forall s \in S.
-    %    \end{equation}
-    %    The function $V^*$, known as the optimal value function, is the maximum expected runs scored starting from state $s \in {\cal S}$. A policy $\pi^*$ such that $V^{\pi^*}(s) = V^*(s) \ \forall s \in {\cal S}$ is called an optimal policy.
-    
-    %    We present the following definitions that will be needed to characterize the optimal value function and an optimal policy.
-    
-    %    \begin{definition}\label{defn:mdp_operators}
-    %     \normalfont
-    %     \begin{enumerate}
-    %         \item For any $\pi \in \Pi_\text{R}$, the evaluation operator $\Phi_\pi:\mathbb{R}^{\abs{{\cal S}}} \to \mathbb{R}^{\abs{{\cal S}}}$ is defined as
-    %         \[
-    %         (\Phi_\pi V)(s) \defeq \mathbb{E}_{s' \sim p(\cdot|s,\pi(s))}\left[r(s'|s) + V(s')\right] \ \forall s \in {\cal S}.
-    %         \]
-    %         \item The optimality operator $\Phi: \mathbb{R}^{\abs{{\cal S}}} \to \mathbb{R}^{\abs{{\cal S}}}$ is defined as
-    %         \[
-    %         (\Phi V)(s) \defeq \max_{a \in A_\text{R}(s)}\mathbb{E}_{s' \sim p(\cdot|s,a)}\left[r(s'|s) + V(s')\right] \ \forall s \in {\cal S}.
-    %         \]
-    %     \end{enumerate}       
-    %    \end{definition}
-    
-    %    \begin{theorem}[\parencite{bertsekas_analysis_1991}]\label{thm:mdp_optimality_condition}
-    %        \normalfont
-    %       Suppose Assumption \ref{assum:mdp_halts} holds. Then
-    %       \begin{enumerate}
-    %           \item For any policy $\pi$, its value $V^\pi$ is the unique fixed point of the operator $\Phi_\pi$.
-    %           \item The optimal value function $V^*$ is the unique fixed point of the operator $\Phi$. Furthermore, $\pi^*$ is an optimal policy if and only if $\Phi_{\pi^*}V^* = \Phi V^*$.
-    %       \end{enumerate}
-    %    \end{theorem}
-    %  \todo[inline]{The above theorem also requires $p(s'|s,a)$ to be continuous in $a$ for any $s,s' \in S$. This is true for fixed-effects model since $x \mapsto e^x/1+e^x$ is continuous. I do not know about random-effects model. [[SP: $a$ comes into the model as a fixed effect (the random effects are for player identities), so, yes, $p(s'|s,a)$ is continuous in $a$.]]}
-    
-    % Theorem \ref{thm:mdp_optimality_condition} enables the characterization of $V^*(s)$ as in the following lemma.
-    
-    % \begin{lemma}\label{lem:mdp_value_function_characterization}
-    %     \normalfont
-    %     Suppose \footnote{Andrew - Don't love this as a lemma - corollary seems more appropriate} Assumption \ref{assum:mdp_halts} holds. Then $V^*$ is the unique solution to the following system of equations.
-    %     \begin{align*}
-    %         V(s) &= \max_{\ell \in {\cal L}}\sum_{s' \in {\cal S}}\left[r(s'|s) + V(s')\right]p(s'|s,\ell) \quad  \text{ if } s = (b,c,d,o) \text{ and } b = (1,0,0)\\
-    %         V(s) &= \sum_{s' \in {\cal S}}\left[r(s'|s) + V(s')\right]p(s'|s,\delta) \quad \text{ if } s = (b,c,d,o) \text{ and } b \neq (1,0,0)\\
-    %         V(s) &= 0 \quad \text{ if } s = \Delta.
-    %     \end{align*}
-    %     \begin{proof}
-    %         Immediate from Theorem \ref{thm:mdp_optimality_condition}.
-    %     \end{proof}
-    % \end{lemma}
-    
-    % An algorithmic device to obtain the optimal policy is value iteration or policy iteration \parencite{bertsekas_analysis_1991}. We use policy iteration  in this work to compute the optimal policy which is as follows.  Initialize $V^0 \in \mathbb{R}^{\abs{{\cal S}}}$ and $\pi^0 \in \Pi_\text{R}$, and then iteratively obtain $V^k$ and $\pi^k$ by applying the updates
-    %         \begin{align}
-    %           \label{eqn:update-value-single-agent}
-    %           V^{k+1}(s) &= \sum_{s' \in \mathcal{S}} p(s' | s,\, \pi^k(s)) [r(s, s') + V^k(s')] && \forall s \in \mathcal{S}, \mbox{ and}\\
-    %           \label{eqn:update-policy-single-agent}
-    %           \pi^{k+1}(s) &= \argmax_{a \in A_\text{R}(s)} \sum_{s' \in \mathcal{S}} p(s' | s,\, a) [r(s, s') + V^{k+1}(s')] && \forall s \in \mathcal{S}.
-    %         \end{align}
-    %     The iterates generated by the policy iteration satisfy $V^k \uparrow V^*$ and every limit point of $\pi^k$ is an optimal policy \parencite{bertsekas_analysis_1991}.
-
 \end{document}
