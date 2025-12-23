@@ -340,7 +340,7 @@
 
     As detailed in Section \ref{sec:introduction}, MLB made several rule changes between the 2022 season and the 2023 season, most notably (for the present work) widening the bases and limiting the number of pickoffs that can be attempted by the pitcher. Figure \ref{fig:leads-overall} illustrates the difference in runner lead distance behavior (from first base) between 2022 and 2023. With zero disengagements in 2023, the distribution of lead distances is very similar to the overall distribution of lead distances in 2022. With each successive disengagement, we observe a positive shift in the distribution of lead distance in the 2023 data. In 2022, the average lead distance was 9.6 feet. In 2023, the average lead distance under zero, one, and two disengagements was 9.6 feet, 10.3 feet, and 11.0 feet, respectively.
  
-    \begin{figure}[H]
+    \begin{figure}
       \centering
       \includegraphics[width = 0.8\textwidth]{leads_overall_light.pdf}
       \caption{
@@ -348,14 +348,15 @@
       }
       \label{fig:leads-overall}
     \end{figure}
-      
+    
     \subsection{Runner outcome probability model}
     \label{sec:results-multilevel-model}
 
       Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected.
 
-      \begin{table}[H]
-        \hspace{-6mm}
+      \begin{table}
+        \small
+        \center
         \input{../../output/tables/model_summary.tex}
         \caption{\it Summary of estimated runner outcome probability models. We estimated four different generalized (binomial) linear mixed-effects models for pickoff (PO) attempt and success and for stolen base (SB) attempt and success. For fixed effects we report the estimated effect with one standard error, and for random effects we report the estimated standard deviation term. For 2022, we encoded disengagements as always zero to reflect no pickoff limit.}
         \label{tab:model-summary}
@@ -363,7 +364,7 @@
       
       Figure \ref{fig:prob-pickoff} illustrates how pickoff attempt probability and success probability vary with distance. We observe that pickoff attempt rates were lower in 2023 than in 2022, especially as the number of prior disengagements increased. The modeled probability remains low even for extremely long leads. MLB has very limited data on lead distances beyond 14 feet, especially with fewer than two prior disengagements, so extrapolation much beyond 14 feet is likely not reliable. The ball-strike count and the identity of the pitcher also influence the pickoff attempt probability, but the primary drivers are lead distance and the number prior disengagements. We observe that, except for the most skilled pitchers, pickoff success probability is very low within the range covering the vast majority of lead distances. Toward the high end of this range, the success rate increases quickly as lead distance increases. Interestingly, there is a large gap between the 90$^{th}$-percentile pitcher and the median pitcher but a small gap between the median pitcher and the 10$^{th}$-percentile pitcher, demonstrating a right skew in the distribution of pitcher pickoff skill.
  
-      \begin{figure}[H]
+      \begin{figure}
         \centering
         \includegraphics[width = 0.4\textwidth]{prob_po_attempt_light.pdf}
         \includegraphics[width = 0.4\textwidth]{prob_po_success_light.pdf}
@@ -373,9 +374,9 @@
         \label{fig:prob-pickoff}
       \end{figure}
 
-      Figure \ref{fig:prob-sb-success} shows stolen base success probability modeled as a function of lead distance, split by season and by runner skill (accounting for sprint speed and runner random effect). We observe that, conditioned on lead distance, even 10$^{th}$-percentile runners in 2023 had higher success probabilities than the median runner in 2022, which is likely attributable to rule changes making it easier to steal bases in 2023. Within the range covering most lead distances, the difference between the 90$^{th}$-percentile runner and the median runner is just under 5 percentage points of success probability, similar to the difference between the median runner and the 10$^{th}$-percentile runner. Base-out state and battery (i.e. pitcher and catcher) skill also influence stolen base success probability although they are not shown in this visualization.
+      Figure \ref{fig:prob-sb-success} shows stolen base success probability modeled as a function of lead distance, split by season and by runner skill. We observe that, conditioned on lead distance, even 10$^{th}$-percentile runners in 2023 had higher success probabilities than the median runner in 2022, which is likely attributable to rule changes making it easier to steal bases in 2023. Within the range covering most lead distances, the difference between the 90$^{th}$-percentile runner and the median runner is just under 5 percentage points of success probability, similar to the difference between the median runner and the 10$^{th}$-percentile runner. Base-out state and battery (i.e. pitcher and catcher) skill also influence stolen base success probability although they are not shown in this visualization.
       
-      \begin{figure}[H]
+      \begin{figure}
         \centering
         \includegraphics[width = 0.7\textwidth]{prob_sb_success_light.pdf}
         \caption{
