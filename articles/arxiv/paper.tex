@@ -45,9 +45,9 @@
 \author[2]{Sivaramakrishnan Ramani}
 \author[3]{Jacob Hahn}
 \author[2]{Andrew J. Schaefer}
-\affil[1]{Department of Sport Management, Rice University}
-\affil[2]{Department of Computational Applied Mathematics and Operations Research, Rice University}
-\affil[3]{Department of Statistics, Rice University}
+\affil[1]{\small Department of Sport Management, Rice University}
+\affil[2]{\small Department of Computational Applied Mathematics and Operations Research, Rice University}
+\affil[3]{\small Department of Statistics, Rice University}
 
 \begin{document}
 
@@ -357,7 +357,7 @@
       Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected.
 
       \begin{table}
-        \footnotesize
+        \small
         \center
         \inputtable{model_summary.tex}
         \caption{\it Summary of estimated runner outcome probability models. We estimated four different generalized (binomial) linear mixed-effects models for pickoff (PO) attempt and success and for stolen base (SB) attempt and success. For fixed effects we report the estimated effect with one standard error, and for random effects we report the estimated standard deviation term. For 2022, we encoded disengagements as always zero to reflect no pickoff limit.}
@@ -406,7 +406,7 @@
     \subsection{Two-player sequential game}
     \label{sec:results-two-player}
     
-      Using the transition probabilities estimated on the empirical data, we implemented the value iteration algorithm presented in Section \ref{sec:sg-model}, discretizing the runner's action space to the nearest tenth of a foot in lead distance. Table \ref{tab:lead-by-count-two-player} reports how the optimal runner policy varies by count and prior disengagements, and Table \ref{tab:lead-by-outs-two-player} reports how the optimal runner policy varies by outs and prior disengagements. This optimal lead distance policy maximizes runs scored while taking into account the rational behavior of both players, as defined by (\ref{eqn:sg_val}). For this runner policy, the pitcher is indifferent to attempting a pickoff or not.
+      Using the transition probabilities estimated on the empirical data, we implemented the value iteration algorithm from Section \ref{sec:sg-model}, discretizing the runner's lead distance action space to the nearest tenth of a foot. Table \ref{tab:lead-by-count-two-player} reports how the optimal runner policy varies by count and disengagements, and Table \ref{tab:lead-by-outs-two-player} reports how the optimal runner policy varies by outs and disengagements. This runner policy maximizes runs scored while taking into account the rational behavior of both players, as defined by (\ref{eqn:sg_val}). For this runner policy, the pitcher is indifferent to attempting a pickoff or not.
       
       \begin{table}
         \centering
@@ -441,7 +441,7 @@
 
       Pitchers may be unlikely to adapt their strategy to the optimal policy in the short term. Runner actions are already observable by the defense, and current pitcher behavior seems more conservative than optimal, as noted in Section \ref{sec:results-two-player}. After all, the pitcher has the additional cognitive burden of contending with the batter. In light of this, we consider the results of value iteration applied to the one-player MDP. In this model, we assume the pitcher's pickoff decision is a stochastic policy modeled using empirical data. Because the pitcher's action is not optimal, the runner can exploit it. Table \ref{tab:lead-by-count-one-player} reports how the optimal runner policy varies by count and prior disengagements, and Table \ref{tab:lead-by-outs-one-player} reports how the optimal runner policy varies by outs and prior disengagements.
 
-      \begin{table}[b]
+      \begin{table}
         \centering
         \inputtable{lead_by_count_one_player.tex}
         \caption{
