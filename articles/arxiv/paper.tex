@@ -60,7 +60,7 @@
 
     On May 17, 2025, the Chicago Cubs hosted the Chicago White Sox in the second game of their Crosstown Series. In the bottom of the first inning, White Sox pitcher Sean Burke faced Cubs batter Michael Busch with two outs and Cubs runner Kyle Tucker on first base. Before the 1-1 pitch, Burke pivoted and threw to first base behind Tucker, who retreated safely before a tag. Tucker had 10 stolen bases in 10 attempts on the young season, the most of any base stealer who had not been caught \parencite{fangraphs_major_2025}. On the White Sox broadcast, color commentator Steve Stone explained to the audience, ``The only problem is now there's two throws over there, and Tucker's gonna get a much bigger lead.'' On the next pitch, Tucker stole his 11$^{th}$ base of the season, the first Burke had allowed. ``I don't think anybody in the room could have thrown him out on that play,'' said Stone.
 
-    For background, the stolen base is an exciting play in which a runner takes off on the pitch, attempting to reach the next base before the catcher can throw the to a fielder at the base to tag the runner out \parencite{mlb_baseball_2025}. Whether attempting a stolen base or not, the runner takes a {\it lead} from their base, commonly positioning themselves 8--12 feet away from their base, toward the next base. The longer the lead, the shorter the distance needed to run to reach the next base. The pitcher's primary deterrent against long leads is a {\it pickoff attempt}, in which they throw the ball to a fielder at the runner's base, attempting a tag before the runner returns safely to the base.
+    For background, the stolen base is an exciting play in which a runner takes off on the pitch, attempting to reach the next base before the catcher can throw the ball to a fielder at the base to tag the runner out \parencite{mlb_baseball_2025}. Whether attempting a stolen base or not, the runner takes a {\it lead} from their base, commonly positioning themselves 8--12 feet away from their base, toward the next base. The longer the lead, the shorter the distance needed to run to reach the next base. The pitcher's primary deterrent against long leads is a {\it pickoff attempt}, in which they throw the ball to a fielder at the runner's base, attempting a tag before the runner returns safely to the base.
 
     MLB stolen base totals surged in the 1980s and 1990s but then waned in the 2000s and 2010s as teams cut back on the play, which generally requires a high success rate in order to have a positive impact on run scoring \parencite{tango_book_2007}. Before 2023, pickoff attempts could delay games because unsuccessful pickoff attempts do not advance the state of the game. Acknowledging this and other trends, MLB introduced several rule changes in 2023, with the goal of making the game more exciting \parencite{castrovince_pitch_2023}. With these changes, a pitch clock limits the time between pitches, and there are restrictions on infielder positioning, curtailing defensive shifts. Two changes are particularly relevant to stolen base attempts: Bases are now wider (reducing the distance between first and second base by 4.5 inches), and there are now limitations on pickoff attempts, or more formally, {\it disengagements}.
 
@@ -68,7 +68,7 @@
 
     This disengagement limit creates an interesting cat-and-mouse game between the pitcher and the runner. Each unsuccessful pickoff attempt disincentivizes the pitcher from attempting another pickoff, which incentivizes the runner to increase their lead distance. As indicated by Stone before the Tucker stolen base against the White Sox, players and coaches understand this intuitively. But how much should the runner extend their lead, and when should the pitcher attempt a pickoff? Our work introduces a formal model to address this timely question and the consequences arising from the implementation of our recommendations.
     
-    Section \ref{sec:sg-model} uses a two-payer zero-sum sequential game to model the evolving interaction between the runner and the pitcher.  Our model captures the vital aspects of the play while retaining analytical and computational tractability. Our model is closely related to the class of stochastic/dynamic Stackelberg games \parencite{goktas_zero-sum_2022,li_review_2017,lopez_stationary_2023,vasal_sequential_2022,vorobeychik_computing_2012}, which combines the elements of Stackelberg and stochastic games. The main difference between our infinite-horizon model and the stochastic Stackelberg games literature is that we do not discount the rewards. The rationale for this modeling choice is that our optimization objective---expected runs in the inning---by definition includes no discount. We establish a maximin Bellman equation for our sequential game and propose a variant of value iteration and policy iteration to determine the optimal strategies for runner and pitcher.
+    Section \ref{sec:sg-model} uses a two-player zero-sum sequential game to model the evolving interaction between the runner and the pitcher.  Our model captures the vital aspects of the play while retaining analytical and computational tractability. Our model is closely related to the class of stochastic/dynamic Stackelberg games \parencite{goktas_zero-sum_2022,li_review_2017,lopez_stationary_2023,vasal_sequential_2022,vorobeychik_computing_2012}, which combines the elements of Stackelberg and stochastic games. The main difference between our infinite-horizon model and the stochastic Stackelberg games literature is that we do not discount the rewards. The rationale for this modeling choice is that our optimization objective---expected runs in the inning---by definition includes no discount. We establish a maximin Bellman equation for our sequential game and propose a variant of value iteration and policy iteration to determine the optimal strategies for runner and pitcher.
 
     In addition to developing a model which captures the important features of the pitcher-runner game, we analyze the model using recently available real-world MLB data. The most innovative component of our parameterization is the construction of transition probabilities. The outcome of each play is influenced by factors outside of our state variable, such as the sprint speed of the runner and the arm strength of the catcher. As a result, constructing transition probabilities using empirical conditional estimates (which use only the information from the current state and the actions of the player) is likely to be less accurate compared with a method that incorporates the player-specific factors.
     
@@ -157,7 +157,7 @@
         \label{eqn:sg_val}
         V^*(s) \defeq \max_{\pi_\text{R} \in \Pi_\text{R}}\min_{\pi_\text{P} \in \Pi_\text{P}}V^{\pi_\text{R},\pi_\text{P}}(s) \ \forall s \in S.
    \end{equation}
-   We call $V^*$ the \emph{optimal value function}. In our context, $V^*$ is the maximum expected total runs scored in an inning by the batting team, which, by the zero-sum property of the game, equals the minimum expected total runs incurred by the fielding team. A policy pair $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ such that $V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) = V^*(s) \ \forall s \in {\cal S}$ is called an equilibrium policy. That is, $\pi_\text{R}^*$ is a policy for the batting team that maximizes the expected total runs scored by them, and $\pi_\text{P}^*$ is a policy for the fielding team that minimizes the expected total runs incurred by them. In other words, $\pi_\text{R}^*$ is a optimal policy for the batting team and $\pi_\text{P}^*$ is an optimal policy for the fielding team. 
+   We call $V^*$ the \emph{optimal value function}. In our context, $V^*$ is the maximum expected total runs scored in an inning by the batting team, which, by the zero-sum property of the game, equals the minimum expected total runs incurred by the fielding team. A policy pair $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ such that $V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) = V^*(s) \ \forall s \in {\cal S}$ is called an equilibrium policy. That is, $\pi_\text{R}^*$ is a policy for the batting team that maximizes the expected total runs scored by them, and $\pi_\text{P}^*$ is a policy for the fielding team that minimizes the expected total runs incurred by them. In other words, $\pi_\text{R}^*$ is an optimal policy for the batting team and $\pi_\text{P}^*$ is an optimal policy for the fielding team. 
 
    A characterization of optimality conditions for \eqref{eqn:sg_val} including a dynamic programming equation is presented in the Appendix. In our computational experiments in Section \ref{sec:results}, we use value iteration to solve \eqref{eqn:sg_val}. The value iteration algorithm is as follows. Starting from an arbitrary $V^0 \in \mathbb{R}^{\abs{\cal S}}$ with $V^0(\Delta) = 0$, iteratively obtain $V^k$ via the following updates
         \begin{align}
@@ -190,7 +190,7 @@
         & \mbox{P}^+  \mbox{ represents a successful pickoff attempt (runner is out);}\\
         & \mbox{P}^-  \mbox{ represents an unsuccessful pickoff attempt (runner is safe);}\\
         & \mbox{S}^+  \mbox{ represents a successful stolen base attempt (runner is safe);}\\
-        & \mbox{S}^-  \mbox{ represents an usuccessful stolen base attempt (runner is out); and}\\
+        & \mbox{S}^-  \mbox{ represents an unsuccessful stolen base attempt (runner is out); and}\\
         & \mbox{N}~   \mbox{ represents no runner action (a pitch with no stolen base attempt).}
       \end{split}
     \end{align}
@@ -219,7 +219,7 @@
             \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P.
           \end{split}
         \end{align}
-        This model has eight fixed, unknown parameters: the intercept $\alpha$; the five slopes $\beta^B$, $\beta^S$, $\beta^O$, $\beta^D$, and $\beta^L$; and the two variance parameters $\sigma^2_R$ and $\sigma^2_P$. The number of random effects is $|\mathcal{H}^R| + |\mathcal{H}^P|$.
+        This model has seven fixed, unknown parameters: the intercept $\alpha$; the five slopes $\beta^B$, $\beta^S$, $\beta^O$, $\beta^D$, and $\beta^L$; and the variance parameter $\sigma^2_P$. The number of random effects is $|\mathcal{H}^P|$.
         
       \subsubsection{Pickoff success probability}
       \label{sec:prob-po-success}
@@ -355,7 +355,7 @@
       Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected.
 
       \begin{table}
-        \small
+        \footnotesize
         \center
         \input{../../output/tables/model_summary.tex}
         \caption{\it Summary of estimated runner outcome probability models. We estimated four different generalized (binomial) linear mixed-effects models for pickoff (PO) attempt and success and for stolen base (SB) attempt and success. For fixed effects we report the estimated effect with one standard error, and for random effects we report the estimated standard deviation term. For 2022, we encoded disengagements as always zero to reflect no pickoff limit.}
@@ -389,7 +389,7 @@
 
       For the stolen base success probability model, Figure \ref{fig:random-effect} shows the relationship between the combined player effect and the corresponding measurable characteristic, for both catchers and runners. We observe that arm strength explains 65\% of the variance in the catcher combined effect and that sprint speed explains 86\% of the variance in the runner combined effect. In other words, sprint speed tells us more about runner skill than arm strength tells us about catcher skill, with regard to stolen base outcomes. Beyond arm strength, the catcher can reduce stolen base success by releasing the ball more quickly or by throwing it more accurately to the target base. Beyond sprint speed, the runner can increase stolen base success by starting to run earlier (i.e., getting a better jump) or by accelerating more quickly to their top speed.
       
-      \begin{figure}[H]
+      \begin{figure}
         \centering
         \includegraphics[width = 0.4\textwidth]{effect_catcher_light.pdf}
         \includegraphics[width = 0.4\textwidth]{effect_runner_light.pdf}
@@ -406,7 +406,7 @@
     
       Using the transition probabilities estimated on the empirical data, we implemented the value iteration algorithm presented in Section \ref{sec:sg-model}, discretizing the runner's action space to the nearest tenth of a foot in lead distance. Table \ref{tab:lead-by-count-two-player} reports how the optimal runner policy varies by count and prior disengagements, and Table \ref{tab:lead-by-outs-two-player} reports how the optimal runner policy varies by outs and prior disengagements. This optimal lead distance policy maximizes runs scored while taking into account the rational behavior of both players, as defined by (\ref{eqn:sg_val}). For this runner policy, the pitcher is indifferent to attempting a pickoff or not.
       
-      \begin{table}[H]
+      \begin{table}
         \centering
         \input{../../output/tables/lead_by_count_two_player.tex}
         \caption{
@@ -417,7 +417,7 @@
 
       The most striking observation is that the optimal lead distance is significantly longer with two prior disengagements (14.9--15.8 feet) than in other states. These recommended lead distances are near the edge of observed lead distances in the dataset but not outside of the observed range. Overall, the optimal runner policy is more aggressive than observed behavior. Recall from Section \ref{sec:results-multilevel-model} that the average lead distance after zero, one, and two prior disengagements was 9.6 feet, 10.3 feet, and 11.0 feet, respectively.
 
-      \begin{table}[H]
+      \begin{table}
         \centering
         \input{../../output/tables/lead_by_outs_two_player.tex}
         \caption{
@@ -439,7 +439,7 @@
 
       Pitchers may be unlikely to adapt their strategy to the optimal policy in the short term. Runner actions are already observable by the defense, and current pitcher behavior seems more conservative than optimal, as noted in Section \ref{sec:results-two-player}. After all, the pitcher has the additional cognitive burden of contending with the batter. In light of this, we consider the results of value iteration applied to the one-player MDP. In this model, we assume the pitcher's pickoff decision is a stochastic policy modeled using empirical data. Because the pitcher's action is not optimal, the runner can exploit it. Table \ref{tab:lead-by-count-one-player} reports how the optimal runner policy varies by count and prior disengagements, and Table \ref{tab:lead-by-outs-one-player} reports how the optimal runner policy varies by outs and prior disengagements.
 
-      \begin{table}[H]
+      \begin{table}[b]
         \centering
         \input{../../output/tables/lead_by_count_one_player.tex}
         \caption{
@@ -450,7 +450,7 @@
 
       For the most part, the trends in the optimal lead distance policy in the one-player MDP are similar to that of the two-player game. One exception is that optimal lead distance increases with the number of balls in the count because pitchers are less likely to attempt pickoffs (Table \ref{tab:model-summary}). The relationship between prior disengagements and optimal lead distance is also different. We observe that increasing prior disengagements from zero to one generally increases the optimal lead distance by approximately 1.5 feet. Increasing prior disengagements from one to two generally increases the optimal lead distance by approximately 2.5 feet. Based on these results, we recommend the {\it Two-Foot Rule}: that runners increase their lead by two feet after each disengagement, a very simple and actionable guideline for athletes to follow.
       
-      \begin{table}[H]
+      \begin{table}
         \centering
         \input{../../output/tables/lead_by_outs_one_player.tex}
         \caption{
@@ -461,7 +461,7 @@
   
       Table \ref{tab:lead-by-players} shows the robustness of the Two-Foot Rule under different assumptions regarding player talent. Against batteries more skilled at controlling the run game, the optimal lead distance is shorter. For more skilled runners, the optimal lead distance is longer. Regardless of the skill levels, the rule of thumb holds up well. The greatest deviation from the Two-Foot Rule is when a 90th-percentile runner faces a 10th-percentile battery after the first disengagement. In this situation, we recommend a long lead before the first disengagement and an increase of only 0.9 feet afterward.
     
-      \begin{table}[H]
+      \begin{table}
         \centering
         \input{../../output/tables/lead_by_players.tex}
         \caption{
