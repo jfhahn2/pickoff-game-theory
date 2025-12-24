@@ -11,7 +11,9 @@
 
 \usepackage{amsmath, amssymb, amsthm, amsfonts, authblk, color, enumerate, framed, graphicx, mathrsfs, mathtools, mdframed, subcaption, tabularx, theoremref, titlesec, verbatim, xfrac, soul, mathtools, wrapfig, tikz, float}
 
-\graphicspath {{../../output/figures/}}
+\graphicspath {{figures/}}
+\newcommand{\tablepath}{tables/}
+\newcommand{\inputtable}[1]{\input{\tablepath #1}}
 
 \newtheorem*{theorem*}{Theorem}
 \newtheorem{theorem}{Theorem}
@@ -357,7 +359,7 @@
       \begin{table}
         \footnotesize
         \center
-        \input{../../output/tables/model_summary.tex}
+        \inputtable{model_summary.tex}
         \caption{\it Summary of estimated runner outcome probability models. We estimated four different generalized (binomial) linear mixed-effects models for pickoff (PO) attempt and success and for stolen base (SB) attempt and success. For fixed effects we report the estimated effect with one standard error, and for random effects we report the estimated standard deviation term. For 2022, we encoded disengagements as always zero to reflect no pickoff limit.}
         \label{tab:model-summary}
       \end{table}
@@ -408,7 +410,7 @@
       
       \begin{table}
         \centering
-        \input{../../output/tables/lead_by_count_two_player.tex}
+        \inputtable{lead_by_count_two_player.tex}
         \caption{
           \it The optimal lead distance (in feet) by count and prior disengagements under the two-player sequential game, assuming an average runner on first base facing an average battery (pitcher and catcher) with no outs and third base empty.
         }
@@ -419,14 +421,14 @@
 
       \begin{table}
         \centering
-        \input{../../output/tables/lead_by_outs_two_player.tex}
+        \inputtable{lead_by_outs_two_player.tex}
         \caption{
           \it The optimal lead distance (in feet) by outs and prior disengagements under the two-player sequential game, assuming an average runner on first base facing an average battery (pitcher and catcher) with an 0-0 count and third base empty.
         }
         \label{tab:lead-by-outs-two-player}
       \end{table}
 
-      We observe that the lead distance generally (although not strictly) shortens as the count deepens (i.e., as the numbers of balls and strikes increase). This makes intuitive sense because the plate appearance is closer to ending, which relieves the pressure on the pitcher to avoid attempting a pickoff. The lead distance generally (although not strictly) increases as the number of outs increases. This makes intuitive sense because the runner is less likely to score without more aggressive action. In other words, the riskier lead distance is more palatable because the runner has a lower baseline probability of scoring from first base with two outs. The non-monotonicity of the optimal lead distance policy may be a consequence of estimating transition probabilities using empirical data.
+      We observe that the lead distance generally, although not strictly, shortens as the count deepens (i.e., as the numbers of balls and strikes increase). This makes intuitive sense because the plate appearance is closer to ending, which relieves the pressure on the pitcher to avoid attempting a pickoff. The lead distance generally, although not strictly, increases as the number of outs increases. This makes intuitive sense because the runner is less likely to score without more aggressive action. In other words, the riskier lead distance is more palatable because the runner has a lower baseline probability of scoring from first base with two outs. The non-monotonicity of the optimal lead distance policy may be a consequence of estimating transition probabilities using empirical data.
 
       Under the game-theoretic equilibrium, pitchers would be more aggressive with attempting pickoffs when runners take long leads. Based on observed lead distances in 2023, we estimate that a pickoff attempt would be the optimal action in 11.4\% of opportunities with only first base occupied. When a pickoff attempt would have been recommended, pitchers attempted pickoffs 10.4\% of the time---100\% would be optimal. When a pickoff attempt would not have been recommended, pitchers attempted pickoffs 4.9\% of the time---0\% would be optimal. Overall, pitchers attempted pickoffs on 5.6\% of opportunities, less than the recommended 11.4\%.
       
@@ -441,7 +443,7 @@
 
       \begin{table}[b]
         \centering
-        \input{../../output/tables/lead_by_count_one_player.tex}
+        \inputtable{lead_by_count_one_player.tex}
         \caption{
           \it The optimal lead distance (in feet) by count and prior disengagements under the single-player MDP, assuming an average runner on first base facing an average battery (pitcher and catcher) with no outs and third base empty.
         }
@@ -452,7 +454,7 @@
       
       \begin{table}
         \centering
-        \input{../../output/tables/lead_by_outs_one_player.tex}
+        \inputtable{lead_by_outs_one_player.tex}
         \caption{
           \it The optimal lead distance (in feet) by outs and prior disengagements under the single-player MDP, assuming an average runner on first base facing an average battery (pitcher and catcher) with an 0-0 count and third base empty.
         }
@@ -463,7 +465,7 @@
     
       \begin{table}
         \centering
-        \input{../../output/tables/lead_by_players.tex}
+        \inputtable{lead_by_players.tex}
         \caption{
           \it Optimal lead distance (in feet) by battery/runner skill and prior disengagements, for an 0-0 count with no outs and third base empty. For example, the hypothetical 90$^{th}$-percentile battery represents the 90$^{th}$ percentile at attempting pickoffs, successfully executing pickoffs, suppressing stolen base attempts, and catching would-be base stealers.
         }
@@ -724,6 +726,7 @@
                \label{eqn:policy_iteration_temp1}
                (T_{\pi_\text{R}} u )(s) \defeq \min_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}(s))}\sum_{s' \in S}\left[r(s'|s) + u(s')\right]p(s'|s,\pi_\text{R}(s),a_\text{P}) \ \forall s \in {\cal S}.
            \end{equation}
+           \endgroup
            Since $\pi_\text{R}$ is stationary, the best response of the pitcher corresponding to $\pi_\text{R}$ reduces to solving a MDP. Denote the value of this MDP as $V^{\pi_\text{R}}$, i.e., $V^{\pi_\text{R}}(s) \defeq \min_{\pi_\text{P} \in \Pi_\text{P}} V^{\pi_\text{R},\pi_\text{P}}(s) \ \forall s \in {\cal S}$. Using similar arguments as in the proof of Theorem  \ref{lem:vi_convergence}, it follows that $\lim_{k \to \infty}T_{\pi_\text{R}}^k u = V^{\pi_\text{R}}$, where $T_{\pi_\text{R}}^k$ is the composition of $T_{\pi_\text{R}}$ taken with itself $k$ times.  Also, using arguments similar to the proof of Proposition  \ref{lem:bellman_equations}, it follows that $V^{\pi_\text{R}}$ is the unique fixed point of $T_{\pi_\text{R}}$.
     
            Note that the policy sequence $\pi_\text{R}^k$ generated by our algorithm satisfies  
