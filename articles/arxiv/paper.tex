@@ -44,7 +44,7 @@
 \author[3]{Jacob Hahn}
 \author[2]{Andrew J. Schaefer}
 \affil[1]{Department of Sport Management, Rice University}
-\affil[2]{Dept of Computational Applied Mathematics and Operations Research, Rice University}
+\affil[2]{Department of Computational Applied Mathematics and Operations Research, Rice University}
 \affil[3]{Department of Statistics, Rice University}
 
 \begin{document}
@@ -68,7 +68,7 @@
 
     This disengagement limit creates an interesting cat-and-mouse game between the pitcher and the runner. Each unsuccessful pickoff attempt disincentivizes the pitcher from attempting another pickoff, which incentivizes the runner to increase their lead distance. As indicated by Stone before the Tucker stolen base against the White Sox, players and coaches understand this intuitively. But how much should the runner extend their lead, and when should the pitcher attempt a pickoff? Our work introduces a formal model to address this timely question and the consequences arising from the implementation of our recommendations.
     
-    Section \ref{sec:sg-model} uses a two-payer zero-sum sequential game to model the evolving interaction between the runner and the pitcher.  Our model captures the vital aspects of the play while retaining analytical and computational tractability. Our model is closely related to the class of stochastic/dynamic Stackelberg games \parencite{goktas2022zero,li2017review,lopez2022stationary,vasal2020stochastic,vorobeychik2012computing}, which combines the elements of Stackelberg and stochastic games. The main difference between our infinite-horizon model and the stochastic Stackelberg games literature is that we do not discount the rewards. The rationale for this modeling choice is that our optimization objective---expected runs in the inning---by definition includes no discount. We establish a maximin Bellman equation for our sequential game and propose a variant of value iteration and policy iteration to determine the optimal strategies for runner and pitcher.
+    Section \ref{sec:sg-model} uses a two-payer zero-sum sequential game to model the evolving interaction between the runner and the pitcher.  Our model captures the vital aspects of the play while retaining analytical and computational tractability. Our model is closely related to the class of stochastic/dynamic Stackelberg games \parencite{goktas_zero-sum_2022,li_review_2017,lopez_stationary_2023,vasal_sequential_2022,vorobeychik_computing_2012}, which combines the elements of Stackelberg and stochastic games. The main difference between our infinite-horizon model and the stochastic Stackelberg games literature is that we do not discount the rewards. The rationale for this modeling choice is that our optimization objective---expected runs in the inning---by definition includes no discount. We establish a maximin Bellman equation for our sequential game and propose a variant of value iteration and policy iteration to determine the optimal strategies for runner and pitcher.
 
     In addition to developing a model which captures the important features of the pitcher-runner game, we analyze the model using recently available real-world MLB data. The most innovative component of our parameterization is the construction of transition probabilities. The outcome of each play is influenced by factors outside of our state variable, such as the sprint speed of the runner and the arm strength of the catcher. As a result, constructing transition probabilities using empirical conditional estimates (which use only the information from the current state and the actions of the player) is likely to be less accurate compared with a method that incorporates the player-specific factors.
     
@@ -169,7 +169,7 @@
      
      \noindent This result is proved in  in the Appendix. Furthermore, the proof of Theorem 1 also establishes a convergence rate of the form $\abs{V^k(s) - V^*(s)} \leq O(\rho^k)$ for all $s \in {\cal S}$ and a $\rho \in (0,1)$.
     
-    We note that fixing a pitcher policy reduces our two-player sequential game to a single-player MDP whose objective is to optimize the lead distance for the first-base runner. Optimality criterion similar to the two-player sequential game also exists for MDP with undiscounted rewards \parencite[Section 7.2]{bertsekas2012dynamic}. Numerical experiments using this decision  model for a specific pitcher policy are presented in Section \ref{sec:two-foot-rule}. These results may provide more immediately actionable insights for lead distance selection, as we discuss in Section \ref{sec:discussion}.
+    We note that fixing a pitcher policy reduces our two-player sequential game to a single-player MDP whose objective is to optimize the lead distance for the first-base runner. Optimality criterion similar to the two-player sequential game also exists for MDP with undiscounted rewards \parencite[Section 7.2]{bertsekas_dynamic_2012}. Numerical experiments using this decision  model for a specific pitcher policy are presented in Section \ref{sec:two-foot-rule}. These results may provide more immediately actionable insights for lead distance selection, as we discuss in Section \ref{sec:discussion}.
 
   \section{Transition probability model}
   \label{sec:transition-probability-model}
@@ -546,7 +546,7 @@
        \end{assumption}
        \noindent Assumption \ref{assum:game_halts} states that regardless of the policies and the starting state, there is a positive probability (at least $1-\rho$) that an inning ends after no more than $m \in \mathbb{N}$ plays.
     
-       Under Assumption \ref{assum:game_halts}, we prove that the expected number of runs scored by the batter, $V^{\pi_\text{R},\pi_\text{P}}$, in  \eqref{eqn:sg_pol_val} is finite. Our proof is based on standard arguments used in the analyses of undiscounted problems \parencite[Section 7.2]{bertsekas2012dynamic}. We present it here for completeness.  
+       Under Assumption \ref{assum:game_halts}, we prove that the expected number of runs scored by the batter, $V^{\pi_\text{R},\pi_\text{P}}$, in  \eqref{eqn:sg_pol_val} is finite. Our proof is based on standard arguments used in the analyses of undiscounted problems \parencite[Section 7.2]{bertsekas_dynamic_2012}. We present it here for completeness.  
     
        \begin{lemma}
            \label{lem:sg_pol_val_well_defined}
@@ -571,7 +571,7 @@
            thereby establishing the existence of $V^{\pi_\text{R},\pi_\text{P}}(s)$. The uniform bound follows since the above upper bound on $V^{\pi_\text{R},\pi_\text{P}}(s)$ is independent of $\pi_\text{R},\pi_\text{P}$, and $s$.
        \end{proof}
        
-        We present optimality characterizations in Theorem \ref{lem:vi_convergence} and Propositions \ref{lem:bellman_equations} to  \ref{lem:policy_iteration}. These results and their proofs are similar to the undiscounted problem in the single-player case \parencite[Section 7.2]{bertsekas2012dynamic} and the zero-sum stochastic game with simultaneous moves \parencite{patek_stochastic_1999}. We state and prove our results for completeness and to outline the minor differences. 
+        We present optimality characterizations in Theorem \ref{lem:vi_convergence} and Propositions \ref{lem:bellman_equations} to  \ref{lem:policy_iteration}. These results and their proofs are similar to the undiscounted problem in the single-player case \parencite[Section 7.2]{bertsekas_dynamic_2012} and the zero-sum stochastic game with simultaneous moves \parencite{patek_stochastic_1999}. We state and prove our results for completeness and to outline the minor differences. 
       \begin{definition}\label{defn:sg_operators}
         \normalfont
         Consider the sequential game defined in Section \ref{sec:sg-model}. Fix a $u \in \mathbb{R}^{\abs{\cal S}}$ with $u(\Delta) = 0$.
@@ -679,7 +679,7 @@
            &= \min_{a_\text{P} \in A_\text{P}(s,a_\text{R}^k)}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P}),
            \end{align*}
            \endgroup
-           where the second equality follows from Assumption \ref{assum:transition_pby_continuous} and the convergence of $u_{k-1}$ to $V^*$ established in Theorem \ref{lem:vi_convergence}. We have established the continuous convergence of the sequence of functions $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ over $A_\text{R}(s)$. The set $A_\text{R}(s)$ in \eqref{eqn:runner_action_sapce}   is compact. Hence, by Theorem 5 in Subsection X, Section 21 in  \parencite{kuratowski2014topology}, $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ converges to $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P})$ uniformly over $A_\text{R}(s)$.
+           where the second equality follows from Assumption \ref{assum:transition_pby_continuous} and the convergence of $u_{k-1}$ to $V^*$ established in Theorem \ref{lem:vi_convergence}. We have established the continuous convergence of the sequence of functions $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ over $A_\text{R}(s)$. The set $A_\text{R}(s)$ in \eqref{eqn:runner_action_sapce}   is compact. Hence, by Theorem 5 in Subsection X, Section 21 in  \parencite{kuratowski_topology_2014}, $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ converges to $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P})$ uniformly over $A_\text{R}(s)$.
     
            Utilizing this uniform convergence in \eqref{eqn:bellman_equation_temp1} gives us 
            \begin{align*}
