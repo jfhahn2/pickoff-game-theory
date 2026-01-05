@@ -18,7 +18,7 @@
 
 \newcommand{\defeq}{\stackrel{\text{def}}{=}}
 \newcommand{\abs}[1]{\left\lvert#1\right\rvert}
-% \newcommand{\revision}[1]{{\color{orange} #1}}
+\newcommand{\revision}[1]{{\color{orange} #1}}
 
 % Natbib setup for author-number style
 \usepackage{natbib}
@@ -128,12 +128,12 @@
     In this section, we present our two-player zero-sum sequential game that models the dynamic between runner and pitcher under the pickoff limit rule. Though our sequential game describes only a portion of an inning, it captures the vital aspects that enable the generation of valuable and actionable insights for the runner and the pitcher. Before describing the specifics of our model, we note that our model assumes a representative pitcher and a representative runner for the whole inning, rather than capturing full lineups and substitutions of players with varying skills. Without this assumption, we would end up with a nonstationary (infinite-horizon) two-player sequential game, which appears to be significantly more challenging to analyze when compared with the stationary version. The four components of our sequential game are as follows.
 
     {\bf 1. State space.} We use $s=(b,c,d,o) \in {\cal X}$ to capture a play, where     
-    \begin{align*}
-      b &\in \{0, 1\}^3 \text{ are the bases occupied by runners};\\
-      c &\in \{0, 1, 2, 3\} \times \{0, 1, 2\} \text{ is the ball-strike count};\\
-      d &\in \{0, 1, 2\} \text{ denotes the number of disengagements already used; and}\\
-      o &\in \{0, 1, 2\} \text{ denotes the number of outs}.
-    \end{align*}
+    \begin{itemize}
+      \item $b &\in \{0, 1\}^3$ are the bases occupied by runners;
+      \item $c &\in \{0, 1, 2, 3\} \times \{0, 1, 2\}$ is the ball-strike count;
+      \item $d &\in \{0, 1, 2\}$ denotes the number of disengagements already used; and
+      \item $o &\in \{0, 1, 2\}$ denotes the number of outs.
+    \end{itemize}
     The number of elements in ${\cal X}$ equals $2^3 \times (4 \times 3) \times 3 \times 3 = 864$. We use $\mathcal P$ to denote the set of four penultimate states and $\Delta$ to denote the terminal end-of-inning state. The purpose of the penultimate states is to keep track of the number of runs that are scored on the transition to the terminal state. A penultimate state $s \in \mathcal{P} \equiv \{0, 1, 2, 3\}$ represents the number of runs scored on the final play of the inning. We use $\mathcal{S} \equiv \mathcal{X} \cup \mathcal{P} \cup \{\Delta\}$ to denote the set of all states and $S_t$ to denote the state at play $t$ in a (fixed) inning. Traditionally, the state is defined by the bases occupied and the number of outs (24 non-terminal states) or by those and the ball-strike count (288 non-terminal states) \citep{bukiet_markov_1997}. Our construction of the state extends them by further including the number of disengagements as a component of the state, thereby allowing us to analyze the game under the new pickoff limit rule.
 
     {\bf 2. Action space.} We limit the agency of runners and pitchers to states in which only first base is occupied 
@@ -150,19 +150,25 @@
             \quad \text{ with } b \neq (1,0,0),\\
             \quad \text{ or } s \in {\cal P} \cup \{\Delta\}
         \end{cases} \forall s \in {\cal S},
-        \end{align}
-where ${\cal L} \defeq [0,20]$ is the set of allowable lead distances for the first-base runner, and
-       \begin{align}
-    \label{eqn:pitcher_action_sapce}
-        A_{\text{P}}(s,a_\text{R}) \defeq \begin{cases}
-            {\cal P} \text{ if } s = (b,c,d,o)\\
+    \end{align}
+        
+    where ${\cal L} \defeq [0,20]$ is the set of allowable lead distances for the first-base runner, and
+    
+    \begin{align}
+      \label{eqn:pitcher_action_sapce}
+      \begin{split}
+        &A_{\text{P}}(s,a_\text{R})\\
+        & \defeq \begin{cases}
+          {\cal P} \text{ if } s = (b,c,d,o)\\
             \quad \text{ with } b = (1,0,0) \\
-            \{\delta\} \text{ if } s = (b,c,d,o)\\
-            \quad \text{ with } b \neq (1,0,0),
-            \\ \quad \text{ or } s \in {\cal P} {\cup} \{\Delta\},         \end{cases} \forall s \in {\cal S}, 
-            a_\text{R} \in A_\text{R}(s),
-            \end{align}            
-where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt and $0$ otherwise.  Here, $\delta$ is a dummy element that captures the lack of agency. We note that the state of our sequential game progresses even when no actions are played by both players. We will model this through appropriate transition probabilities.  
+          \{\delta\} \text{ if } s = (b,c,d,o)\\
+            \quad \text{ with } b \neq (1,0,0),\\
+            \quad \text{ or } s \in {\cal P} {\cup} \{\Delta\},
+        \end{cases}\\
+        &\hspace{10mm} \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s),
+      \end{split}
+    \end{align} 
+    where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt and $0$ otherwise.  Here, $\delta$ is a dummy element that captures the lack of agency. We note that the state of our sequential game progresses even when no actions are played by both players. We will model this through appropriate transition probabilities.  
 
     {\bf 3. Transition probabilities.} The uncertainty in our sequential game is modeled through transition probabilities, i.e., the conditional probability of transitioning to a future state given the sequence of previously visited states and the actions played in those states. Our sequential game assumes that the transition probabilities satisfy the Markov property.  Following the convention in the literature, we denote the transition probability as $p(\cdot|s,a_\text{R},a_\text{P}) \ \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s), a_\text{P} \in A_\text{P}(s,a_\text{R})$. Section \ref{sec:transition-probability-model} details our specific construction of transition probabilities, which uses generalized linear mixed-effects models to estimate runner outcome (e.g., unsuccessful pickoff attempt or successful stolen base attempt) probabilities which depend on lead distance and the pitcher's pickoff decision, as well as player-specific factors. These, along with appropriate conditional empirical frequencies, will be used to construct the transition probabilities.
 
@@ -172,7 +178,7 @@ where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt
         r(s'|s,a_\text{R},a_\text{P}) &\defeq r(s'|s) \\
         \nonumber
         \quad 
-        \forall s,s' \in {\cal S}, a_\text{R} \in A_\text{R}(s), & a_\text{P} \in A_\text{P}(s,a_\text{R}),
+        \forall s,s' \in {\cal S},\, a_\text{R} \in A_\text{R}(s),\, & a_\text{P} \in A_\text{P}(s,a_\text{R}),
     \end{align}
     where
     \begin{align}
@@ -223,37 +229,34 @@ where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt
   \label{sec:transition-probability-model}
 
     In this section, we describe how we estimate state transition probabilities which we use for the two-player sequential game described in Section \ref{sec:sg-model}. Throughout, we use $s_i = (b_i, c_i, d_i, o_i)$ to denote the state of the game at the beginning of each observed play $i \in \{1, ..., n\}$ (which can be a pitch or a pickoff attempt). We use $\mathcal{H}^R$, $\mathcal{H}^P$, and $\mathcal{H}^C$ to denote the sets of runners, pitchers and catchers, respectively. On play $i$:
-    \begin{align*}
-      h_i^R & \in \mathcal{H}^R \mbox{ is the runner;}\\
-      h_i^P & \in \mathcal{H}^P \mbox{ is the pitcher;}\\
-      h_i^C & \in \mathcal{H}^C \mbox{ is the catcher;}\\
-      z_i^R & \in \mathbb{R^+} \mbox{ is the sprint speed of runner $h_i^R$; and}\\
-      z_i^C & \in \mathbb{R^+} \mbox{ is the arm strength of catcher $h_i^C$.}
-    \end{align*}
+    \begin{itemize}
+      \item $h_i^R \in \mathcal{H}^R$ is the runner;
+      \item $h_i^P \in \mathcal{H}^P$ is the pitcher;
+      \item $h_i^C \in \mathcal{H}^C$ is the catcher;
+      \item $z_i^R \in \mathbb{R^+}$ is the sprint speed of runner $h_i^R$; and
+      \item $z_i^C \in \mathbb{R^+}$ is the arm strength of catcher $h_i^C$.
+    \end{itemize}
     
     When the play begins, we use $\ell_i \in \mathbb{R}^+$ to denote the lead distance (in feet) taken by the first-base runner; and we use $p_i \in \{0, 1\}$ to denote whether the pitcher attempts (1) or does not attempt (0) a pickoff. We use $r_i \in \{\mbox{P}^+,\, \mbox{P}^-,\, \mbox{S}^+,\, \mbox{S}^-,\, \mbox{N}\} \equiv \mathcal{R}$ to denote the runner outcome, where
-    \begin{align}
-    \label{eqn:runner-outcome}
-      \begin{split}
-        & \mbox{P}^+  \mbox{ represents a successful pickoff attempt (runner is out);}\\
-        & \mbox{P}^-  \mbox{ represents an unsuccessful pickoff attempt (runner is safe);}\\
-        & \mbox{S}^+  \mbox{ represents a successful stolen base attempt (runner is safe);}\\
-        & \mbox{S}^-  \mbox{ represents an unsuccessful stolen base attempt (runner is out); and}\\
-        & \mbox{N}~   \mbox{ represents no runner action (a pitch with no stolen base attempt).}
-      \end{split}
-    \end{align}
+    \begin{itemize}
+      \item $\mbox{P}^+$ represents a successful pickoff attempt (runner is out);
+      \item $\mbox{P}^-$ represents an unsuccessful pickoff attempt (runner is safe);
+      \item $\mbox{S}^+$ represents a successful stolen base attempt (runner is safe);
+      \item $\mbox{S}^-$ represents an unsuccessful stolen base attempt (runner is out); and
+      \item $\mbox{N}$ represents no runner action (a pitch with no stolen base attempt).
+    \end{itemize}
     If there is no runner on first base, then $\ell_i$ and $r_i$ are undefined.
 
     \subsection{Probability model for runner outcomes}
     \label{sec:prob-runner-outcome}
 
-      As itemized in (\ref{eqn:runner-outcome}), there are five possible outcomes for the runner with respect to the run game. To estimate each of these probabilities conditional on player identities, count, and lead distance, we model four probabilities. Using $R_i$ to denote the random variable governing the probability distribution over $r_i$,
-      \begin{align*}
-        \phi_i    &= \mathbb{P}(R_i \in \{\mbox{P}^+,\, \mbox{P}^-\}) \mbox{ is the pickoff attempt probability;}\\
-        \phi_i^+  &= \mathbb{P}(R_i \in \{\mbox{P}^+\} \mid R_i \in \{\mbox{P}^+,\, \mbox{P}^-\}) \mbox{ is the pickoff success probability;}\\
-        \psi_i   &= \mathbb{P}(R_i \in \{\mbox{S}^+,\, \mbox{S}^-\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-, N\}) \mbox{ is the stolen base attempt probability; and}\\
-        \psi_i^+ &= \mathbb{P}(R_i \in \{\mbox{S}^+\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-\}) \mbox{ is the stolen base success probability.}
-      \end{align*}
+      There are $|\mathcal{R}| = 5$ possible outcomes for the runner with respect to the run game. To estimate each of these probabilities conditional on player identities, count, and lead distance, we model four probabilities. Using $R_i$ to denote the random variable governing the probability distribution over $r_i$,
+      \begin{itemize}
+        \item $\phi_i = \mathbb{P}(R_i \in \{\mbox{P}^+,\, \mbox{P}^-\})$ is the pickoff attempt probability;
+        \item $\phi_i^+ = \mathbb{P}(R_i \in \{\mbox{P}^+\} \mid R_i \in \{\mbox{P}^+,\, \mbox{P}^-\})$ is the pickoff success probability;
+        \item $\psi_i = \mathbb{P}(R_i \in \{\mbox{S}^+,\, \mbox{S}^-\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-, N\})$ is the stolen base attempt probability; and
+        \item $\psi_i^+ = \mathbb{P}(R_i \in \{\mbox{S}^+\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-\})$ is the stolen base success probability.
+      \end{itemize}
       We estimate each of these probabilities with generalized linear mixed-effects models \citep{stroup_generalized_2012}, implemented in R using the package lme4 \citep{bates_fitting_2015}. Specifically, we use logistic regression because the outcomes are binary. Mixed-effects models allow us to incorporate player random effects along with fixed effects for game state variables and lead distance. Player random effects are particularly appropriate for this setting because they yield player skill estimates which go beyond measurable characteristics like sprint speed and are regularized towards a common mean.
 
       \subsubsection{Pickoff attempt probability}
@@ -324,12 +327,20 @@ where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt
     \subsection{Probability model for state transitions}
     \label{sec:prob-state-transition}
 
-      We first describe the estimation of transition probabilities for the two-player sequential game, and then we present transition probabilities for the single-player MDP as a reduction. In the case where $a_\text{R} = a_\text{P} = \delta$, we simply use the empirical transition probabilities between states. Otherwise, we use the law of total probability to decompose the transition probability function $p(s'|s,a_\text{R},a_\text{P})$ conditionally on the runner outcome. The runner outcome depends on runner and pitcher actions, but we assume that given the runner outcome, the state transition does not depend on the actions.
+      We first describe the estimation of transition probabilities for the two-player sequential game, and then we present transition probabilities for the single-player MDP as a reduction. In the case where $a_\text{R} = a_\text{P} = \delta$, we simply use the empirical transition probabilities between states. Otherwise, we use the law of total probability to decompose the transition probability function $p(s'|s,a_\text{R},a_\text{P})$ conditionally on the runner outcome. The runner outcome depends on runner and pitcher actions, but we assume that given the runner outcome, the state transition does not depend on the actions. 
+      \revision{
+        Using $\mathcal{E}$ to denote the event $\{S_i = s, \ell_i = a_\text{R}, p_i = a_\text{P}\}$,
+      }
       \begin{align}
         \label{eqn:prob-state-transition-two-player}
-        p(s'|s,\, a_\text{R},\, a_\text{P}) &= \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, \ell_i = a_\text{R},\, p_i = a_\text{P}) \notag\\
-          &= \sum_{r \in \mathcal{R}} \mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a_\text{R},\, p_i = a_\text{P}) \cdot \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, \ell_i = a_\text{R},\, p_i = a_\text{P},\, R_i = r) \notag\\
-          &= \sum_{r \in \mathcal{R}} \mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a_\text{R},\, p_i = a_\text{P}) \cdot \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r).
+          & p(s'|s,\, a_\text{R},\, a_\text{P}) \notag\\
+          &=\quad \mathbb{P}(S_{i+1} = s' \mid \revision{\mathcal{E}}) \notag\\
+          &=\quad \sum_{r \in \mathcal{R}} \big(\mathbb{P}(R_i = r \mid \revision{\mathcal{E}}) \cdot \notag\\
+          &\hspace{18mm} \mathbb{P}(S_{i+1} = s' \mid \revision{\mathcal{E}},\, R_i = r)\big) \notag\\
+          \begin{split}
+            &=\quad \sum_{r \in \mathcal{R}} \big( \mathbb{P}(R_i = r \mid \revision{\mathcal{E}}) \cdot\\
+            &\hspace{18mm} \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r) \big).
+          \end{split}
       \end{align}
       The first factor within the summation of (\ref{eqn:prob-state-transition-two-player}) is the runner outcome probability, and the second factor is the conditional transition probability given the runner outcome. To estimate runner outcome probability, we use the models from Section \ref{sec:prob-runner-outcome}. Specifically, assuming $a_\text{R} \ne \delta$ and $a_\text{P} \ne \delta$, then $\mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a_\text{R},\, p_i = a_\text{P})$ is given by
       \begin{align}
@@ -349,22 +360,32 @@ where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt
       To estimate $\mathbb{P}(S_{i+1} = s' \mid S_i   = s, R_i = r)$, we use conditional empirical frequencies of the ending state $s'$ given the starting state $s$ and the runner outcome $r$. However, we pool across the starting disengagements $d$ when calculating these empirical frequencies. Our assumption is that, given the runner event, the starting disengagements $d$ does not impact the transition probabilities between the reduced states $\tilde s \equiv (b, c, \cdot, o)$ and $\tilde s' \equiv (b', c', \cdot, o')$. By pooling data across different values of $d$, we mitigate small sample size issues when estimating transition probabilities from rare states, such as having a runner on third base with an 0-0 count, two disengagements and zero outs.
 
       The pooled empirical transition probability conditions on $e = d' - d$ instead of conditioning on $d$ and $d'$. Using $E_{i}$ to denote the random variable governing the probability distribution over $d_{i + 1} - d_i$,
-      \begin{align*}                                  
-        Q(\tilde s, r, \tilde s', e)                  
-          &= \hat{\mathbb{P}}\left(\tilde S_{i+1} =   \tilde s',\, E_i = e \mid \tilde S_i = \tilde s,\, R_i = r\right)\\
-          &= \frac
-            {\sum_{i=1}^n\mathbb{I}\left\{\tilde s_i = \tilde s,\, r_i = r\right\} \cdot \mathbb{I}\left\{\tilde s_{i+1} = \tilde s',\, d_{i+1} - d_i = e\right\}}
-            {\sum_{i=1}^n\mathbb{I}\left\{\tilde s_i = \tilde s,\, r_i = r\right\}}.
-      \end{align*}
+      \begin{align}
+        \label{eqn:pooled-probabilities}
+        \begin{split}
+          &Q(\tilde s, r, \tilde s', e)\\
+            &= \hat{\mathbb{P}}\left(\tilde S_{i+1} =   \tilde s',\, E_i = e \mid \tilde S_i = \tilde s,\, R_i = r\right)\\
+            &= \frac
+              {\sum_{i=1}^n 1_i^{\tilde s, r} \cdot 1_i^{\tilde s', e}}
+              {\sum_{i=1}^n 1_i^{\tilde s, r}},
+        \end{split}
+      \end{align}
+      \revision{
+        where $ = \mathbb{I}\left\{\tilde s_i = \tilde s,\, r_i = r\right\}$ and $1_i^{\tilde s', e}= \mathbb{I}\left\{\tilde s_{i+1} = \tilde s',\, d_{i+1} - d_i = e\right\}$.
+      }
       Finally, we estimate the full-state transition probabilities as
       \begin{align*}
-        \hat{\mathbb{P}}(S_{i+1} = (b', c', d', o') \mid S_i = (b, c, d, o), R_i = r) = Q\big((b, c, \cdot, o),\, r,\, (b', c', \cdot, o'),\, d' - d\big).
+        &\hat{\mathbb{P}}(S_{i+1} = (b', c', d', o') \mid S_i = (b, c, d, o), R_i = r)\\
+        & = Q\big((b, c, \cdot, o),\, r,\, (b', c', \cdot, o'),\, d' - d\big).
       \end{align*}
 
       In Section \ref{sec:two-foot-rule} we present additional numerical results for the optimal runner policy assuming that the pitcher follows a fixed, exploitable policy (matching observed behavior). In this case, we follow the same estimation method for the transition probabilities except that the function $p(s'|s,a_\text{R})$ depends only on the runner's action. For this model, we replace (\ref{eqn:prob-state-transition-two-player}) with
       \begin{align}
         \label{eqn:prob-state-transition-one-player}
-        p(s'|s,\, a_\text{R}) = \sum_{r \in \mathcal{R}} \mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a_\text{R}) \cdot \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r),
+        \begin{split}
+          &p(s'|s,\, a_\text{R}) = \sum_{r \in \mathcal{R}} \big(\mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a_\text{R}) \cdot \\
+          & \hspace{32mm} \mathbb{P}(S_{i+1} = s' \mid S_i = s,\, R_i = r)\big),
+        \end{split}
       \end{align}
       where $\mathbb{P}(R_i = r \mid S_i = s,\, \ell_i = a_\text{R})$ is given by
       \begin{align}
@@ -644,10 +665,9 @@ where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt
  \bibliographystyle{informs2014}
  \bibliography{bibliography}
 
-% \newpage
+\newpage
 
-\begin{comment}
-  \section*{Appendix: Technical results}
+\section*{Electronic Companion}
     % \label{sec:appendix}
     We present a formal description of the sequential game described in Section \ref{sec:sg-model} and the related optimality characterizations. 
     
@@ -894,6 +914,5 @@ where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt
        \[
        \pi_\text{P}^*(s,\pi_\text{R}^*(s)) \in \argmin_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}^*(s))}[r(s'|s) + V^*(s')] p(s'|s,\pi_\text{R}^*(s),a_\text{P}) \ \forall s \in {\cal S}, \pi_\text{R}^*(s) \in A_\text{R}(s).
        \]
-\end{comment}
-               
+              
 \end{document}
