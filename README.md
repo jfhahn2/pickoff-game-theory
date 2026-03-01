@@ -1,7 +1,7 @@
 
-# The Two-Foot Rule: A game theoretic analysis of the pickoff limit in Major League Baseball
+# Lead distance under a pickoff limit in Major League Baseball: A sequential game model
 
-Jacob Hahn, Scott Powers, Mallesh Pai and Andrew Schaefer
+Scott Powers, Sivaramakrishnan Ramani, Jacob Hahn, and Andrew Schaefer
 
 2024 Cascadia Symposium on Statistics in Sports
 [slides](https://drive.google.com/file/d/17jveBX0U5hDRP7KH2GtvgGVATdS8wI7Q),
