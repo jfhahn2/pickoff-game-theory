@@ -1,5 +1,5 @@
 
-# The Two-Foot Rule: A game theoretic analysis of the pickoff limit in Major League Baseball
+# Lead distance under a pickoff limit in Major League Baseball: A sequential game model
 
 Scott Powers, Sivaramakrishnan Ramani, Jacob Hahn and Andrew J Schaefer
 [preprint](https://arxiv.org/abs/2601.15608)
