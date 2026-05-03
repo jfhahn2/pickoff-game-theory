@@ -2,7 +2,7 @@
 
 \usepackage[alldates=year, block=space, style=apa]{biblatex}
 \setlength\bibitemsep{0.5\baselineskip}
-\addbibresource{../bibliography.bib}
+\addbibresource{bibliography.bib}
 
 \usepackage[margin=1in]{geometry}
 \linespread{1.2}
@@ -50,17 +50,20 @@
 \affil[3]{\small Department of Statistics, Rice University}
 
 \begin{document}
+\date{}
 
   \maketitle
 
   \begin{abstract}
-    Recently, Major League Baseball (MLB) limited pitchers to three pickoff attempts, creating a cat-and-mouse game between pitcher and runner. Each failed attempt adds pressure on the pitcher to avoid using another, and the runner can intensify this pressure by extending their leadoff toward the next base. We model this dynamic as a two-player zero-sum sequential game in which the runner first chooses a lead distance, and then the pitcher chooses whether to attempt a pickoff. We establish optimality characterizations for the game and present variants of value iteration and policy iteration to solve the game. Using lead distance data, we estimate generalized linear mixed-effects models for pickoff and stolen base outcome probabilities given lead distance, context, and player skill. We compute the game-theoretic equilibria under the two-player model, as well as the optimal runner policy under a simplified one-player Markov decision process (MDP) model. In the one-player setting, our results establish an actionable rule of thumb: the Two-Foot Rule, which recommends that a runner increase their lead by two feet after each pickoff attempt.
+    Major League Baseball (MLB) recently limited pitchers to three pickoff attempts, creating a cat-and-mouse game between pitcher and runner. Each failed attempt adds pressure on the pitcher to avoid using another, and the runner can intensify this pressure by extending their leadoff toward the next base. We model this dynamic as a two-player zero-sum sequential game in which the runner first chooses a lead distance, and then the pitcher chooses whether to attempt a pickoff. We establish optimality characterizations for the game and present variants of value iteration and policy iteration to solve the game. Using lead distance data, we estimate generalized linear mixed-effects models for pickoff and stolen base outcome probabilities given lead distance, context, and player skill. We compute the game-theoretic equilibria under the two-player model, as well as the optimal runner policy under a simplified one-player Markov decision process (MDP) model. In the one-player setting, our results establish an actionable rule of thumb: the Two-Foot Rule, which recommends that a runner increase their lead by two feet after each pickoff attempt.
   \end{abstract}
 
   \section{Introduction}
   \label{sec:introduction}
 
     On May 17, 2025, the Chicago Cubs hosted the Chicago White Sox in the second game of their Crosstown Series. In the bottom of the first inning, White Sox pitcher Sean Burke faced Cubs batter Michael Busch with two outs and Cubs runner Kyle Tucker on first base. Before the 1-1 pitch, Burke pivoted and threw to first base behind Tucker, who retreated safely before a tag. Tucker had 10 stolen bases in 10 attempts on the young season, the most of any base stealer who had not been caught \parencite{fangraphs_major_2025}. On the White Sox broadcast, color commentator Steve Stone explained to the audience, ``The only problem is now there's two throws over there, and Tucker's gonna get a much bigger lead.'' On the next pitch, Tucker stole his 11$^{th}$ base of the season, the first Burke had allowed. ``I don't think anybody in the room could have thrown him out on that play,'' said Stone.
+
+    Baseball is a significant societal phenomenon in the United States and worldwide \parencite{kelly_is_2007}. In 2025, the total attendance at Major League Baseball (MLB) regular season games was 71 million \parencite{baseball_reference_2025_2025}. Game 7 of the 2025 World Series between the Los Angeles Dodgers and the Toronto Blue Jays averaged 51 million viewers worldwide \parencite{mlb_51_2025}. For 2024, MLB reported \$12.1 billion in gross revenues \parencite{brown_mlb_2025}, supporting jobs and generating tax revenue. To drive this significant societal impact, it is important for MLB to maintain an engaging spectator experience.
 
     For background, the stolen base is an exciting play in which a runner takes off on the pitch, attempting to reach the next base before the catcher can throw the ball to a fielder at the base to tag the runner out \parencite{mlb_baseball_2025}. Whether attempting a stolen base or not, the runner takes a {\it lead} from their base, commonly positioning themselves 8--12 feet away from their base, toward the next base. The longer the lead, the shorter the distance needed to run to reach the next base. The pitcher's primary deterrent against long leads is a {\it pickoff attempt}, in which they throw the ball to a fielder at the runner's base, attempting a tag before the runner returns safely to the base.
 
@@ -80,7 +83,7 @@
 
     \subsection{Related work}
 
-    \textcite{downey_pick_2015} analyzed pickoff throws and stolen base attempts as a mixed strategy game without using lead distance data. They modeled the two-player game as a simultaneous decision in which the pitcher chooses whether to attempt a pickoff and the runner chooses whether to attempt a stolen base, showing that this theoretical game has a mixed-strategy Nash equilibrium. Under this equilibrium, left-handed pitchers (typically possessing better pickoff moves than their right-handed counterparts) attempt fewer pickoffs and see fewer stolen bases attempted against them, a result validated by empirical data. In a later analysis, \textcite{downey_pressure_2019} argued that pitchers can effectively implement a mixed strategy in low-pressure situations but struggle to randomize their decisions as pressure increases, showing a higher auto-correlation for sequential pickoff decisions in high-pressure situations. Both of these analyses covered a game in which pickoff attempts were unlimited.
+    \textcite{downey_pick_2015} analyzed pickoff throws and stolen base attempts as a mixed strategy game without using lead distance data. They modeled the two-player game as a simultaneous decision in which the pitcher chooses whether to attempt a pickoff and the runner chooses whether to attempt a stolen base, showing that this game has a mixed-strategy Nash equilibrium. Under this equilibrium, left-handed pitchers (typically possessing better pickoff moves than their right-handed counterparts) attempt fewer pickoffs and see fewer stolen bases attempted against them, a result validated by empirical data. \textcite{downey_pressure_2019} later argued that pitchers can effectively implement a mixed strategy in low-pressure situations but struggle to randomize their decisions as pressure increases, showing a higher auto-correlation for sequential pickoff decisions in high-pressure situations. Both of these analyses covered a game in which pickoff attempts were unlimited.
 
     Several studies in the sports economics literature have examined the extent to which professional athletes play minimax strategy. \textcite{palacios-huerta_professionals_2003} found evidence consistent with minimax equilibrium behavior in the mixed strategy game of the soccer penalty kick, in which the kicker chooses to shoot the ball left or right and the goalkeeper simultaneously chooses to dive left or right for the save. \textcite{palacios-huerta_experientia_2008} followed this with a laboratory experiment featuring professional soccer players and college students simulating the penalty kick decision using cards, showing that the professionals played minimax but the students did not. On the other hand, \textcite{kovash_professionals_2009} found evidence inconsistent with minimax equilibrium behavior in the National Football League (teams called more run plays and fewer pass plays than theoretically optimal) and in MLB (pitchers threw more fastballs than theoretically optimal).
 
@@ -548,21 +551,21 @@
        \end{assumption}
        \noindent Assumption \ref{assum:game_halts} states that regardless of the policies and the starting state, there is a positive probability (at least $1-\rho$) that an inning ends after no more than $m \in \mathbb{N}$ plays.
     
-       Under Assumption \ref{assum:game_halts}, we prove that the expected number of runs scored by the batter, $V^{\pi_\text{R},\pi_\text{P}}$, in  \eqref{eqn:sg_pol_val} is finite. Our proof is based on standard arguments used in the analyses of undiscounted problems \parencite[Section 7.2]{bertsekas_dynamic_2012}. We present it here for completeness.  
+       Under Assumption \ref{assum:game_halts}, we prove that the expected number of runs scored by the batter, $V^{\pi_\text{R},\pi_\text{P}}$ is finite. Our proof is based on standard arguments used in the analyses of undiscounted problems \parencite[Section 7.2]{bertsekas_dynamic_2012}. We present it here for completeness.  
     
        \begin{lemma}
            \label{lem:sg_pol_val_well_defined}
-           Suppose Assumption \ref{assum:game_halts} holds. Then $V^{\pi_\text{R},\pi_\text{P}}(s)$ in \eqref{eqn:sg_pol_val} is well-defined for all $\pi_\text{R} \in \overline\Pi_\text{R}, \pi_\text{P} \in \overline\Pi_\text{P}$, and $s \in {\cal S}$. Also, $V^{\pi_\text{R},\pi_\text{P}}$ is uniformly bounded over $\overline\Pi_\text{R} \times \overline\Pi_\text{P} \times {\cal S}$.  
+           Suppose Assumption \ref{assum:game_halts} holds. Then $V^{\pi_\text{R},\pi_\text{P}}(s)$ is well-defined for all $\pi_\text{R} \in \overline\Pi_\text{R}, \pi_\text{P} \in \overline\Pi_\text{P}$, and $s \in {\cal S}$. Also, $V^{\pi_\text{R},\pi_\text{P}}$ is uniformly bounded over $\overline\Pi_\text{R} \times \overline\Pi_\text{P} \times {\cal S}$.  
        \end{lemma}
        \begin{proof}
            Fix a $\pi_\text{R} \in \overline\Pi_\text{R}, \pi_\text{P} \in \overline\Pi_\text{P}$, and $s \in {\cal S}$. Then 
            \begingroup
            \allowdisplaybreaks
            \begin{align*}
-               V^{\pi_\text{R},\pi_\text{P}}(s) &= \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=0}^\infty r(S_{t+1}|S_t) \Big| S_0 = s\right] = \lim_{t \to \infty} \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{j=0}^{t-1} r(S_{j+1}|S_j) \Big| S_0 = s\right].
+               V^{\pi_\text{R},\pi_\text{P}}(s) &= \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=0}^\infty r(S_{t+1}|S_t) \Big| S_0 = s\right] = \lim_{t \to \infty} \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{j=0}^{t-1} r(S_{j+1}|S_j) \Big| S_0 = s\right],
            \end{align*}
            \endgroup
-           The first equality is the  definition of $V^{\pi_\text{R},\pi_\text{P}}(s)$ in \eqref{eqn:sg_pol_val}. The second equality follows by the monotone convergence theorem since the rewards are nonnegative. Under Assumption \ref{assum:game_halts}, it follows by standard Markov chain arguments that
+           where the second equality follows by the monotone convergence theorem since the rewards are nonnegative. Under Assumption \ref{assum:game_halts}, it follows by standard Markov chain arguments that
            \[
            \mathbb{P}^{\pi_\text{R}, \pi_\text{P}}[S_{km} \neq \Delta|S_0=s] \leq \rho^k \ \forall k \in \mathbb{N}.
            \]
@@ -628,7 +631,7 @@
            The proof of part $(b)$ follows via similar arguments as that of part $(a)$.
        \end{proof}
     
-    Theorem \ref{lem:vi_convergence}(a) is value iteration for our sequential game. The computational experiments in Section \ref{sec:results} use this value iteration to solve our sequential game after a suitable discretization of the runner's action space. Apart from serving as an algorithmic device, Theorem \ref{lem:vi_convergence} also enables proving the optimality of deterministic, stationary policies. This result established in Proposition \ref{lem:stationary_pol_optimal} uses the claim in Proposition \ref{lem:bellman_equations}, which in turn relies on the below assumption.
+    Theorem \ref{lem:vi_convergence}(a) is value iteration for our sequential game. The computational experiments in Section \ref{sec:results} use value iteration to solve our sequential game after a suitable discretization of the runner's action space. Apart from serving as an algorithmic device, Theorem \ref{lem:vi_convergence} also enables proving the optimality of deterministic, stationary policies. This result established in Proposition \ref{lem:stationary_pol_optimal} uses the claim in Proposition \ref{lem:bellman_equations}, which in turn relies on the below assumption.
     
        \begin{assumption}
            \label{assum:transition_pby_continuous}
@@ -671,7 +674,7 @@
            \endgroup
            We prove that $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ converges to $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[\\r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P})$ uniformly over $A_\text{R}(s)$ for each $s \in {\cal S}$.
            
-           Fix a $s \in {\cal S}$. If $s = (b,c,o,d)$ is such that $b \neq (1,0,0)$, then from \eqref{eqn:runner_action_sapce} and \eqref{eqn:pitcher_action_sapce}  $A_\text{R}(s) = \{\delta\}$ and $ A_\text{P}(a_\text{R},s) = \{\delta\}$. As a result, $p(\cdot|s,a_\text{R},a_\text{P}) = p(\cdot|s)$, and hence the convergence is independent of $a_\text{R}$ and $a_\text{P}$. Suppose the component $b$ equals $(1,0,0)$. Let $\{a_\text{R}^k\} \in A_\text{R}(s)$ be such that $\lim_{k \to \infty}a_\text{R}^k = a_\text{R} \in A_\text{R}(s)$. Then from  \eqref{eqn:pitcher_action_sapce}, $A_\text{P}(a_\text{R}^k,s) = \{0,1\}$ for all $k \in \mathbb{N}$. Therefore
+           Fix a $s \in {\cal S}$. If $s = (b,c,o,d)$ is such that $b \neq (1,0,0)$, then from \eqref{eqn:runner_action_sapce} and \eqref{eqn:pitcher_action_sapce},  $A_\text{R}(s) = \{\delta\}$ and $ A_\text{P}(a_\text{R},s) = \{\delta\}$. As a result, $p(\cdot|s,a_\text{R},a_\text{P}) = p(\cdot|s)$, and hence the convergence is independent of $a_\text{R}$ and $a_\text{P}$. Suppose the component $b$ equals $(1,0,0)$. Let $\{a_\text{R}^k\} \in A_\text{R}(s)$ be such that $\lim_{k \to \infty}a_\text{R}^k = a_\text{R} \in A_\text{R}(s)$. Then from  \eqref{eqn:pitcher_action_sapce}, $A_\text{P}(a_\text{R}^k,s) = \{0,1\}$ for all $k \in \mathbb{N}$. Therefore
            \begingroup
            \allowdisplaybreaks
            \begin{align*}
@@ -681,7 +684,7 @@
            &= \min_{a_\text{P} \in A_\text{P}(s,a_\text{R}^k)}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P}),
            \end{align*}
            \endgroup
-           where the second equality follows from Assumption \ref{assum:transition_pby_continuous} and the convergence of $u_{k-1}$ to $V^*$ established in Theorem \ref{lem:vi_convergence}. We have established the continuous convergence of the sequence of functions $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ over $A_\text{R}(s)$. The set $A_\text{R}(s)$ in \eqref{eqn:runner_action_sapce}   is compact. Hence, by Theorem 5 in Subsection X, Section 21 in  \parencite{kuratowski_topology_2014}, $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ converges to $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P})$ uniformly over $A_\text{R}(s)$.
+           where the second equality follows from Assumption \ref{assum:transition_pby_continuous} and the convergence of $u_{k-1}$ to $V^*$ established in Theorem \ref{lem:vi_convergence}. We have established the continuous convergence of the sequence of functions $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ over $A_\text{R}(s)$. Next, the set $A_\text{R}(s)$ in \eqref{eqn:runner_action_sapce}   is compact. Hence, by Theorem 5 in Subsection X, Section 21 in  \parencite{kuratowski_topology_2014}, $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ converges to $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P})$ uniformly over $A_\text{R}(s)$.
     
            Utilizing this uniform convergence in \eqref{eqn:bellman_equation_temp1} gives us 
            \begin{align*}
