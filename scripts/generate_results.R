@@ -42,6 +42,12 @@ lead_distance_1b <- rbind(second_open_22, second_open_23) |>
       year == 2023 & pre_disengagements == 2 ~ "2023 - 2 Disengagements"
     )
   ) |>
+  dplyr::group_by(year_dis) |>
+  dplyr::mutate(
+    mean = sprintf("%.1f", mean(`lead_distance_1st Base`)),
+    label = glue::glue("{year_dis} ({mean} ft)")
+  ) |>
+  dplyr::ungroup() |>
   dplyr::filter(!is.na(year_dis))
 
 lead_distance_1b |>
@@ -54,15 +60,15 @@ if (fig_make) {
 
   sputil::open_device(glue::glue("output/figures/leads_overall_{fig_mode}.pdf"), height = 4, width = 7)
   plot <- lead_distance_1b |>
-    ggplot2::ggplot(ggplot2::aes(`lead_distance_1st Base`, col = year_dis, linetype = year_dis)) +
+    ggplot2::ggplot(ggplot2::aes(`lead_distance_1st Base`, col = label, linetype = label)) +
     ggplot2::stat_density(geom = "line", position = "identity") +
     ggplot2::scale_x_continuous(breaks = breaks) +
     ggplot2::scale_color_manual(
-      name = "Scenario",
+      name = "Scenario (mean)",
       values = c(sputil::color("orange", fig_mode), rep(sputil::color("blue", fig_mode), 3))
     ) +
     ggplot2::scale_linetype_manual(
-      name = "Scenario",
+      name = "Scenario (mean)",
       values = c("solid", "solid", "dashed", "dotted")
     ) +
     ggplot2::labs(x = "Lead Distance", y = "Density") +
@@ -447,14 +453,14 @@ skill_grid |>
   # Hopefully this nastiness can be cleaned up upstream in the future
   dplyr::mutate(
     battery_skill = dplyr::case_when(
-      battery_skill == "10th Percentile Battery" ~ "10th",
-      battery_skill == "Median Battery" ~ "50th",
-      battery_skill == "90th Percentile Battery" ~ "90th"
+      battery_skill == "10th Percentile Battery" ~ "10$^\\text{th}$",
+      battery_skill == "Median Battery" ~ "50$^\\text{th}$",
+      battery_skill == "90th Percentile Battery" ~ "90$^\\text{th}$"
     ),
     runner_skill = dplyr::case_when(
-      runner_skill == "10th Percentile Runner" ~ "10th",
-      runner_skill == "Median Runner" ~ "50th",
-      runner_skill == "90th Percentile Runner" ~ "90th"
+      runner_skill == "10th Percentile Runner" ~ "10$^\\text{th}$",
+      runner_skill == "Median Runner" ~ "50$^\\text{th}$",
+      runner_skill == "90th Percentile Runner" ~ "90$^\\text{th}$"
     )
   ) |>
   dplyr::select(battery_skill, runner_skill, V15, V16, V17) |>
