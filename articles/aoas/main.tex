@@ -705,7 +705,9 @@
 
 %% if your bibliography is in bibtex format, uncomment commands:
 \bibliographystyle{imsart-nameyear} % Style BST file
-\bibliography{../bibliography}       % Bibliography file (usually '*.bib')
+% This nastiness for the bibliography to work both locally and on Overleaf
+% https://tex.stackexchange.com/questions/623701/path-for-bib-file-working-simultaneously-in-texstudio-and-overleaf
+\bibliography{\ifnum\pdfstrcmp{\jobname}{output}=0 articles/bibliography\else ../bibliography\fi}
 
 %% or include bibliography directly:
 % \begin{thebibliography}{}
