@@ -3,6 +3,7 @@
 #' Combines base occupancy, outs, balls, strikes, and optionally disengagements 
 #' into a unified string identifier for state-transition modeling.
 #'
+#' @param first Binary 0/1 indicating whether this is the first play of the current event.
 #' @param bases Character string representing base occupancy (e.g., "100" for a runner on first base).
 #' @param outs Integer or character count of outs (0, 1, or 2).
 #' @param balls Integer or character count of balls (0 to 3).
@@ -15,7 +16,7 @@
 #'
 #' @importFrom glue glue
 #' @export
-construct_state <- function(bases, outs, balls, strikes, disengagements = NULL) {
+construct_state <- function(first, bases, outs, balls, strikes, disengagements = NULL) {
 
   if (!is.null(disengagements)) {
     disengagement_string <- paste0("_", disengagements)
@@ -23,7 +24,7 @@ construct_state <- function(bases, outs, balls, strikes, disengagements = NULL) 
     disengagement_string <- ""
   }
 
-  state <- glue::glue("{bases}_{outs}_{balls}{strikes}{disengagement_string}")
+  state <- glue::glue("{first}_{bases}_{outs}_{balls}{strikes}{disengagement_string}")
 
   return(state)
 }

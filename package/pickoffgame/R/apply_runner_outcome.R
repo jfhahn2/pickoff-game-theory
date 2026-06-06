@@ -33,7 +33,7 @@ apply_runner_outcome <- function(pre_state_reduced, runner_outcome) {
         runner_outcome == "S-" ~ "000"
       ),
       outs = outs + (runner_outcome %in% c("P+", "S-")),
-      post_state_reduced = ifelse(outs == 3, "0", construct_state(bases, outs, balls, strikes))
+      post_state_reduced = ifelse(outs == 3, "0", construct_state(first, bases, outs, balls, strikes))
     ) |>
     dplyr::pull(post_state_reduced)
 }

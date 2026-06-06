@@ -67,12 +67,16 @@ wrangle_data <- function(play,
         TRUE ~ batter_description
       ),
       is_po_attempt = type == "pickoff",
-      is_po_success = dplyr::coalesce(is_pickoff, FALSE),
+      # There are a couple of rare plays in which a pickoff is labelled as successful but there are
+      # no outs on the play. We choose to define this as an unsuccessful pickoff attempt.
+      is_po_success = dplyr::coalesce(is_pickoff, FALSE) & (post_outs - pre_outs) > 0,
       is_sb_attempt = !is_po_attempt & (is_stolen_base | is_caught_stealing),
       is_sb_success = is_sb_attempt & is_stolen_base,
       is_1b_only = !is.na(pre_runner_1b_id) & is.na(pre_runner_2b_id) & is.na(pre_runner_3b_id),
+      is_full_count_two_outs = (pre_balls == 3) & (pre_strikes == 2) & (pre_outs == 2),
       runner_outcome = dplyr::case_when(
-        !is_1b_only ~ "N",   # runner outcome only refers to 1B occupied with 2B & 3B empty
+        # we consider only runner outcome with 1B occupied 2B & 3B empty, not full count two outs
+        !is_1b_only | is_full_count_two_outs ~ "N",
         is_po_attempt & is_po_success ~ "P+",
         is_po_attempt & !is_po_success ~ "P-",
         is_sb_attempt & is_sb_success ~ "S+",
@@ -110,7 +114,10 @@ wrangle_data <- function(play,
     # after runner movement, and post-disengagements is not zero at the end of a plate appearance.
     dplyr::group_by(game_id, event_index) |>
     dplyr::mutate(
+      is_first_play_of_event = 1:dplyr::n() == 1,
       is_last_play_of_event = 1:dplyr::n() == dplyr::n(),
+      pre_first = as.integer(is_first_play_of_event),
+      post_first = as.integer(is_last_play_of_event),
       # Within each event, group plays into stints between runner movement
       disengagement_stint = ((!is_last_play_of_event) & (pre_bases != post_bases)) |>
         dplyr::lag(1) |>
@@ -135,15 +142,21 @@ wrangle_data <- function(play,
       # Reset count at the end of a plate appearance
       post_balls = ifelse(is_last_play_of_event, 0, post_balls),
       post_strikes = ifelse(is_last_play_of_event, 0, post_strikes),
-      pre_state = construct_state(pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements),
-      pre_state_reduced = substring(pre_state, 1, 8),
+      pre_state = construct_state(pre_first, pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements),
+      pre_state_reduced = construct_state(pre_first, pre_bases, pre_outs, pre_balls, pre_strikes),
       post_state = ifelse(
         test = post_outs == 3,
         yes = as.character(runs_on_play),
-        no = construct_state(post_bases, post_outs, post_balls, post_strikes, post_disengagements)
+        no = construct_state(post_first, post_bases, post_outs, post_balls, post_strikes, post_disengagements)
       ),
-      post_state_reduced = substring(post_state, 1, 8),
-    )
+      post_state_reduced = ifelse(
+        test = post_outs == 3,
+        yes = as.character(runs_on_play),
+        no = construct_state(post_first, post_bases, post_outs, post_balls, post_strikes)
+      )
+    ) |>
+    # We exclude step-offs, intentional balls, automatic balls/strikes
+    dplyr::filter(type %in% c("pickoff", "pitch"))
 
   return(game_state)
 }
