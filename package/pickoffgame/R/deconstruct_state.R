@@ -18,13 +18,15 @@
 #' @importFrom tibble tibble
 #' @export
 deconstruct_state <- function(state) {
-  bases <- substring(state, 1, 3)
-  outs <- as.integer(substring(state, 5, 5))
-  balls <- as.integer(substring(state, 7, 7))
-  strikes <- as.integer(substring(state, 8, 8))
-  disengagements <- as.integer(substring(state, 10, 10))
+  first <- substring(state, 1, 1)
+  bases <- substring(state, 3, 5)
+  outs <- as.integer(substring(state, 7, 7))
+  balls <- as.integer(substring(state, 9, 9))
+  strikes <- as.integer(substring(state, 10, 10))
+  disengagements <- as.integer(substring(state, 12, 12))
   return(
     tibble::tibble(
+      first = first,
       bases = bases,
       outs = outs,
       balls = balls,
