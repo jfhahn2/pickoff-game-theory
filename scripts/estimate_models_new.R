@@ -1,16 +1,17 @@
 
+# TODO: Handle full-count strike-em-out throw-em-out (currently debit for strikeout is assigned to steal decision)
+
 fit_glmer_models <- FALSE
 value_iteration_threshold <- 1e-4   # well-accepted default
 
-# READ DATA ----
+# WRANGLE DATA ----
+logger::log_info("Wrangling data")    # 1 minute
 
 data_2022 <- pickoffgame::read_data(2022)
 data_2023 <- pickoffgame::read_data(2023)
 
 event_map <- data.table::fread("input/data/batter_event.csv")
 pitch_map <- data.table::fread("input/data/batter_pitch.csv")
-
-# WRANGLE DATA ----
 
 game_state_2023 <- pickoffgame::wrangle_data(
   play = data_2023$play,
@@ -36,18 +37,13 @@ game_state_2022 <- pickoffgame::wrangle_data(
 
 game_state <- dplyr::bind_rows(game_state_2022, game_state_2023)
 
-
-# FIT RUNNER OUTCOME MODELS ----
-
 data_glmer <- game_state |>
   dplyr::group_by(pre_runner_1b_id) |>
   dplyr::filter(
     # For modeling purposes, we consider only plays in which only first base is occupied
-    !is.na(pre_runner_1b_id),
-    is.na(pre_runner_2b_id),
-    is.na(pre_runner_3b_id),
+    is_1b_only,
     # Exclude full count with two outs because runners because these are not really steal attempts
-    pre_balls < 3 | pre_strikes < 2 | pre_outs < 2,
+    !is_full_count_two_outs,
     # We include only runners who attempted at least three stolen bases in our sample
     sum(is_sb_attempt) >= 3,
     # The runner taking the lead from first base should match the runner on first base
@@ -66,23 +62,29 @@ data_glmer <- game_state |>
     year = as.factor(year),
   )
 
-if (fit_glmer_models) {
 
-  fit_po_attempt <- lme4::glmer(    # 2 minutes
+# FIT RUNNER OUTCOME MODELS ----
+if (fit_glmer_models) {
+  logger::log_info("Fitting runner outcome models")   # 10 minutes
+
+  logger::log_info("  Estimating GLMM for PO attempt probability")    # 2 minutes
+  fit_po_attempt <- lme4::glmer(
     formula = is_po_attempt ~ year + pre_outs + pre_balls + pre_strikes + pre_disengagements +
       lead_distance_centered + (1 | pitcher_id),
     data = data_glmer,
     family = binomial()
   )
   
-  fit_po_success <- lme4::glmer(    # 2 seconds
+  logger::log_info("  Estimating GLMM for PO success probability")    # 0 minutes
+  fit_po_success <- lme4::glmer(
     formula = is_po_success ~ lead_distance_centered + (1 | pitcher_id),
     data = data_glmer |>
       dplyr::filter(is_po_attempt),
     family = binomial()
   )
   
-  fit_sb_attempt <- lme4::glmer(    # 11 minutes
+  logger::log_info("  Estimating GLMM for SB attempt probability")    # 7 minutes
+  fit_sb_attempt <- lme4::glmer(
     is_sb_attempt ~ pre_outs + pre_balls + pre_strikes + pre_disengagements +
       sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
     data = data_glmer |>
@@ -90,23 +92,37 @@ if (fit_glmer_models) {
     family = binomial()
   )
   
-  fit_sb_success <- lme4::glmer(    # 30 seconds
+  logger::log_info("  Estimating GLMM for SB success probability")    # 1 minute
+  fit_sb_success <- lme4::glmer(
     is_stolen_base ~ year + lead_distance_centered +
       sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
     data = data_glmer |>
       dplyr::filter(is_sb_attempt),
     family = binomial
   )
+
+  saveRDS(fit_po_success, "output/models/fit_po_success.rds")
+  saveRDS(fit_po_attempt, "output/models/fit_po_attempt.rds")
+  saveRDS(fit_sb_success, "output/models/fit_sb_success.rds")
+  saveRDS(fit_sb_attempt, "output/models/fit_sb_attempt.rds")
+
+} else {
+
+  fit_po_success <- readRDS("output/models/fit_po_success.rds")
+  fit_po_attempt <- readRDS("output/models/fit_po_attempt.rds")
+  fit_sb_success <- readRDS("output/models/fit_sb_success.rds")
+  fit_sb_attempt <- readRDS("output/models/fit_sb_attempt.rds")
 }
 
 
-# COMPUTE CONDITIONAL STATE TRANSITION PROBABILITIES ----
+# COMPUTE STATE TRANSITION PROBABILITIES ----
+logger::log_info("Computing state transition probabilities")    # 0 minutes
 
 # Compute empirical transition probabilities between reduced states
 # TODO: Fix the problem of a 0-0 triple with runner on second looking just like a stolen base.
 #       To do this, we'd need to include a new batter indicator in the state space.
-transition_conditional_observed <- game_state_2023 |> # TODO: include 2022?
-  dplyr::filter(type %in% c("pickoff", "pitch")) |>   # don't count stepoffs as transitions
+transition_conditional_observed <- game_state_2023 |> # TODO: decide whether to include
+  dplyr::filter(type %in% c("pickoff", "pitch")) |>   # TODO: decide whether to keep this
   dplyr::group_by(pre_state_reduced, runner_outcome, post_state_reduced) |>
   dplyr::summarize(n = dplyr::n(), reward = mean(runs_on_play), .groups = "drop") |>
   dplyr::group_by(pre_state_reduced, runner_outcome) |>
@@ -119,7 +135,9 @@ transition_conditional_unobserved <- tidyr::expand_grid(
   pre_state_reduced = unique(transition_conditional_observed$pre_state_reduced),
   runner_outcome = unique(transition_conditional_observed$runner_outcome)
 ) |>
-  dplyr::filter(pickoffgame::deconstruct_state(pre_state_reduced)$bases == "100") |>
+  dplyr::mutate(pre = pickoffgame::deconstruct_state(pre_state_reduced)) |>
+  # When the action space is null, we don't need to fill in conditional transitions
+  dplyr::filter(pre$bases == "100", !(pre$outs == 2 & pre$balls == 3 & pre$strikes == 2)) |>
   dplyr::anti_join(
     y = transition_conditional_observed,
     by = c("pre_state_reduced", "runner_outcome")
@@ -130,22 +148,34 @@ transition_conditional_unobserved <- tidyr::expand_grid(
     reward = 0
   )
 
+# This is where we append disengagements back onto the state. The logic is tricky and might be
+# worth revisiting. For example, we do not correctly handle the (rare) case where bases, count and
+# outs stay the same (and it's not a new batter). In this case, we should increment disengagements.
 transition_conditional <- transition_conditional_observed |>
   dplyr::bind_rows(transition_conditional_unobserved) |>
   # Expand reduced state to full state by tacking on disengagements
   tidyr::expand_grid(pre_disengagements = 0:2) |>
   dplyr::mutate(
+    pre = pickoffgame::deconstruct_state(pre_state_reduced),
+    post = pickoffgame::deconstruct_state(post_state_reduced),
     pre_state = pickoffgame::update_state(
       state = pre_state_reduced,
       new_disengagements = pre_disengagements
     ),
     post_disengagements = pre_disengagements + ifelse(runner_outcome %in% c("P+", "P-"), 1, 0),
+    is_end_of_pa = post$first == 1,
+    is_runner_movement = pre$bases != post$bases,
     post_state = dplyr::case_when(
       # If the reduced post-state is a terminal end-of-inning state, do not append disengagements
       nchar(post_state_reduced) == 1 ~ post_state_reduced,
+      # If the transition is end of plate appearance or runner movement, reset disengagements
+      is_end_of_pa | is_runner_movement ~ pickoffgame::update_state(
+        state = post_state_reduced,
+        new_disengagements = 0
+      ),
       # If the pre-state is not 1B occupied, 2B & 3B empty, then post-disengagements must be zero
       # because we only count disengagements with 1B occupied, 2B & 3B empty
-      pickoffgame::deconstruct_state(pre_state)$bases != "100" ~ pickoffgame::update_state(
+      pre$bases != "100" ~ pickoffgame::update_state(
         state = post_state_reduced,
         new_disengagements = 0
       ),
@@ -160,9 +190,6 @@ transition_conditional <- transition_conditional_observed |>
   ) |>
   dplyr::select(pre_state, runner_outcome, post_state, prob, reward)
 
-
-# COMPUTE STATE TRANSITION PROBABILITIES ----
-
 runner_outcome_grid <- transition_conditional |>
   dplyr::distinct(pre_state) |>
   tidyr::expand_grid(
@@ -171,30 +198,34 @@ runner_outcome_grid <- transition_conditional |>
   ) |>
   dplyr::mutate(
     year = factor(2023, levels = c(2022, 2023)),
-    pre_bases = pickoffgame::deconstruct_state(pre_state)$bases,
-    pre_outs = pickoffgame::deconstruct_state(pre_state)$outs,
-    pre_balls = pickoffgame::deconstruct_state(pre_state)$balls,
-    pre_strikes = pickoffgame::deconstruct_state(pre_state)$strikes,
-    pre_disengagements = factor(
-      x = pickoffgame::deconstruct_state(pre_state)$disengagements,
-      levels = 0:2
-    ),
+    pre = pickoffgame::deconstruct_state(pre_state),
+    pre_bases = pre$bases,
+    pre_outs = pre$outs,
+    pre_balls = pre$balls,
+    pre_strikes = pre$strikes,
+    pre_disengagements = factor(pre$disengagements, levels = 0:2),
     lead_distance_centered = lead_distance - 10,
     sprint_speed_centered = 0,
     arm_strength_centered = 0,
-    pitcher_id = "0"
-  )
+    pitcher_id = "0",
+    is_1b_only = pre$bases == "100",
+    is_full_count_two_outs = (pre$balls == 3) & (pre$strikes == 2) & (pre$outs == 2)
+  ) |>
+  # Action space is null unless only 1B is occupied without full count and two strikes
+  dplyr::filter(lead_distance == 0 | (is_1b_only & !is_full_count_two_outs))
 
 runner_outcome_prob <- runner_outcome_grid |>
   dplyr::mutate(
     prob_po_attempt = ifelse(
-      test = pre_bases == "100",  # we only consider runner outcomes for 1B occupied, 2B & 3B empty
+      # our model only allows pickoffs and steals with only 1B occupied, not full count two outs
+      test = is_1b_only & !is_full_count_two_outs,
       yes = predict(fit_po_attempt, newdata = runner_outcome_grid, type = "response", re.form = NA),
       no = 0
     ),
     prob_po_success = predict(fit_po_success, newdata = runner_outcome_grid, type = "response", re.form = NA),
     prob_sb_attempt = ifelse(
-      test = pre_bases == "100",  # we only consider runner outcomes for 1B occupied, 2B & 3B empty
+      # our model only allows pickoffs and steals with only 1B occupied, not full count two outs
+      test = is_1b_only & !is_full_count_two_outs,
       yes = predict(fit_sb_attempt, newdata = runner_outcome_grid, type = "response", re.form = NA),
       no = 0
     ),
@@ -220,12 +251,13 @@ transition <- runner_outcome_prob |>
   dplyr::group_by(pre_state, lead_distance, post_state) |>
   dplyr::summarize(
     prob = sum(prob_runner_outcome * prob_conditional),
-    reward = sum(prob_runner_outcome * reward),   # reward should not depend on runner outcome
+    # reward should not depend on runner outcome
+    reward = weighted.mean(reward, w = prob_runner_outcome * prob_conditional),
     .groups = "drop"
   )
 
-
-# VALUE ITERATION ----
+# PERFORM VALUE ITERATION ----
+logger::log_info("Performing value iteration")    # 0 minutes
 
 state <- transition |>
   dplyr::distinct(state = pre_state) |>
@@ -238,7 +270,7 @@ while (max_value_change > value_iteration_threshold) {
   state_update <- state |>
     dplyr::left_join(transition, by = c("state" = "pre_state")) |>
     dplyr::left_join(state, by = c("post_state" = "state"), suffix = c("_before", "_after")) |>
-    # The value of terminal end-of-inning states is defintionally zero
+    # The value of terminal end-of-inning states is definitionally zero
     dplyr::mutate(value_after = ifelse(nchar(post_state) == 1, 0, value_after)) |>
     dplyr::group_by(state, value_before, lead_distance) |>
     dplyr::summarize(value = sum(prob * (reward + value_after)), .groups = "drop") |>
@@ -252,7 +284,6 @@ while (max_value_change > value_iteration_threshold) {
 
   state <- state_update |>
     dplyr::select(state, action = lead_distance, value)
-  
-  print(max_value_change)
 }
 
+logger::log_info("Done")

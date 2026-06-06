@@ -26,6 +26,7 @@ update_state <- function(state,
                          new_balls = NA,
                          new_strikes = NA,
                          new_disengagements = NA) {
+
   new_state <- state |>
     deconstruct_state() |>
     dplyr::mutate(
@@ -34,9 +35,14 @@ update_state <- function(state,
       outs = dplyr::coalesce(new_outs, outs),
       balls = dplyr::coalesce(new_balls, balls),
       strikes = dplyr::coalesce(new_strikes, strikes),
-      disengagements = dplyr::coalesce(new_disengagements, disengagements)
+      disengagements = dplyr::coalesce(new_disengagements, disengagements),
+      state = ifelse(
+        test = nchar(state) == 1,
+        yes = state,    # don't update the state if it is a terminal end-of-inning state
+        no = construct_state(first, bases, outs, balls, strikes, disengagements)
+      )
     ) |>
-    with(construct_state(first, bases, outs, balls, strikes, disengagements))
+    dplyr::pull(state)
 
   return(new_state)
 }
