@@ -4,9 +4,11 @@
 \alias{construct_state}
 \title{Construct game state}
 \usage{
-construct_state(bases, outs, balls, strikes, disengagements = NULL)
+construct_state(first, bases, outs, balls, strikes, disengagements = NULL)
 }
 \arguments{
+\item{first}{Binary 0/1 indicating whether this is the first play of the current event.}
+
 \item{bases}{Character string representing base occupancy (e.g., "100" for a runner on first base).}
 
 \item{outs}{Integer or character count of outs (0, 1, or 2).}

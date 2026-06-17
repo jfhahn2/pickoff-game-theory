@@ -6,6 +6,7 @@
 \usage{
 update_state(
   state,
+  new_first = NA,
   new_bases = NA,
   new_outs = NA,
   new_balls = NA,
