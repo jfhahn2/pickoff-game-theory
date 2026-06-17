@@ -206,11 +206,8 @@
     \begin{align}
     \label{eqn:runner_action_space}
         A_\text{R}(s) \defeq \begin{cases}
-            {\cal L} \text{ if } s = (b,c,d,o)\\
-            \quad \text{ with } b = (1,0,0)\\
-            \{\delta\} \text{ if } s = (b,c,d,o)\\
-            \quad \text{ with } b \neq (1,0,0),\\
-            \quad \text{ or } s \in {\cal P} \cup \{\Delta\}
+            {\cal L} \text{ if } s = (b,c,d,o) \text{ with } b = (1,0,0)\\
+            \{\delta\} \text{ if } s = (b,c,d,o) \text{ with } b \neq (1,0,0), \text{ or } s \in {\cal P} \cup \{\Delta\}
         \end{cases} \forall s \in {\cal S},
     \end{align}
         
@@ -221,11 +218,8 @@
       \begin{split}
         &A_{\text{P}}(s,a_\text{R}) \defeq
         \begin{cases}
-          {\cal P} \text{ if } s = (b,c,d,o)\\
-            \quad \text{ with } b = (1,0,0) \\
-          \{\delta\} \text{ if } s = (b,c,d,o)\\
-            \quad \text{ with } b \neq (1,0,0),\\
-            \quad \text{ or } s \in {\cal P} {\cup} \{\Delta\},
+          {\cal P} \text{ if } s = (b,c,d,o) \text{ with } b = (1,0,0) \\
+          \{\delta\} \text{ if } s = (b,c,d,o) \text{ with } b \neq (1,0,0), \text{ or } s \in {\cal P} {\cup} \{\Delta\},
         \end{cases}
         \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s),
       \end{split}
@@ -237,16 +231,14 @@
     {\it Reward function.} The final component of our sequential game is the reward function, which models the payoff received by the players. Since we use a  zero-sum sequential game, the payoff obtained by one player comes at the expense of the other player. We choose the number of runs scored as the reward function. This design choice is more suitable for the early and middle innings of a game and less suitable for the later innings, particularly the bottom of the ninth or extra innings, when the offense knows how many runs they need to score to win the game. For any state $s \in {\cal S}$, the reward function captures the number of runs scored by the batting team in transitioning from state $s$ to $s'$ given the actions of the first-base runner and the pitcher. Formally,
     \begin{align}
       \label{eqn:runner_pitcher_reward}
-        r(s'|s,a_\text{R},a_\text{P}) &\defeq r(s'|s) \\
-        \nonumber
-        \quad 
-        \forall s,s' \in {\cal S},\, a_\text{R} \in A_\text{R}(s),\, & a_\text{P} \in A_\text{P}(s,a_\text{R}),
+        r(s'|s,a_\text{R},a_\text{P}) &\defeq r(s'|s) 
+        \, \forall s,s' \in {\cal S},\, a_\text{R} \in A_\text{R}(s),\,  a_\text{P} \in A_\text{P}(s,a_\text{R}),
     \end{align}
     where
     \begin{align}
       \label{eqn:common_reward}
       r(s'|s) \defeq  \begin{cases}
-          (g(b) + o) - (g(b') + o') +\\ \quad \mathbb{I}\{c' = (0, 0),\, d' = 0\} \text{ if } s,\, s' \in \mathcal{X}\\
+          (g(b) + o) - (g(b') + o') +\mathbb{I}\{c' = (0, 0),\, d' = 0\} \text{ if } s,\, s' \in \mathcal{X}\\
           s'  \text{ if } s \in \mathcal{X},\, s' \in \mathcal{P}\\
           0  \text{ if } s' = \Delta,
       \end{cases} 
