@@ -1,7 +1,5 @@
 
-# TODO: Handle full-count strike-em-out throw-em-out (currently debit for strikeout is assigned to steal decision)
-
-validate_glmer_models <- FALSE
+bootstrap_samples <- 100
 
 # WRANGLE DATA ----
 logger::log_info("Wrangling data")    # 1 minute
@@ -38,28 +36,12 @@ game_state_2022 <- pickoffgame::wrangle_data(
 
 game_state <- dplyr::bind_rows(game_state_2022, game_state_2023)
 
+set.seed(42)
+bootstrap <- rsample::bootstraps(data = game_state, times = bootstrap_samples, strata = year)
 
-# RUN FULL ANALYSIS PIPELINE ----
-
-results <- pickoffgame::run_analysis_pipeline(
-  game_state = game_state,
-  validate_glmer_models = validate_glmer_models
-)
-
-
-# WRITE RESULTS TO FILE ----
-
-if (validate_glmer_models) {
-  data.table::fwrite(
-    x = results$runner_outcome_model_validation,
-    file = "output/runner_outcome_validation.csv"
-  )
+for (b in 1:bootstrap_samples) {
+  logger::log_info("Analyizing bootstrap sample {b}/{bootstrap_samples}")
+  rsample::analysis(bootstrap$splits[[b]]) |>
+    pickoffgame::run_analysis_pipeline() |>
+    saveRDS(glue::glue("output/bootstrap/{b}.rds"))
 }
-
-saveRDS(results$fit_runner_outcome, file = "output/models/fit_runner_outcome.rds")
-
-data.table::fwrite(results$policy_mdp, file = "output/policy_mdp.csv")
-data.table::fwrite(results$policy_zsg, file = "output/policy_zsg.csv")
-data.table::fwrite(results$policy_mdp_skill, file = "output/policy_mdp_skill.csv")
-
-logger::log_info("Done")

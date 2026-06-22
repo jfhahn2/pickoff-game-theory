@@ -6,6 +6,7 @@
 \usage{
 estimate_game_model(
   data,
+  fit_runner_outcome,
   players = c("one", "two"),
   percentile_players = NULL,
   runner_percentile = NULL,
@@ -15,6 +16,9 @@ estimate_game_model(
 \arguments{
 \item{data}{A data frame containing historical play-by-play data used to
 estimate transitions.}
+
+\item{fit_runner_outcome}{a list of estimated GLMMs, from
+\code{\link{estimate_runner_outcome_model}}}
 
 \item{players}{Character string. Specifies the game type: \code{"one"}
 (Markov decision process) or \code{"two"} (stochastic zero-sum game).
