@@ -5,6 +5,8 @@
 #'
 #' @param data A data frame containing historical play-by-play data used to 
 #'   estimate transitions.
+#' @param fit_runner_outcome a list of estimated GLMMs, from
+#'   \code{\link{estimate_runner_outcome_model}}
 #' @param players Character string. Specifies the game type: \code{"one"} 
 #'   (Markov decision process) or \code{"two"} (stochastic zero-sum game). 
 #'   Defaults to \code{"one"}.
@@ -24,6 +26,7 @@
 #' @importFrom pickoffgame estimate_conditional_transition_probability deconstruct_state solve_optimal_policy
 #' @export
 estimate_game_model <- function(data,
+                                fit_runner_outcome,
                                 players = c("one", "two"),
                                 percentile_players = NULL,
                                 runner_percentile = NULL,
