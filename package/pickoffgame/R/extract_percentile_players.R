@@ -27,7 +27,7 @@
 #' @export
 extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.9)) {
 
-  ranef <- lme4::ranef(object)
+  ranef <- glmmTMB::ranef(object)$cond
 
   if ("runner_id" %in% names(ranef)) {
 
@@ -68,10 +68,10 @@ extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.
     data$ranef_catcher <- 0
   }
 
-  sprint_speed_effect <- lme4::fixef(object)["sprint_speed_centered"] |>
+  sprint_speed_effect <- glmmTMB::fixef(object)$cond["sprint_speed_centered"] |>
     dplyr::coalesce(0)
 
-  arm_strength_effect <- lme4::fixef(object)["arm_strength_centered"] |>
+  arm_strength_effect <- glmmTMB::fixef(object)$cond["arm_strength_centered"] |>
     dplyr::coalesce(0)
 
   percentile_runner <- data |>
