@@ -1,7 +1,7 @@
 
 # TODO: Handle full-count strike-em-out throw-em-out (currently debit for strikeout is assigned to steal decision)
 
-fit_glmer_models <- FALSE
+validate_glmer_models <- FALSE
 
 # WRANGLE DATA ----
 logger::log_info("Wrangling data")    # 1 minute
@@ -28,47 +28,38 @@ game_state_2022 <- pickoffgame::wrangle_data(
   pitch = data_2022$pitch,
   lead = data_2022$lead,
   event = data_2022$event,
-  # TODO: Decide how to handle the fact that mean sprint speed and arm strength might not be the same
-  #       across the two years of data (and they are centered separately from each other).
+  # TODO: Decide how to handle the fact that mean sprint speed and arm strength might not be the
+  #       same across the two years of data (and they are centered separately from each other).
   sprint_speed = data_2022$sprint_speed,
   arm_strength = data_2022$arm_strength,
   pitch_map = pitch_map,
   event_map = event_map
 )
 
+game_state <- dplyr::bind_rows(game_state_2022, game_state_2023)
 
-if (fit_glmer_models) {
 
-  fit_runner_outcome <- dplyr::bind_rows(game_state_2022, game_state_2023) |>
-    pickoffgame::estimate_runner_outcome_model()
+# RUN FULL ANALYSIS PIPELINE ----
 
-  saveRDS(fit_runner_outcome$po_attempt, "output/models/fit_po_attempt.rds")
-  saveRDS(fit_runner_outcome$po_success, "output/models/fit_po_success.rds")
-  saveRDS(fit_runner_outcome$sb_attempt, "output/models/fit_sb_attempt.rds")
-  saveRDS(fit_runner_outcome$sb_success, "output/models/fit_sb_success.rds")
+results <- pickoffgame::run_analysis_pipeline(
+  game_state = game_state,
+  validate_glmer_models = validate_glmer_models
+)
 
-} else {
 
-  fit_runner_outcome <- list(
-    po_attempt = readRDS("output/models/fit_po_attempt.rds")
-    po_success = readRDS("output/models/fit_po_success.rds")
-    sb_attempt = readRDS("output/models/fit_sb_attempt.rds")
-    sb_success = readRDS("output/models/fit_sb_success.rds")
+# WRITE RESULTS TO FILE ----
+
+if (validate_glmer_models) {
+  data.table::fwrite(
+    x = results$runner_outcome_model_validation,
+    file = "output/runner_outcome_validation.csv"
   )
 }
 
-percentile_players <- list()
-for (outcome in names(fit_runner_outcome)) {
-  percentile_players[[outcome]] <- pickoffgame::extract_percentile_players(
-    object = fit_runner_outcome[[outcome]],
-    data = data_glmer
-  )
-}
+saveRDS(results$fit_runner_outcome, file = "output/models/fit_runner_outcome.rds")
 
-# TODO: decide whether to include 2022
-policy_mdp <- pickoffgame::estimate_game_model(data = game_state_2023, players = "one")
-
-# TODO: decide whether to include 2022
-policy_zsg <- pickoffgame::estimate_game_model(data = game_state_2023, players = "two")
+data.table::fwrite(results$policy_mdp, file = "output/policy_mdp.csv")
+data.table::fwrite(results$policy_zsg, file = "output/policy_zsg.csv")
+data.table::fwrite(results$policy_mdp_skill, file = "output/policy_mdp_skill.csv")
 
 logger::log_info("Done")
