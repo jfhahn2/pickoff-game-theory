@@ -58,8 +58,8 @@ wrangle_data <- function(play,
       arm_strength = dplyr::coalesce(arm_strength, mean(arm_strength, na.rm = TRUE)),
       sprint_speed = dplyr::coalesce(sprint_speed, mean(sprint_speed, na.rm = TRUE)),
       # Center sprint speed, arm strength and lead distance purely for better lme4 convergence
-      sprint_speed_centered = scale(sprint_speed, scale = FALSE),
-      arm_strength_centered = scale(arm_strength, scale = FALSE),
+      sprint_speed_centered = sprint_speed - 27,
+      arm_strength_centered = arm_strength - 80,
       lead_distance_centered = lead_distance - 10,
       pitch_event = dplyr::case_when(
         is.na(batter_description) ~ "No Pitch",
