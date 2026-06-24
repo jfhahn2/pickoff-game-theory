@@ -94,6 +94,7 @@ run_analysis_pipeline <- function(game_state,
 
   return(
     list(
+      data_glmer = data_glmer,
       runner_outcome_model_validation = runner_outcome_model_validation,
       fit_runner_outcome = fit_runner_outcome,
       policy_mdp = policy_mdp,

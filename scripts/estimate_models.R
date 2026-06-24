@@ -12,26 +12,24 @@ data_2023 <- pickoffgame::read_data(2023)
 event_map <- data.table::fread("input/data/batter_event.csv")
 pitch_map <- data.table::fread("input/data/batter_pitch.csv")
 
-game_state_2023 <- pickoffgame::wrangle_data(
-  play = data_2023$play,
-  pitch = data_2023$pitch,
-  lead = data_2023$lead,
-  event = data_2023$event,
-  sprint_speed = data_2023$sprint_speed,
-  arm_strength = data_2023$arm_strength,
+game_state_2022 <- pickoffgame::wrangle_data(
+  play = data_2022$play,
+  pitch = data_2022$pitch,
+  lead_distance = data_2022$lead_distance,
+  event = data_2022$event,
+  sprint_speed = data_2022$sprint_speed,
+  arm_strength = data_2022$arm_strength,
   pitch_map = pitch_map,
   event_map = event_map
 )
 
-game_state_2022 <- pickoffgame::wrangle_data(
-  play = data_2022$play,
-  pitch = data_2022$pitch,
-  lead = data_2022$lead,
-  event = data_2022$event,
-  # TODO: Decide how to handle the fact that mean sprint speed and arm strength might not be the
-  #       same across the two years of data (and they are centered separately from each other).
-  sprint_speed = data_2022$sprint_speed,
-  arm_strength = data_2022$arm_strength,
+game_state_2023 <- pickoffgame::wrangle_data(
+  play = data_2023$play,
+  pitch = data_2023$pitch,
+  lead_distance = data_2023$lead_distance,
+  event = data_2023$event,
+  sprint_speed = data_2023$sprint_speed,
+  arm_strength = data_2023$arm_strength,
   pitch_map = pitch_map,
   event_map = event_map
 )
@@ -48,6 +46,8 @@ results <- pickoffgame::run_analysis_pipeline(
 
 
 # WRITE RESULTS TO FILE ----
+
+data.table::fwrite(data_glmer, file = "output/data/data_glmer.csv")
 
 if (validate_glmer_models) {
   data.table::fwrite(

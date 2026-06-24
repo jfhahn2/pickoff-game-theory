@@ -10,57 +10,61 @@ arm_strength <- data.table::fread("input/data/arm_strength/2023.csv") |>
 sprint_speed <- data.table::fread("input/data/sprint_speed/2023.csv") |>
   dplyr::select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
 
+data_glmer <- data.table::fread("output/data/data_glmer.csv")
+
+policy_mdp <- data.table::fread("output/policy_mdp.csv")
+policy_zsg <- data.table::fread("output/policy_zsg.csv")
+policy_mdp_skill <- data.table::fread("output/policy_mdp_skill.csv")
+
+
+
+# Read bootstrap results ----
+
+policy_zsg_boot <- NULL
+policy_mdp_boot <- NULL
+policy_mdp_skill_boot <- NULL
+
+result <- list()
+for (file in list.files("output/bootstrap")) {
+  bag <- as.integer(gsub("([0-9]+).*$", "\\1", file))
+  result[[bag]] <- readRDS(file.path("output", "bootstrap", file))
+
+  policy_zsg_boot <- result[[bag]]$policy_zsg |>
+    dplyr::mutate(bag = bag, .before = 1) |>
+    dplyr::bind_rows(policy_zsg_boot)
+
+  policy_mdp_boot <- result[[bag]]$policy_mdp |>
+    dplyr::mutate(bag = bag, .before = 1) |>
+    dplyr::bind_rows(policy_mdp_boot)
+
+  policy_mdp_skill_boot <- result[[bag]]$policy_mdp_skill |>
+    dplyr::mutate(bag = bag, .before = 1) |>
+    dplyr::bind_rows(policy_mdp_skill_boot)
+}
+
 
 # Plot data summary ----
-
-second_open_22 <- baserunners_22 |>
-  dplyr::left_join(play_2022, by = "play_id") |>
-  dplyr::filter(
-    is.na(`lead_distance_2nd Base`),
-    is.na(`lead_distance_3rd Base`),
-    !is.na(`lead_distance_1st Base`)
-  ) |>
-  dplyr::select(`lead_distance_1st Base`, pre_disengagements) |>
-  dplyr::mutate(year = "2022")
-
-second_open_23 <- baserunners |>
-  dplyr::left_join(play_2023, by = "play_id") |>
-  dplyr::filter(
-    is.na(`lead_distance_2nd Base`),
-    is.na(`lead_distance_3rd Base`),
-    !is.na(`lead_distance_1st Base`)
-  ) |>
-  dplyr::select(`lead_distance_1st Base`, pre_disengagements) |>
-  dplyr::mutate(year = "2023")
-
-lead_distance_1b <- rbind(second_open_22, second_open_23) |>
-  dplyr::mutate(
-    year_dis = case_when(
-      year == 2022 ~ "2022 - All Situations",
-      year == 2023 & pre_disengagements == 0 ~ "2023 - 0 Disengagements",
-      year == 2023 & pre_disengagements == 1 ~ "2023 - 1 Disengagements",
-      year == 2023 & pre_disengagements == 2 ~ "2023 - 2 Disengagements"
-    )
-  ) |>
-  dplyr::group_by(year_dis) |>
-  dplyr::mutate(
-    mean = sprintf("%.1f", mean(`lead_distance_1st Base`)),
-    label = glue::glue("{year_dis} ({mean} ft)")
-  ) |>
-  dplyr::ungroup() |>
-  dplyr::filter(!is.na(year_dis))
-
-lead_distance_1b |>
-  dplyr::group_by(year_dis) |>
-  dplyr::summarize(mean(`lead_distance_1st Base`))
 
 breaks <- seq(from = 4, to = 16, by = 2)
 
 if (fig_make) {
 
   sputil::open_device(glue::glue("output/figures/leads_overall_{fig_mode}.pdf"), height = 4, width = 7)
-  plot <- lead_distance_1b |>
-    ggplot2::ggplot(ggplot2::aes(`lead_distance_1st Base`, col = label, linetype = label)) +
+  plot <- data_glmer |>
+    dplyr::mutate(
+      year_dis = dplyr::case_when(
+        year == 2022 ~ "2022 - All Situations",
+        year == 2023 & pre_disengagements == 0 ~ "2023 - 0 Disengagements",
+        year == 2023 & pre_disengagements == 1 ~ "2023 - 1 Disengagements",
+        year == 2023 & pre_disengagements == 2 ~ "2023 - 2 Disengagements"
+      )
+    ) |>
+    dplyr::mutate(
+      mean = sprintf("%.1f", mean(lead_distance)),
+      label = glue::glue("{year_dis} ({mean} ft)"),
+      .by = year_dis
+    ) |>
+    ggplot2::ggplot(ggplot2::aes(lead_distance, col = label, linetype = label)) +
     ggplot2::stat_density(geom = "line", position = "identity") +
     ggplot2::scale_x_continuous(breaks = breaks) +
     ggplot2::scale_color_manual(
@@ -82,19 +86,15 @@ if (fig_make) {
 
 # Plot probability model summaries ----
 
-fit_po_attempt <- readRDS("output/models/fit_po_attempt.rds")
-fit_po_success <- readRDS("output/models/fit_po_success.rds")
-fit_sb_attempt <- readRDS("output/models/fit_sb_attempt.rds")
-fit_sb_success <- readRDS("output/models/fit_sb_success.rds")
-
-# Table
+fit_runner_outcome <- readRDS("output/models/fit_runner_outcome.rds")
 
 extract_model_fit <- function(model) {
-  ranef <- lme4::VarCorr(model) |>
-    tibble::as_tibble() |>
-    dplyr::mutate(type = "random", variable = grp, `Std. Error` = sdcor) |>
-    dplyr::select(type, variable, `Std. Error`)
-  summary(model)$coefficients |>
+  ranef <- tibble::tibble(
+    type = "random",
+    variable = names(glmmTMB::VarCorr(model)$cond),
+    `Std. Error` = sapply(glmmTMB::VarCorr(model)$cond, function(x) {attr(x, "stddev")})
+  )
+  summary(model)$coefficients$cond |>
     tibble::as_tibble(rownames = "variable") |>
     dplyr::mutate(type = "fixed") |>
     dplyr::bind_rows(ranef) |>
@@ -107,13 +107,13 @@ extract_model_fit <- function(model) {
     dplyr::select(type, variable, estimate)
 }
 
-table_po_attempt <- extract_model_fit(fit_po_attempt) |>
+table_po_attempt <- extract_model_fit(fit_runner_outcome$po_attempt) |>
   dplyr::rename(po_attempt = estimate)
-table_po_success <- extract_model_fit(fit_po_success) |>
+table_po_success <- extract_model_fit(fit_runner_outcome$po_success) |>
   dplyr::rename(po_success = estimate)
-table_sb_attempt <- extract_model_fit(fit_sb_attempt) |>
+table_sb_attempt <- extract_model_fit(fit_runner_outcome$sb_attempt) |>
   dplyr::rename(sb_attempt = estimate)
-table_sb_success <- extract_model_fit(fit_sb_success) |>
+table_sb_success <- extract_model_fit(fit_runner_outcome$sb_success) |>
   dplyr::rename(sb_success = estimate)
 
 table_po_attempt |>
@@ -149,15 +149,19 @@ table_po_attempt |>
     hline.after = c(0, 1, 11)
   )
 
-# Figures
+
+# Plot runner outcome probabilities as functions of lead distance ----
 
 covariate_baseline <- tibble::tibble(
+  pre_outs = 0,
   pre_balls = 0,
   pre_strikes = 0,
-  pre_outs = 0,
-  arm_strength = median(arm_strength$arm_strength)
+  arm_strength_centered = 0
 )
-lead_distance_grid <- tibble::tibble(lead1b = seq(from = 0, to = 20, by = 0.1))
+lead_distance_grid <- tibble::tibble(
+  lead_distance = seq(from = 0, to = 20, by = 0.1),
+  lead_distance_centered = lead_distance - 10
+)
 
 if (fig_make) {
 
@@ -166,8 +170,8 @@ if (fig_make) {
     dplyr::cross_join(lead_distance_grid) |>
     dplyr::cross_join(tibble::tibble(subset = c("2022_0", "2023_0", "2023_1", "2023_2"))) |>
     dplyr::mutate(
-      year = substring(subset, 1, 4),
-      pre_disengagements = substring(subset, 6),
+      year = factor(substring(subset, 1, 4), levels = c(2022, 2023)),
+      pre_disengagements = factor(substring(subset, 6), levels = 0:2),
       legend = ifelse(
         test = year == 2022,
         yes = as.character(year),
@@ -177,13 +181,14 @@ if (fig_make) {
   plot <- covariate_grid |>
     dplyr::mutate(
       prob_po_attempt = predict(
-        object = fit_po_attempt,
+        object = fit_runner_outcome$po_attempt,
         newdata = covariate_grid,
         type = "response",
-        re.form = NA)
+        re.form = NA
+      )
     ) |>
     ggplot2::ggplot(
-      ggplot2::aes(x = lead1b, y = prob_po_attempt, col = legend, linetype = legend)
+      ggplot2::aes(x = lead_distance, y = prob_po_attempt, col = legend, linetype = legend)
     ) +
     ggplot2::geom_line() +
     ggplot2::scale_x_continuous(breaks = breaks) +
@@ -208,7 +213,7 @@ if (fig_make) {
 }
 
 
-pitcher_grid <- ranef(fit_po_success)$pitcher_id |>
+pitcher_grid <- glmmTMB::ranef(fit_runner_outcome$po_success)$cond$pitcher_id |>
   dplyr::arrange(`(Intercept)`) |>
   dplyr::slice(round(dplyr::n() * c(0.9, 0.5, 0.1))) |>
   tibble::rownames_to_column("pitcher_id") |>
@@ -221,7 +226,11 @@ pitcher_grid <- ranef(fit_po_success)$pitcher_id |>
   )
 
 if (fig_make) {
-  sputil::open_device(glue::glue("output/figures/prob_po_success_{fig_mode}.pdf"), height = 4, width = 4)
+  sputil::open_device(
+    file = glue::glue("output/figures/prob_po_success_{fig_mode}.pdf"),
+    height = 4,
+    width = 4
+  )
   covariate_grid <- covariate_baseline |>
     dplyr::cross_join(lead_distance_grid) |>
     dplyr::cross_join(pitcher_grid) |>
@@ -231,10 +240,14 @@ if (fig_make) {
     )
   plot <- covariate_grid |>
     dplyr::mutate(
-      prob_po_attempt = predict(fit_po_success, newdata = covariate_grid, type = "response")
+      prob_po_attempt = predict(
+        object = fit_runner_outcome$po_success,
+        newdata = covariate_grid,
+        type = "response"
+      )
     ) |>
     ggplot2::ggplot(
-      ggplot2::aes(x = lead1b, y = prob_po_attempt, col = legend, linetype = legend)
+      ggplot2::aes(x = lead_distance, y = prob_po_attempt, col = legend, linetype = legend)
     ) +
     ggplot2::geom_line() +
     ggplot2::scale_x_continuous(breaks = breaks) +
@@ -258,14 +271,16 @@ if (fig_make) {
   dev.off()
 }
 
-sb_success_effect_runner <- ranef(fit_sb_success)$run1b |>
+sb_success_effect_runner <- glmmTMB::ranef(fit_runner_outcome$sb_success)$cond$runner_id |>
   tibble::rownames_to_column("player_id") |>
-  dplyr::filter(player_id != "r1") |>   # remove "replacement-level" runner
   dplyr::mutate(player_id = as.integer(player_id)) |>
   dplyr::inner_join(sprint_speed, by = "player_id") |>
   dplyr::mutate(
-    effect = `(Intercept)` + fixef(fit_sb_success)["sprint_speed"] * sprint_speed |>
-      scale(scale = FALSE)
+    effect = `(Intercept)` +
+      (
+        glmmTMB::fixef(fit_runner_outcome$sb_success)$cond["sprint_speed_centered"] *
+        (sprint_speed - mean(sprint_speed))
+      )
   )
 
 if (fig_make) {
@@ -278,20 +293,22 @@ if (fig_make) {
       x = "Sprint Speed",
       y = "Effect on SB Success (log-odds)"
     ) +
-    ggplot2::coord_cartesian(ylim = c(-0.6, 0.6)) +
+    ggplot2::coord_cartesian(ylim = c(-0.8, 0.8)) +
     sputil::theme_sleek(mode = fig_mode)
   print(plot)
   dev.off()
 }
 
-sb_success_effect_catcher <- ranef(fit_sb_success)$fielder_2_id |>
+sb_success_effect_catcher <- glmmTMB::ranef(fit_runner_outcome$sb_success)$cond$catcher_id |>
   tibble::rownames_to_column("player_id") |>
-  dplyr::filter(player_id != "c1") |>   # remove "replacement-level" catcher
   dplyr::mutate(player_id = as.integer(player_id)) |>
   dplyr::inner_join(arm_strength, by = "player_id") |>
   dplyr::mutate(
-    effect = `(Intercept)` + fixef(fit_sb_success)["arm_strength"] * arm_strength |>
-      scale(scale = FALSE)
+    effect = `(Intercept)` +
+      (
+        glmmTMB::fixef(fit_runner_outcome$sb_success)$cond["arm_strength_centered"] *
+        (arm_strength - mean(arm_strength))
+      )
   )
 
 if (fig_make) {
@@ -304,7 +321,7 @@ if (fig_make) {
       x = "Arm Strength",
       y = "Effect on SB Success (log-odds)"
     ) +
-    ggplot2::coord_cartesian(ylim = c(-0.6, 0.6)) +
+    ggplot2::coord_cartesian(ylim = c(-0.8, 0.8)) +
     sputil::theme_sleek(mode = fig_mode)
   print(plot)
   dev.off()
@@ -313,17 +330,20 @@ if (fig_make) {
 runner_grid <- sb_success_effect_runner |>
   dplyr::arrange(effect) |>
   dplyr::slice(round(dplyr::n() * c(0.9, 0.5, 0.1, 0.5))) |>
-  dplyr::mutate(run1b = as.character(player_id)) |>
-  dplyr::select(run1b, sprint_speed) |>
+  dplyr::mutate(runner_id = as.character(player_id), sprint_speed_centered = sprint_speed - 27) |>
+  dplyr::select(runner_id, sprint_speed_centered) |>
   dplyr::mutate(
     year = factor(c(rep(2023, 3), 2022), levels = 2022:2023),
     legend = factor(
       x = paste0(year, "; ", c(90, 50, 10, 50), "th Pct Runner"),
       levels = paste0(year, "; ", c(90, 50, 10, 50), "th Pct Runner")
-    )
+    ),
+    pitcher_id = 0,
+    catcher_id = 0
   )
 
 if (fig_make) {
+  # TODO: Explore why this result is so different from the old one
   sputil::open_device(glue::glue("output/figures/prob_sb_success_{fig_mode}.pdf"), height = 4, width = 7)
   covariate_grid <- covariate_baseline |>
     dplyr::cross_join(lead_distance_grid) |>
@@ -331,14 +351,14 @@ if (fig_make) {
   plot <- covariate_grid |>
     dplyr::mutate(
       prob_sb_success = predict(
-        object = fit_sb_success,
+        object = fit_runner_outcome$sb_success,
         newdata = covariate_grid,
         type = "response",
-        re.form = ~ (1 | run1b)
+        allow.new.levels = TRUE
       )
     ) |>
     ggplot2::ggplot(
-      ggplot2::aes(x = lead1b, y = prob_sb_success, col = legend, linetype = legend)
+      ggplot2::aes(x = lead_distance, y = prob_sb_success, col = legend, linetype = legend)
     ) +
     ggplot2::geom_line() +
     ggplot2::scale_x_continuous(breaks = breaks) +
@@ -363,169 +383,142 @@ if (fig_make) {
 }
 
 
-# Plot MDP example ----
-
-lead_value <- transition_values |>
-  dplyr::left_join(value_old, by = c("New_State" = "State")) |>
-  dplyr::group_by(State, lead1b) |>
-  dplyr::summarize(RE = sum(TotalProb * (RunsScored + RE)), n = mean(n), .groups = "drop") |>
-  dplyr::filter(State %in% c("100 0 000", "100 1 000", "100 2 000")) |>
-  dplyr::mutate(disengagements = substring(State, 5, 5))
-
-lead_value_max <- lead_value |>
-  dplyr::group_by(disengagements) |>
-  dplyr::arrange(-RE) |>
-  dplyr::slice(1) |>
-  dplyr::ungroup()
-
-if (fig_make) {
-  sputil::open_device(
-    file = glue::glue("output/figures/finding_optimal_lead_{fig_mode}.pdf"),
-    height = 4,
-    width = 7
-  )
-  plot <- lead_value |>
-    dplyr::mutate(disengagements = factor(disengagements, levels = 2:0)) |>   # re-order for legend
-    ggplot2::ggplot(ggplot2::aes(lead1b, y = RE, linetype = disengagements)) +
-    ggplot2::geom_line(color = sputil::color("blue", fig_mode)) +
-    ggplot2::geom_vline(
-      xintercept = lead_value_max$lead1b,
-      color = sputil::color("blue", fig_mode),
-      linetype = c("solid", "dashed", "dotted")
-    ) +
-    ggplot2::labs(x = "Lead Distance", y = "Expected Runs to End of Inning") +
-    ggplot2::scale_linetype_manual(
-      name = "Disengagements",
-      values = c("dotted", "dashed", "solid")
-    ) +
-    ggplot2::coord_cartesian(xlim = c(0, 20), ylim = c(0.9, 0.96)) +
-    sputil::theme_sleek(mode = fig_mode) +
-    ggplot2::theme(legend.position.inside = c(0.2, 0.25))
-  print(plot)
-  dev.off()
-}
-
-
 # Write results tables ----
 
-sorted <- policy_old |>
+policy_zsg_se <- policy_zsg_boot |>
   dplyr::mutate(
-    bases = substr(State, 1, 3),
-    dis = substr(State, 5,5),
-    countouts = substr(State, 7, 9)
+    state = pickoffgame::deconstruct_state(state),
+    first = state$first,
+    bases = state$bases,
+    outs = state$outs,
+    balls = state$balls,
+    strikes = state$strikes,
+    disengagements = state$disengagements
   ) |>
-  arrange(bases, countouts, dis)
+  dplyr::filter(bases == "100", !(first == 0 & balls == 0 & strikes == 0)) |>
+  dplyr::group_by(outs, balls, strikes, disengagements) |>
+  dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
+  dplyr::mutate(
+    count = glue::glue("{balls}-{strikes}"),
+    policy = glue::glue("{sprintf('%.1f', mean)} $\\pm$ {sprintf('%.1f', sd)}")
+  ) |>
+  dplyr::arrange(strikes, balls, outs, disengagements) |>
+  dplyr::select(outs, count, disengagements, policy)
 
-sorted |>
-  dplyr::ungroup() |>
-  dplyr::filter(substr(countouts, 3, 3) == "0", bases == "100") |>
-  dplyr::arrange(substr(countouts, 2, 2), substr(countouts, 1, 1)) |>   # sort by strikes then balls
-  dplyr::mutate(count = paste0(substr(countouts, 1, 1), "-", substr(countouts, 2, 2))) |>
-  dplyr::select(count, dis, lead1b) |>
-  tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
+policy_zsg_se |>
+  dplyr::filter(outs == 0) |>
+  dplyr::select(count, disengagements, policy) |>
+  tidyr::pivot_wider(names_from = disengagements, values_from = policy) |>
   sputil::write_latex_table(
-    file = "output/tables/lead_by_count_one_player.tex",
-    prefix_rows = "Prior & \\multicolumn{12}{c}{Count}",
-    colnames = c(
-      "Disengagements",
-      "0-0", "1-0", "2-0", "3-0", "0-1", "1-1", "2-1", "3-1", "0-2", "1-2", "2-2", "3-2"
-    ),
-    align = "r|cccc|cccc|cccc",
-    digits = 1
+    file = "output/tables/policy_by_count_zsg.tex",
+    prefix_rows = "& \\multicolumn{3}{c}{Prior Disengagements}",
+    colnames = c("Count", "0", "1", "2"),
+    align = "c|ccc",
+    hline.after = c(0, 4, 8, 12)
   )
 
-sorted |>
-  dplyr::ungroup() |>
-  dplyr::filter(substr(countouts, 1,2) == "00") |>
-  dplyr::mutate(outs = substr(countouts, 3, 3)) |>
-  dplyr::select(outs, dis, lead1b) |>
-  tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "dis_") |>
+policy_zsg_se |>
+  dplyr::filter(count == "0-0") |>
+  dplyr::select(outs, disengagements, policy) |>
+  tidyr::pivot_wider(names_from = disengagements, values_from = policy) |>
   sputil::write_latex_table(
-    file = "output/tables/lead_by_outs_one_player.tex",
-    prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
+    file = "output/tables/policy_by_outs_zsg.tex",
+    prefix_rows = "& \\multicolumn{3}{c}{Prior Disengagements}",
     colnames = c("Outs", "0", "1", "2"),
-    align = "r|ccc",
-    digits = 1
+    align = "c|ccc"
   )
 
-skill_grid |>
+
+policy_mdp_se <- policy_mdp_boot |>
+  dplyr::mutate(
+    state = pickoffgame::deconstruct_state(state),
+    first = state$first,
+    bases = state$bases,
+    outs = state$outs,
+    balls = state$balls,
+    strikes = state$strikes,
+    disengagements = state$disengagements
+  ) |>
+  dplyr::filter(bases == "100", !(first == 0 & balls == 0 & strikes == 0)) |>
+  dplyr::group_by(outs, balls, strikes, disengagements) |>
+  dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
+  dplyr::mutate(
+    count = glue::glue("{balls}-{strikes}"),
+    policy = glue::glue("{sprintf('%.1f', mean)} $\\pm$ {sprintf('%.1f', sd)}")
+  ) |>
+  dplyr::arrange(strikes, balls, outs, disengagements) |>
+  dplyr::select(outs, count, disengagements, policy)
+
+policy_mdp_se |>
+  dplyr::filter(outs == 0) |>
+  dplyr::select(count, disengagements, policy) |>
+  tidyr::pivot_wider(names_from = disengagements, values_from = policy) |>
+  sputil::write_latex_table(
+    file = "output/tables/policy_by_count_mdp.tex",
+    prefix_rows = "& \\multicolumn{3}{c}{Prior Disengagements}",
+    colnames = c("Count", "0", "1", "2"),
+    align = "c|ccc",
+    hline.after = c(0, 4, 8, 12)
+  )
+
+
+lead_increase_long <- policy_mdp_boot |>
+  pickoffgame::summarize_lead_increase()
+
+lead_increase_long |>
+  dplyr::select(pre_outs, pre_balls, pre_strikes, increase_1, increase_2) |>
+  # Group same-strike counts together visually
+  dplyr::arrange(pre_strikes, pre_balls, pre_outs) |>
+  dplyr::mutate(count = glue::glue("{pre_balls}-{pre_strikes}")) |>
+  tidyr::pivot_longer(cols = c(increase_1, increase_2)) |>
+  dplyr::arrange(name) |>
+  dplyr::mutate(name = paste(name, pre_outs, sep = "_")) |>
+  dplyr::select(count, name, value) |>
+  tidyr::pivot_wider() |>
+  sputil::write_latex_table(
+    file = "output/tables/policy_increase_mdp.tex",
+    prefix_rows = "& \\multicolumn{3}{c}{After 1$^\\text{st}$ Disengagement} & \\multicolumn{3}{c}{After 2$^\\text{nd}$ Disengagement}",
+    colnames = c("Count", "0", "1", "2", "0", "1", "2"),
+    align = "c|ccc|ccc",
+    hline.after = c(0, 4, 8, 12)
+  )
+
+
+# What is the average recommended increase in lead distance, weighted by frequency of
+# (pre_outs, pre_balls, pre_strikes, pre_disengagements) in which unsuccessful pickoffs occur?
+
+lead_increase_by_state <- lead_increase_long |>
+  dplyr::select(pre_outs, pre_balls, pre_strikes, `0_mean`, `1_mean`) |>
+  tidyr::pivot_longer(cols = dplyr::contains("_mean"), values_to = "lead_distance_increase") |>
+  dplyr::mutate(pre_disengagements = as.integer(substring(name, 1, 1)))
+
+data_glmer |>
+  dplyr::filter(is_po_attempt, !is_po_success, pre_disengagements < 2) |>
+  dplyr::count(pre_outs, pre_balls, pre_strikes, pre_disengagements) |>
+  dplyr::left_join(
+    y = lead_increase_by_state,
+    by = c("pre_outs", "pre_balls", "pre_strikes", "pre_disengagements")
+  ) |>
+  dplyr::summarize(lead_distance_increase = weighted.mean(lead_distance_increase, w = n))
+
+
+lead_increase_by_state_skill <- policy_mdp_skill_boot |>
+  dplyr::group_by(pct_runner, pct_battery) |>
+  pickoffgame::summarize_lead_increase() |>
   dplyr::ungroup() |>
-  # Hopefully this nastiness can be cleaned up upstream in the future
-  dplyr::mutate(
-    battery_skill = dplyr::case_when(
-      battery_skill == "10th Percentile Battery" ~ "10$^\\text{th}$",
-      battery_skill == "Median Battery" ~ "50$^\\text{th}$",
-      battery_skill == "90th Percentile Battery" ~ "90$^\\text{th}$"
-    ),
-    runner_skill = dplyr::case_when(
-      runner_skill == "10th Percentile Runner" ~ "10$^\\text{th}$",
-      runner_skill == "Median Runner" ~ "50$^\\text{th}$",
-      runner_skill == "90th Percentile Runner" ~ "90$^\\text{th}$"
-    )
+  dplyr::select(pct_runner, pct_battery, pre_outs, pre_balls, pre_strikes, `0_mean`, `1_mean`) |>
+  tidyr::pivot_longer(cols = dplyr::contains("_mean"), values_to = "lead_distance_increase") |>
+  dplyr::mutate(pre_disengagements = as.integer(substring(name, 1, 1)))
+
+data_glmer |>
+  dplyr::filter(is_po_attempt, !is_po_success, pre_disengagements < 2) |>
+  dplyr::count(pre_outs, pre_balls, pre_strikes, pre_disengagements) |>
+  dplyr::left_join(
+    y = lead_increase_by_state_skill,
+    by = c("pre_outs", "pre_balls", "pre_strikes", "pre_disengagements")
   ) |>
-  dplyr::select(battery_skill, runner_skill, V15, V16, V17) |>
-  sputil::write_latex_table(
-    file = "output/tables/lead_by_players.tex",
-    prefix_rows = "\\multicolumn{2}{c|}{Skill Percentile} & \\multicolumn{3}{c}{Disengagements}",
-    colnames = c("Battery", "Runner", "0", "1", "2"),
-    align = "cc|rrr",
-    digits = 1,
-    hline.after = c(0, 3, 6)
-  )
-
-sorted_two <- policy_old_two |>
-  dplyr::mutate(
-    bases = substr(State, 1, 3),
-    dis = substr(State, 5,5),
-    countouts = substr(State, 7, 9),
-    count = paste0(substr(countouts, 1, 1), "-", substring(countouts, 2, 2)),
-    outs = as.integer(substr(countouts, 3, 3))
-  ) |>
-  dplyr::arrange(bases, countouts, dis) |>
-  dplyr::ungroup()
-
-sorted_two |>
-  dplyr::filter(outs == 0, bases == "100") |>
-  dplyr::arrange(substr(countouts, 2, 2), substr(countouts, 1, 1)) |>   # sort by strikes then balls
-  dplyr::select(count, dis, lead1b) |>
-  tidyr::pivot_wider(names_from = count, values_from = lead1b, names_prefix = "count") |>
-  sputil::write_latex_table(
-    file = "output/tables/lead_by_count_two_player.tex",
-    prefix_rows = "Prior & \\multicolumn{12}{c}{Count}",
-    colnames = c(
-      "Disengagements",
-      "0-0", "1-0", "2-0", "3-0", "0-1", "1-1", "2-1", "3-1", "0-2", "1-2", "2-2", "3-2"
-    ),
-    align = "r|cccc|cccc|cccc",
-    digits = 1
-  )
-
-sorted_two |>
-  dplyr::filter(count == "0-0", bases == "100") |>
-  dplyr::arrange(outs) |>   # sort by outs
-  dplyr::select(outs, dis, lead1b) |>
-  tidyr::pivot_wider(names_from = dis, values_from = lead1b, names_prefix = "dis_") |>
-  sputil::write_latex_table(
-    file = "output/tables/lead_by_outs_two_player.tex",
-    prefix_rows = " & \\multicolumn{3}{c}{Disengagements}",
-    colnames = c("Outs", "0", "1", "2"),
-    align = "r|ccc",
-    digits = 1
-  )
-
-actual_vs_recommended_leads |>
-  dplyr::group_by(pre_disengagements) |>
+  dplyr::group_by(pct_runner, pct_battery) |>
   dplyr::summarize(
-    Actual = mean(ActualLead, na.rm = TRUE),
-    Rec = mean(RecLead, na.rm = TRUE),
-    Exceeds = mean(LeadDiff > 0, na.rm = TRUE)
-  ) |>
-  dplyr::mutate(Exceeds = glue::glue("{sprintf('%.1f', 100 * Exceeds)}\\%")) |>
-  sputil::write_latex_table(
-    file = "output/tables/actual_vs_rec_lead.tex",
-    prefix_rows = " & \\multicolumn{2}{c|}{Average Lead} & Actual Exceeds",
-    colnames = c("Disengagements", "Actual", "Recommended", "Recommendation"),
-    align = "c|cc|c",
-    digits = c(NA, 0, 1, 1, NA)
+    lead_distance_increase = weighted.mean(lead_distance_increase, w = n),
+    .groups = "drop"
   )
-
