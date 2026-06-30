@@ -86,7 +86,7 @@ estimate_runner_outcome_model <- function(data,
       logger::log_info("  Estimating GLMM for SB success probability")    # 1 minute
     }
     fit_sb_success <- glmmTMB::glmmTMB(
-      is_stolen_base ~ year + lead_distance_centered +
+      is_sb_success ~ year + lead_distance_centered +
         sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
       data = data |>
         dplyr::filter(is_sb_attempt),

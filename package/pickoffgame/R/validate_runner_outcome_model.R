@@ -20,7 +20,7 @@
 #' @importFrom dplyr arrange mutate filter summarize select starts_with n
 #' @importFrom stats predict weighted.mean
 #' @export
-validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE) {
+validate_runner_outcome_model <- function(data_glmer, folds = 10, verbose = FALSE) {
 
   pred_cv <- data_glmer |>
     dplyr::arrange(year, sample(1:dplyr::n())) |>   # stratify folds by year
@@ -29,7 +29,11 @@ validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE
       prob_po_attempt = NA,
       prob_po_success = NA,
       prob_sb_attempt = NA,
-      prob_sb_success = NA
+      prob_sb_success = NA,
+      null_po_attempt = NA,
+      null_po_success = NA,
+      null_sb_attempt = NA,
+      null_sb_success = NA
     )
 
   for (v in 1:folds) {
@@ -48,6 +52,9 @@ validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE
       type = "response",
       allow.new.levels = TRUE
     )
+    pred_cv$null_po_attempt[pred_cv$fold == v] <- pred_cv |>
+      dplyr::filter(fold != v) |>
+      with(mean(is_po_attempt))
 
     pred_cv$prob_po_success[pred_cv$fold == v] <- predict(
       object = fit$po_success,
@@ -56,6 +63,20 @@ validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE
       type = "response",
       allow.new.levels = TRUE
     )
+    pred_cv$null_po_success[pred_cv$fold == v] <- pred_cv |>
+      dplyr::filter(fold != v, is_po_attempt) |>
+      with(mean(is_po_success))
+
+    pred_cv$prob_sb_attempt[pred_cv$fold == v] <- predict(
+      object = fit$sb_attempt,
+      newdata = pred_cv |>
+        dplyr::filter(fold == v),
+      type = "response",
+      allow.new.levels = TRUE
+    )
+    pred_cv$null_sb_attempt[pred_cv$fold == v] <- pred_cv |>
+      dplyr::filter(fold != v, !is_po_attempt) |>
+      with(mean(is_sb_attempt))
 
     pred_cv$prob_sb_success[pred_cv$fold == v] <- predict(
       object = fit$sb_success,
@@ -64,6 +85,9 @@ validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE
       type = "response",
       allow.new.levels = TRUE
     )
+    pred_cv$null_sb_success[pred_cv$fold == v] <- pred_cv |>
+      dplyr::filter(fold != v, is_sb_attempt) |>
+      with(mean(is_sb_success))
 
     rm(fit)
     gc()
@@ -73,7 +97,7 @@ validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE
     dplyr::summarize(
       dev_po_attempt = mean(-2 * log(ifelse(is_po_attempt, prob_po_attempt, 1 - prob_po_attempt))),
       nulldev_po_attempt = mean(
-        x = -2 * log(ifelse(is_po_attempt, mean(is_po_attempt), 1 - mean(is_po_attempt)))
+        x = -2 * log(ifelse(is_po_attempt, null_po_attempt, 1 - null_po_attempt))
       ),
       pctdevexp_po_attempt = 1 - dev_po_attempt / nulldev_po_attempt,
 
@@ -82,7 +106,7 @@ validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE
         w = is_po_attempt
       ),
       nulldev_po_success = weighted.mean(
-        x = -2 * log(ifelse(is_po_success, mean(is_po_success), 1 - mean(is_po_success))),
+        x = -2 * log(ifelse(is_po_success, null_po_success, 1 - null_po_success)),
         w = is_po_attempt
       ),
       pctdevexp_po_success = 1 - dev_po_success / nulldev_po_success,
@@ -92,7 +116,7 @@ validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE
         w = !is_po_attempt
       ),
       nulldev_sb_attempt = weighted.mean(
-        x = -2 * log(ifelse(is_sb_attempt, mean(is_sb_attempt), 1 - mean(is_sb_attempt))),
+        x = -2 * log(ifelse(is_sb_attempt, null_sb_attempt, 1 - null_sb_attempt)),
         w = !is_po_attempt
       ),
       pctdevexp_sb_attempt = 1 - dev_sb_attempt / nulldev_sb_attempt,
@@ -102,7 +126,7 @@ validate_runner_outcome_model <- function(data_glmer, folds = 5, verbose = FALSE
         w = is_sb_attempt
       ),
       nulldev_sb_success = weighted.mean(
-        x = -2 * log(ifelse(is_sb_success, mean(is_sb_success), 1 - mean(is_sb_success))),
+        x = -2 * log(ifelse(is_sb_success, null_sb_success, 1 - null_sb_success)),
         w = is_sb_attempt
       ),
       pctdevexp_sb_success = 1 - dev_sb_success / nulldev_sb_success

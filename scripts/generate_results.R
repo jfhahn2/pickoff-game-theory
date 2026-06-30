@@ -343,7 +343,6 @@ runner_grid <- sb_success_effect_runner |>
   )
 
 if (fig_make) {
-  # TODO: Explore why this result is so different from the old one
   sputil::open_device(glue::glue("output/figures/prob_sb_success_{fig_mode}.pdf"), height = 4, width = 7)
   covariate_grid <- covariate_baseline |>
     dplyr::cross_join(lead_distance_grid) |>
@@ -363,8 +362,8 @@ if (fig_make) {
     ggplot2::geom_line() +
     ggplot2::scale_x_continuous(breaks = breaks) +
     ggplot2::scale_y_continuous(
-      breaks = seq(from = 0.65, to = 0.85, by = 0.05),
-      labels = glue::glue("{seq(from = 65, to = 85, by = 5)}%")
+      breaks = seq(from = 0.2, to = 1, by = 0.2),
+      labels = glue::glue("{seq(from = 20, to = 100, by = 20)}%")
     ) +
     ggplot2::scale_color_manual(
       name = "Scenario",
@@ -400,7 +399,7 @@ policy_zsg_se <- policy_zsg_boot |>
   dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
   dplyr::mutate(
     count = glue::glue("{balls}-{strikes}"),
-    policy = glue::glue("{sprintf('%.1f', mean)} $\\pm$ {sprintf('%.1f', sd)}")
+    policy = glue::glue("{sprintf('%.1f', mean)}' $\\pm$ {sprintf('%.1f', sd)}'")
   ) |>
   dplyr::arrange(strikes, balls, outs, disengagements) |>
   dplyr::select(outs, count, disengagements, policy)
@@ -444,7 +443,7 @@ policy_mdp_se <- policy_mdp_boot |>
   dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
   dplyr::mutate(
     count = glue::glue("{balls}-{strikes}"),
-    policy = glue::glue("{sprintf('%.1f', mean)} $\\pm$ {sprintf('%.1f', sd)}")
+    policy = glue::glue("{sprintf('%.1f', mean)}' $\\pm$ {sprintf('%.1f', sd)}'")
   ) |>
   dplyr::arrange(strikes, balls, outs, disengagements) |>
   dplyr::select(outs, count, disengagements, policy)
@@ -463,7 +462,36 @@ policy_mdp_se |>
 
 
 lead_increase_long <- policy_mdp_boot |>
-  pickoffgame::summarize_lead_increase()
+  dplyr::mutate(
+    state = pickoffgame::deconstruct_state(state),
+    first = state$first,
+    pre_bases = state$bases,
+    pre_outs = state$outs,
+    pre_balls = state$balls,
+    pre_strikes = state$strikes,
+    pre_disengagements = state$disengagements
+  ) |>
+  dplyr::select(
+    bag, first, pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements, policy_runner
+  ) |>
+  tidyr::pivot_wider(names_from = pre_disengagements, values_from = policy_runner) |>
+  dplyr::mutate(`0` = 12 * (`1` - `0`), `1` = 12 * (`2` - `1`)) |>    # report inches
+  dplyr::group_by(first, pre_bases, pre_outs, pre_balls, pre_strikes) |>
+  dplyr::summarize(
+    dplyr::across(.cols = c(`0`, `1`), .fns = c(mean = mean, sd = sd)),
+    .groups = "drop"
+  ) |>
+  dplyr::filter(pre_bases == 100, !(first == 0 & pre_balls == 0 & pre_strikes == 0)) |>
+  dplyr::mutate(
+    increase_1 = glue::glue(
+      "{sprintf('%.1f', `0_mean`)}'' $\\pm$ {sprintf('%.1f', `0_sd`)}''"
+    ),
+    increase_1 = ifelse(pre_balls == 3 & pre_strikes == 2 & pre_outs == 2, NA, increase_1),
+    increase_2 = glue::glue(
+      "{sprintf('%.1f', `1_mean`)}'' $\\pm$ {sprintf('%.1f', `1_sd`)}''"
+    ),
+    increase_2 = ifelse(pre_balls == 3 & pre_strikes == 2 & pre_outs == 2, NA, increase_2)
+  )
 
 lead_increase_long |>
   dplyr::select(pre_outs, pre_balls, pre_strikes, increase_1, increase_2) |>
@@ -478,7 +506,7 @@ lead_increase_long |>
   sputil::write_latex_table(
     file = "output/tables/policy_increase_mdp.tex",
     prefix_rows = "& \\multicolumn{3}{c}{After 1$^\\text{st}$ Disengagement} & \\multicolumn{3}{c}{After 2$^\\text{nd}$ Disengagement}",
-    colnames = c("Count", "0", "1", "2", "0", "1", "2"),
+    colnames = c("Count", "0 Outs", "1 Out", "2 Outs", "0 Outs", "1 Out", "2 Outs"),
     align = "c|ccc|ccc",
     hline.after = c(0, 4, 8, 12)
   )
@@ -487,38 +515,68 @@ lead_increase_long |>
 # What is the average recommended increase in lead distance, weighted by frequency of
 # (pre_outs, pre_balls, pre_strikes, pre_disengagements) in which unsuccessful pickoffs occur?
 
+state_frequency <- data_glmer |>
+  dplyr::filter(is_po_attempt, !is_po_success) |>
+  dplyr::count(pre_outs, pre_balls, pre_strikes, pre_disengagements)
+
 lead_increase_by_state <- lead_increase_long |>
   dplyr::select(pre_outs, pre_balls, pre_strikes, `0_mean`, `1_mean`) |>
   tidyr::pivot_longer(cols = dplyr::contains("_mean"), values_to = "lead_distance_increase") |>
-  dplyr::mutate(pre_disengagements = as.integer(substring(name, 1, 1)))
-
-data_glmer |>
-  dplyr::filter(is_po_attempt, !is_po_success, pre_disengagements < 2) |>
-  dplyr::count(pre_outs, pre_balls, pre_strikes, pre_disengagements) |>
+  dplyr::mutate(pre_disengagements = as.integer(substring(name, 1, 1))) |>
   dplyr::left_join(
-    y = lead_increase_by_state,
+    y = state_frequency,
     by = c("pre_outs", "pre_balls", "pre_strikes", "pre_disengagements")
   ) |>
+  dplyr::filter(pre_outs < 2 | pre_balls < 3 | pre_strikes < 2) |>  # no SB allowed in these states
   dplyr::summarize(lead_distance_increase = weighted.mean(lead_distance_increase, w = n))
 
 
-lead_increase_by_state_skill <- policy_mdp_skill_boot |>
-  dplyr::group_by(pct_runner, pct_battery) |>
-  pickoffgame::summarize_lead_increase() |>
-  dplyr::ungroup() |>
-  dplyr::select(pct_runner, pct_battery, pre_outs, pre_balls, pre_strikes, `0_mean`, `1_mean`) |>
-  tidyr::pivot_longer(cols = dplyr::contains("_mean"), values_to = "lead_distance_increase") |>
-  dplyr::mutate(pre_disengagements = as.integer(substring(name, 1, 1)))
-
-data_glmer |>
-  dplyr::filter(is_po_attempt, !is_po_success, pre_disengagements < 2) |>
-  dplyr::count(pre_outs, pre_balls, pre_strikes, pre_disengagements) |>
+policy_mdp_skill_boot |>
+  dplyr::mutate(
+    state = pickoffgame::deconstruct_state(state),
+    first = state$first,
+    pre_bases = state$bases,
+    pre_outs = state$outs,
+    pre_balls = state$balls,
+    pre_strikes = state$strikes,
+    pre_disengagements = state$disengagements
+  ) |>
+  dplyr::filter(
+    pre_bases == 100,
+    !(first == 0 & pre_balls == 0 & pre_strikes == 0),
+    pre_outs < 2 | pre_balls < 3 | pre_strikes < 2    # no SB allowed in these states
+  ) |>
+  dplyr::select(
+    first, pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements,
+    bag, pct_runner, pct_battery, policy_runner
+  ) |>
+  tidyr::pivot_wider(names_from = pre_disengagements, values_from = policy_runner) |>
+  dplyr::mutate(`0` = 12 * (`1` - `0`), `1` = 12 * (`2` - `1`)) |>    # report inches
+  tidyr::pivot_longer(
+    cols = c(`0`, `1`),
+    names_to = "pre_disengagements",
+    values_to = "increase"
+  ) |>
+  dplyr::mutate(pre_disengagements = as.integer(pre_disengagements)) |>
   dplyr::left_join(
-    y = lead_increase_by_state_skill,
+    y = state_frequency,
     by = c("pre_outs", "pre_balls", "pre_strikes", "pre_disengagements")
   ) |>
+  dplyr::group_by(bag, pct_runner, pct_battery) |>
+  dplyr::summarize(increase = weighted.mean(increase, w = n), .groups = "drop") |>
   dplyr::group_by(pct_runner, pct_battery) |>
-  dplyr::summarize(
-    lead_distance_increase = weighted.mean(lead_distance_increase, w = n),
-    .groups = "drop"
+  dplyr::summarize(increase_mean = mean(increase), increase_sd = sd(increase), .groups = "drop") |>
+  dplyr::mutate(
+    pct_runner = glue::glue("{100 * pct_runner}$^\\text{{th}}$"),
+    pct_battery = glue::glue("{100 * pct_battery}$^\\text{{th}}$"),
+    increase = glue::glue("{sprintf('%.1f', increase_mean)}'' $\\pm$ {sprintf('%.1f', increase_sd)}''")
+  ) |>
+  dplyr::select(pct_runner, pct_battery, increase) |>
+  tidyr::pivot_wider(names_from = pct_battery, values_from = increase) |>
+  sputil::write_latex_table(
+    file = "output/tables/policy_increase_by_skill_mdp.tex",
+    prefix_rows = "& \\multicolumn{3}{c}{Battery Percentile}",
+    colnames = c("Runner Percentile", "10$\\text{th}$", "50$\\text{th}$", "90$\\text{th}$"),
+    align = "c|ccc",
+    hline.after = 0
   )

@@ -36,7 +36,7 @@ run_analysis_pipeline <- function(game_state,
     logger::log_info("Validating runner outcome models")    # 7 minutes
 
     set.seed(42)
-    runner_outcome_model_validation <- validate_runner_outcome_model(data_glmer, folds = 5)
+    runner_outcome_model_validation <- validate_runner_outcome_model(data_glmer)
 
   } else {
     runner_outcome_model_validation <- NULL
