@@ -4,7 +4,7 @@
 \alias{validate_runner_outcome_model}
 \title{Cross-validate runner outcome models}
 \usage{
-validate_runner_outcome_model(data_glmer, folds = 5, verbose = FALSE)
+validate_runner_outcome_model(data_glmer, folds = 20, verbose = FALSE)
 }
 \arguments{
 \item{data_glmer}{A data frame containing the prepared model covariates and

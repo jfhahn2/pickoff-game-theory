@@ -7,6 +7,14 @@
 #' decision processes (MDP) and two-player zero-sum game (ZSG).
 #'
 #' @param game_state A data frame containing raw play-by-play baseball tracking data.
+#' @param bootstrap_index integer, optional, indicating the index of the bootstrap sample
+#'   to use. If NULL (default), game model is estimated using original data.
+#' @param bootstrap_resample optional tibble from \code{rsample::bootstraps} containing
+#'   bootstrap samples, ignored if \code{bootstrap_index} is NULL.
+#' @param bootstrap_simulate optimal list of bootstrap parametric simulations from
+#'   \code{glmmTMB:::simulate.glmmTMB}, ignored if \code{bootstrap_index} is NULL.
+#' @param bootstrap_fit_original optional list of original fitted \code{glmmTMB} objects
+#'   for refitting, ignored if \code{bootstrap_index} is NULL.
 #' @param validate_glmer_models Logical. If \code{TRUE}, performs a 5-fold stratified 
 #'   cross-validation on the runner outcome models before proceeding. Expect this to 
 #'   add roughly 7 minutes to execution time. Defaults to \code{FALSE}.
@@ -28,9 +36,18 @@
 #' @importFrom pickoffgame prep_runner_outcome_data validate_runner_outcome_model estimate_runner_outcome_model extract_percentile_players estimate_game_model
 #' @export
 run_analysis_pipeline <- function(game_state,
+                                  bootstrap_index = NULL,
+                                  bootstrap_resample = NULL,
+                                  bootstrap_simulate = NULL,
+                                  bootstrap_fit_original = NULL,
                                   validate_glmer_models = FALSE) {
 
   data_glmer <- pickoffgame::prep_runner_outcome_data(data = game_state)
+
+  if (!is.null(bootstrap_index)) {
+    # If we're doing bootstrapping, replace the dataset with a bootstrap resample
+    game_state <- rsample::analysis(bootstrap_resample$splits[[bootstrap_index]])
+  }
 
   if (validate_glmer_models) {
     logger::log_info("Validating runner outcome models")    # 7 minutes
@@ -46,7 +63,11 @@ run_analysis_pipeline <- function(game_state,
   logger::log_info("Fitting runner outcome models")         # 2 minutes
 
   fit_runner_outcome <- data_glmer |>
-    pickoffgame::estimate_runner_outcome_model()
+    pickoffgame::estimate_runner_outcome_model(
+      bootstrap_index = bootstrap_index,
+      bootstrap_simulate = bootstrap_simulate,
+      bootstrap_fit_original = bootstrap_fit_original
+    )
 
   percentile_players <- list()
   for (outcome in names(fit_runner_outcome)) {
@@ -61,13 +82,13 @@ run_analysis_pipeline <- function(game_state,
   # TODO: decide whether to include 2022 in this section
 
   policy_mdp <- pickoffgame::estimate_game_model(
-    data = game_state_2023,
+    data = game_state,
     fit_runner_outcome = fit_runner_outcome,
     players = "one"
   )
 
   policy_zsg <- pickoffgame::estimate_game_model(
-    data = game_state_2023,
+    data = game_state,
     fit_runner_outcome = fit_runner_outcome,
     players = "two"
   )
@@ -76,7 +97,7 @@ run_analysis_pipeline <- function(game_state,
   for (runner_percentile in c(0.1, 0.5, 0.9)) {
     for (battery_percentile in c(0.1, 0.5, 0.9)) {
       policy_mdp_skill <- pickoffgame::estimate_game_model(
-        data = game_state_2023,
+        data = game_state,
         fit_runner_outcome = fit_runner_outcome,
         players = "one",
         percentile_players = percentile_players,

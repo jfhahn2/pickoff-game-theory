@@ -4,10 +4,29 @@
 \alias{run_analysis_pipeline}
 \title{Execute full analysis pipeline}
 \usage{
-run_analysis_pipeline(game_state, validate_glmer_models = FALSE)
+run_analysis_pipeline(
+  game_state,
+  bootstrap_index = NULL,
+  bootstrap_resample = NULL,
+  bootstrap_simulate = NULL,
+  bootstrap_fit_original = NULL,
+  validate_glmer_models = FALSE
+)
 }
 \arguments{
 \item{game_state}{A data frame containing raw play-by-play baseball tracking data.}
+
+\item{bootstrap_index}{integer, optional, indicating the index of the bootstrap sample
+to use. If NULL (default), game model is estimated using original data.}
+
+\item{bootstrap_resample}{optional tibble from \code{rsample::bootstraps} containing
+bootstrap samples, ignored if \code{bootstrap_index} is NULL.}
+
+\item{bootstrap_simulate}{optimal list of bootstrap parametric simulations from
+\code{glmmTMB:::simulate.glmmTMB}, ignored if \code{bootstrap_index} is NULL.}
+
+\item{bootstrap_fit_original}{optional list of original fitted \code{glmmTMB} objects
+for refitting, ignored if \code{bootstrap_index} is NULL.}
 
 \item{validate_glmer_models}{Logical. If \code{TRUE}, performs a 5-fold stratified
 cross-validation on the runner outcome models before proceeding. Expect this to

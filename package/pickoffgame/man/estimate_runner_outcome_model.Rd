@@ -6,6 +6,9 @@
 \usage{
 estimate_runner_outcome_model(
   data,
+  bootstrap_index = NULL,
+  bootstrap_simulate = NULL,
+  bootstrap_fit_original = NULL,
   verbose = FALSE,
   include_po_attempt = TRUE,
   include_po_success = TRUE,
@@ -22,6 +25,15 @@ columns include \code{pre_runner_1b_id}, \code{is_1b_only},
 \code{pre_balls}, \code{pre_strikes}, \code{lead_distance_centered},
 \code{sprint_speed_centered}, \code{arm_strength_centered},
 \code{pitcher_id}, \code{runner_id}, and \code{catcher_id}.}
+
+\item{bootstrap_index}{integer, optional, indicating the index of the bootstrap sample
+to use. If NULL (default), game model is estimated using original data.}
+
+\item{bootstrap_simulate}{optimal list of bootstrap parametric simulations from
+\code{glmmTMB:::simulate.glmmTMB}, ignored if \code{bootstrap_index} is NULL.}
+
+\item{bootstrap_fit_original}{optional list of original fitted \code{glmmTMB} objects
+for refitting, ignored if \code{bootstrap_index} is NULL.}
 
 \item{verbose}{Logical. If \code{TRUE}, logs estimation progress to the console.
 Defaults to \code{FALSE}.}
