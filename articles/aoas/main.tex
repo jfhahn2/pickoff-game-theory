@@ -465,6 +465,14 @@
       \begin{align*}
         &\hat{\mathbb{P}}(S_{i+1} = (b', c', d', o') \mid S_i = (b, c, d, o), R_i = r) = Q\big((b, c, \cdot, o),\, r,\, (b', c', \cdot, o'),\, d' - d\big).
       \end{align*}
+  
+    \subsection{\revision{Validation and uncertainty quantification}}
+
+      \revision{
+        We perform 20-fold cross-validation to estimate the out-of-sample prediction error, using negative log loss (deviance). We report the performance as the percentage of deviance explained relative to the null model which always predicts the global mean probability of a positive outcome. A low percentage of deviance explained does not necessarily indicate poor model fit. It would be unrealistic to expect the models to predict individual binary outcomes with high certainty. The purpose of these models is to reflect how player identities, lead distance, and context predict subtle shifts in outcome probabilities which influence the optimal lead distance policy.
+
+        The end product of our analysis is the optimal policy estimated via value iteration as described in Section \ref{sec:sg-model}. The optimal policy is a function of the transition probabilities estimated in this section. We propagate the uncertainty in the transition probability estimation through to the end result using a bootstrapping procedure. For each of $B = 100$ bootstrap replicates, we refit the GLMMs from Section \ref{sec:prob-runner-outcome} via parametric bootstrapping \citep{bates_fitting_2015} and re-estimate the conditional transition probabilities from Section \ref{sec:conditional} by resampling the state transitions in the original dataset, stratified by year. We solve the optimal policy for each bootstrap replicate and report the uncertainty as the standard deviation of the end result across the replicates.
+      }
 
   \section{\revision{Results}}
   \label{sec:results}
@@ -476,14 +484,14 @@
     \subsection{Runner outcome probability model}
     \label{sec:results-multilevel-model}
 
-      \revision{We implemented the GLMMs from Section \ref{sec:prob-runner-outcome} in R using the package lme4 \citep{bates_fitting_2015}.} Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected.
+      \revision{We implemented the GLMMs from Section \ref{sec:prob-runner-outcome} in R using the package glmmTMB \citep{brooks_glmmtmb_2017}.} Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected. \revision{In 20-fold cross-validation, the component GLMMs explained 5.2\% of deviance in pickoff attempt probability; 8.9\% of deviance in pickoff success probability; 10.1\% of deviance in stolen base attempt probability; and 3.0\% of deviance in stolen base success probability.}
 
       \begin{table}
         \resizebox{\textwidth}{!}{
           \inputtable{model_summary.tex}
         }
         \caption{
-          \it Summary of estimated runner outcome probability models. We estimated four different generalized (binomial) linear mixed-effects models for pickoff (PO) attempt and success and for stolen base (SB) attempt and success. For fixed effects we report the estimated effect with one standard error, and for random effects we report the estimated standard deviation term. For 2022, we encoded disengagements as always zero to reflect no pickoff limit.
+          \it Summary of estimated runner outcome probability models. We estimated four different generalized (binomial) linear mixed-effects models for pickoff (PO) attempt and success and for stolen base (SB) attempt and success. For fixed effects we report the estimated effect with one standard error, and for random effects we report the estimated standard deviation term. For 2022, we coded disengagements as always zero to reflect no pickoff limit.
         }
         \label{tab:model-summary}
        \end{table}
@@ -530,16 +538,14 @@
     \subsection{Two-player sequential game}
     \label{sec:results-two-player}
     
-      Using the transition probabilities estimated on the empirical data, we implemented the value iteration algorithm from Section \ref{sec:sg-model}, discretizing the runner's lead distance action space to the nearest tenth of a foot. Table \ref{tab:lead-by-count-two-player} reports how the optimal runner policy varies by count and disengagements, and Table \ref{tab:lead-by-outs-two-player} reports how the optimal runner policy varies by outs and disengagements. This runner policy maximizes runs scored while taking into account the rational behavior of both players, as defined by (\ref{eqn:sg_val}). For this runner policy, the pitcher is indifferent to attempting a pickoff or not.
+      Using the transition probabilities estimated on the empirical data, we implemented the value iteration algorithm from Section \ref{sec:sg-model}, discretizing the runner's lead distance action space to the nearest tenth of a foot. Table \ref{tab:lead-by-count-zsg} reports how the optimal runner policy varies by count and disengagements, and Table \ref{tab:policy-by-outs-zsg} reports how the optimal runner policy varies by outs and disengagements. This runner policy maximizes runs scored while taking into account the rational behavior of both players, as defined by (\ref{eqn:sg_val}). For this runner policy, the pitcher is indifferent to attempting a pickoff or not.
       
       \begin{table}
-        \resizebox{\textwidth}{!}{
-          \inputtable{lead_by_count_two_player.tex}
-        }
+        \inputtable{policy_by_count_zsg.tex}
         \caption{
-          \it The optimal lead distance (in feet) by count and prior disengagements under the two-player sequential game, assuming an average runner on first base facing an average battery (pitcher and catcher) with no outs and third base empty.
+          \it The optimal lead distance (in feet) by count and prior disengagements under the two-player sequential game, assuming an average runner on first base facing an average battery (pitcher and catcher) with no outs and third base empty. \revision{Estimates include standard errors estimated via bootstrapping.}
         }
-        \label{tab:lead-by-count-two-player}
+        \label{tab:lead-by-count-zsg}
       \end{table}
 
       The most striking observation is that the optimal lead distance is significantly longer with two prior disengagements (14.9--15.8 feet) than in other states. These recommended lead distances are near the edge of observed lead distances in the dataset but not outside of the observed range. Overall, the optimal runner policy is more aggressive than observed behavior. Recall from Section \ref{sec:results-multilevel-model} that the average lead distance after zero, one, and two prior disengagements was 9.6 feet, 10.3 feet, and 11.0 feet, respectively.
@@ -547,11 +553,11 @@
       \begin{table}
         \small
         \centering       
-        \inputtable{lead_by_outs_two_player.tex}
+        \inputtable{policy_by_outs_zsg.tex}
         \caption{
-          \it The optimal lead distance (in feet) by outs and prior disengagements under the two-player sequential game, assuming an average runner on first base facing an average battery (pitcher and catcher) with an 0-0 count and third base empty.
+          \it The optimal lead distance (in feet) by outs and prior disengagements under the two-player sequential game, assuming an average runner on first base facing an average battery (pitcher and catcher) with an 0-0 count and third base empty. \revision{Estimates include standard errors estimated via bootstrapping.}
         }
-        \label{tab:lead-by-outs-two-player}
+        \label{tab:policy-by-outs-zsg}
       \end{table}
 
       We observe that the lead distance generally, although not strictly, shortens as the count deepens (i.e., as the numbers of balls and strikes increase). This makes intuitive sense because the plate appearance is closer to ending, which relieves the pressure on the pitcher to avoid attempting a pickoff. The lead distance generally, although not strictly, increases as the number of outs increases. This makes intuitive sense because the runner is less likely to score without more aggressive action. In other words, the riskier lead distance is more palatable because the runner has a lower baseline probability of scoring from first base with two outs. The non-monotonicity of the optimal lead distance policy may be a consequence of estimating transition probabilities using empirical data.
@@ -559,22 +565,20 @@
       Under the game-theoretic equilibrium, pitchers would be more aggressive with attempting pickoffs when runners take long leads. Based on observed lead distances in 2023, we estimate that a pickoff attempt would be the optimal action in 11.4\% of opportunities with only first base occupied. When a pickoff attempt would have been recommended, pitchers attempted pickoffs 10.4\% of the time---100\% would be optimal. When a pickoff attempt would not have been recommended, pitchers attempted pickoffs 4.9\% of the time---0\% would be optimal. Overall, pitchers attempted pickoffs on 5.6\% of opportunities, less than the recommended 11.4\%.
       
 
-      Despite the fact that pitchers would attempt more pickoffs under the game-theoretic equilibrium, Tables \ref{tab:lead-by-count-two-player} and \ref{tab:lead-by-outs-two-player} recommend longer leads for runners, particularly with two prior disengagements. The optimal strategy for the runner is maximin because they choose the lead distance which maximizes the minimum run expectancy across the pitcher's two options (pickoff or pitch). The pitcher will never attempt a pickoff when it is suboptimal to do so. The optimal behavior for the runner is to force their hand (or rather, to make the pitcher indifferent to their two choices).
+      Despite the fact that pitchers would attempt more pickoffs under the game-theoretic equilibrium, Tables \ref{tab:lead-by-count-zsg} and \ref{tab:policy-by-outs-zsg} recommend longer leads for runners, particularly with two prior disengagements. The optimal strategy for the runner is maximin because they choose the lead distance which maximizes the minimum run expectancy across the pitcher's two options (pickoff or pitch). The pitcher will never attempt a pickoff when it is suboptimal to do so. The optimal behavior for the runner is to force their hand (or rather, to make the pitcher indifferent to their two choices).
 
 
     \subsection{One-player MDP}
     \label{sec:results-one-player}
 
-      \revision{The results in Tables \ref{tab:lead-by-count-two-player} and \ref{tab:lead-by-outs-two-player} provide guidance to runners for choosing lead distances that are unexploitable from a game theory perspective. However,} pitchers may be unlikely to adapt their strategy to the optimal policy in the short term. Runner actions are already observable by the defense, and current pitcher behavior seems more conservative than optimal, as noted in Section \ref{sec:results-two-player}. After all, the pitcher has the additional cognitive burden of contending with the batter. In light of this, \revision{runners may achieve better results by choosing a policy to exploit observed pitcher behavior.}
+      \revision{The results in Tables \ref{tab:lead-by-count-zsg} and \ref{tab:policy-by-outs-zsg} provide guidance to runners for choosing lead distances that are unexploitable from a game theory perspective. However,} pitchers may be unlikely to adapt their strategy to the optimal policy in the short term. Runner actions are already observable by the defense, and current pitcher behavior seems more conservative than optimal, as noted in Section \ref{sec:results-two-player}. After all, the pitcher has the additional cognitive burden of contending with the batter. In light of this, \revision{runners may achieve better results by choosing a policy to exploit observed pitcher behavior.}
 
-      \revision{We consider replacing the pitcher's agency in the two-player sequential game with the probability model described in Section \ref{sec:prob-po-attempt}. The pickoff decision becomes a stochastic response to the runner's lead distance, resulting in a one-player MDP. As with the two-player game, we implement value iteration to find the optimal runner policy given observed pitcher behavior.} Table \ref{tab:lead-by-count-one-player} reports how the optimal policy varies by count and prior disengagements, and Table \ref{tab:lead-by-outs-one-player} reports how the optimal policy varies by outs and prior disengagements.
+      \revision{We consider replacing the pitcher's agency in the two-player sequential game with the probability model described in Section \ref{sec:prob-po-attempt}. The pickoff decision becomes a stochastic response to the runner's lead distance, resulting in a one-player MDP. As with the two-player game, we implement value iteration to find the optimal runner policy given observed pitcher behavior.} Table \ref{tab:lead-by-count-one-player} reports how the optimal policy varies by count and prior disengagements.
 
       \begin{table}
-        \resizebox{\textwidth}{!}{
-          \inputtable{lead_by_count_one_player.tex}
-        }
+        \inputtable{policy_by_count_mdp.tex}
         \caption{
-          \it The optimal lead distance (in feet) by count and prior disengagements under the \revision{one}-player MDP, assuming an average runner on first base facing an average battery (pitcher and catcher) with no outs and third base empty.
+          \it The optimal lead distance (in feet) by count and prior disengagements under the \revision{one}-player MDP, assuming an average runner on first base facing an average battery (pitcher and catcher) with no outs and third base empty. \revision{Estimates include standard errors estimated via bootstrapping.}
         }
         \label{tab:lead-by-count-one-player}
       \end{table}
@@ -584,33 +588,37 @@
       \begin{table}
         \small
         \centering
-        \inputtable{lead_by_outs_one_player.tex}
+        \inputtable{policy_increase_mdp.tex}
         \caption{
-          \it The optimal lead distance (in feet) by outs and prior disengagements under the \revision{one}-player MDP, assuming an average runner on first base facing an average battery (pitcher and catcher) with an 0-0 count and third base empty.
+          \revision{
+            \it The increase in optimal lead distance (in inches) after an unsuccessful pickoff attempt under the one-player MDP, assuming an average runner on first base facing an average battery (pitcher and catcher) with third base empty. Estimates include standard errors estimated via bootstrapping.
+          }
         }
-        \label{tab:lead-by-outs-one-player}
+        \label{tab:policy-increase-mdp}
       \end{table}
   
-      Table \ref{tab:lead-by-players} shows the \revision{optimal runner policy by number of disengagements for different combinations of battery skill and runner skill.} Against batteries more skilled at controlling the run game, the optimal lead distance is shorter. For more skilled runners, the optimal lead distance is longer. \revision{However, the relationship between disengagements and recommenced lead distance is similar for different combinations of player skill. The first disengagement increases recommended lead distance by 0.9--1.7 feet, and the second disengagement results in an increase of 1.8--2.7 feet.}
+      Table \ref{tab:policy-increase-by-skill-mdp} shows the \revision{optimal runner policy by number of disengagements for different combinations of battery skill and runner skill.} Against batteries more skilled at controlling the run game, the optimal lead distance is shorter. For more skilled runners, the optimal lead distance is longer. \revision{However, the relationship between disengagements and recommenced lead distance is similar for different combinations of player skill. The first disengagement increases recommended lead distance by 0.9--1.7 feet, and the second disengagement results in an increase of 1.8--2.7 feet.}
     
       \begin{table}
         \small
         \centering
-        \inputtable{lead_by_players.tex}
+        \inputtable{policy_increase_by_skill_mdp.tex}
         \caption{
-          \it Optimal lead distance (in feet) by battery/runner skill and prior disengagements, for an 0-0 count with no outs and third base empty. For example, the hypothetical 90$^\text{th}$-percentile battery represents the 90$^\text{th}$ percentile at attempting pickoffs, successfully executing pickoffs, suppressing stolen base attempts, and catching would-be base stealers.
+          \revision{
+            \it Average increase in optimal lead distance (in inches) by runner and battery skill percentile under the one-player MDP. The reported increase reflects the average increase across game states in which unsuccessful pickoff attempts occur. The hypothetical 90$^\text{th}$-percentile battery represents the 90$^\text{th}$ percentile at attempting pickoffs, successfully executing pickoffs, suppressing stolen base attempts, and catching would-be base stealers.
+          }
         }
-        \label{tab:lead-by-players}
+        \label{tab:policy-increase-by-skill-mdp}
       \end{table}
 
   \section{Discussion and \revision{actionable} insights}
   \label{sec:discussion}
 
-    In comparing the optimal lead distance policy under the two-player game (Table \ref{tab:lead-by-count-two-player}) and the \revision{one}-player MDP (Table \ref{tab:lead-by-count-one-player}), we observe substantial differences between them. For most states, the former lead distance is longer than the latter. The optimal policy for the runner under the two-player game is to extend their lead until the pitcher is indifferent between attempting a pickoff or not. By contrast, the one-player optimal policy corresponds to a pickoff attempt probability below 10\%. Because the pitcher sometimes attempts low-success pickoffs, the runner does not need to extend their lead further.
+    In comparing the optimal lead distance policy under the two-player game (Table \ref{tab:lead-by-count-zsg}) and the \revision{one}-player MDP (Table \ref{tab:lead-by-count-one-player}), we observe substantial differences between them. For most states, the former lead distance is longer than the latter. The optimal policy for the runner under the two-player game is to extend their lead until the pitcher is indifferent between attempting a pickoff or not. By contrast, the one-player optimal policy corresponds to a pickoff attempt probability below 10\%. Because the pitcher sometimes attempts low-success pickoffs, the runner does not need to extend their lead further.
 
-    In the two-player game we recommend long leads (beyond 15 feet) after two prior disengagements. These distances are near the edge of the range of leads we observe but not outside the range. To develop intuition for this policy, consider the optimal lead distance of 15.1 feet in a 3-2 count after two prior disengagements (Table \ref{tab:lead-by-count-two-player}). If an average pitcher attempts a pickoff in this scenario, we estimate a 20.5\% probability that the runner is out. Otherwise, the runner advances to second base. By contrast, if the pitcher throws a pitch and if the runner attempts a stolen base (14.0\% probability), we estimate an 82.8\% probability that the stolen base is successful. In other words, the pitcher is indifferent to throwing a pitch or attempting a pickoff because the probability of an unsuccessful pickoff attempt is similar to the probability of a successful stolen base (conditioned on a steal attempt), and the outcome is the same either way.
+    In the two-player game we recommend long leads (beyond 15 feet) after two prior disengagements. These distances are near the edge of the range of leads we observe but not outside the range. To develop intuition for this policy, consider the optimal lead distance of 15.1 feet in a 3-2 count after two prior disengagements (Table \ref{tab:lead-by-count-zsg}). If an average pitcher attempts a pickoff in this scenario, we estimate a 20.5\% probability that the runner is out. Otherwise, the runner advances to second base. By contrast, if the pitcher throws a pitch and if the runner attempts a stolen base (14.0\% probability), we estimate an 82.8\% probability that the stolen base is successful. In other words, the pitcher is indifferent to throwing a pitch or attempting a pickoff because the probability of an unsuccessful pickoff attempt is similar to the probability of a successful stolen base (conditioned on a steal attempt), and the outcome is the same either way.
 
-    Because a third failed pickoff attempt results directly in free baserunner advancement, the pitcher is strongly disincentivized from attempting a pickoff after two prior disengagements. In the two-player game, this is reflected in a drastic increase in the optimal lead distance after the second disengagement (3--5 feet, Table \ref{tab:lead-by-count-two-player}). In the one-player MDP, we observe a more steady increase in optimal lead distance as a function of prior disengagements because observed pitcher pickoff attempt behavior steadily decreases as a function of prior disengagements (see Figure \ref{fig:prob-pickoff}).
+    Because a third failed pickoff attempt results directly in free baserunner advancement, the pitcher is strongly disincentivized from attempting a pickoff after two prior disengagements. In the two-player game, this is reflected in a drastic increase in the optimal lead distance after the second disengagement (3--5 feet, Table \ref{tab:lead-by-count-zsg}). In the one-player MDP, we observe a more steady increase in optimal lead distance as a function of prior disengagements because observed pitcher pickoff attempt behavior steadily decreases as a function of prior disengagements (see Figure \ref{fig:prob-pickoff}).
  
     Given observed lead distance behavior, offenses scored 0.516 runs per inning in 2023. In other words, if we model the inning as a Markov reward process using empirical transition probabilities between states, the value of the start-of-inning state is 0.516 runs. Under the two-player game, the value of the start-of-inning state is 0.520 runs, which corresponds to approximately 6 more runs over a full season of 162 games of nine innings each. Therefore, offenses stand to benefit more in the transition from observed behavior to a game-theoretic equilibrium. Under the one-player MDP, the value of the start-of-inning state is 0.524 runs, which corresponds to approximately 12 more runs over a full season, relative to observed behavior. Naturally, scoring expectation is higher in the one-player MDP because the runner exploits the sub-optimal strategy of the pitcher. To add 12 expected runs in free agency would cost roughly \$12 million \citep{clemens_what_2021}, which speaks to a significant (but not outlandish) impact. This value may have increased since the last study we found to have estimated it.
 
