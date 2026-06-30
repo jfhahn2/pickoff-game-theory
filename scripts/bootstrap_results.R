@@ -1,8 +1,10 @@
 
-bootstrap_samples <- 100
+bags <- 100
 
 # WRANGLE DATA ----
 logger::log_info("Wrangling data")    # 1 minute
+
+fit_runner_outcome <- readRDS("output/models/fit_runner_outcome.rds")
 
 data_2022 <- pickoffgame::read_data(2022)
 data_2023 <- pickoffgame::read_data(2023)
@@ -35,11 +37,28 @@ game_state_2023 <- pickoffgame::wrangle_data(
 game_state <- dplyr::bind_rows(game_state_2022, game_state_2023)
 
 set.seed(42)
-bootstrap <- rsample::bootstraps(data = game_state, times = bootstrap_samples, strata = year)
+bootstrap_resample <- rsample::bootstraps(
+  data = game_state,
+  times = bags,
+  strata = year
+)
+bootstrap_simulate <- list()
+for (outcome in names(fit_runner_outcome)) {
+  bootstrap_simulate[[outcome]] <- glmmTMB:::simulate.glmmTMB(
+    object = fit_runner_outcome[[outcome]],
+    nsim = bags,
+    seed = 42
+  )
+}
 
-for (b in 1:bootstrap_samples) {
-  logger::log_info("Analyizing bootstrap sample {b}/{bootstrap_samples}")
-  rsample::analysis(bootstrap$splits[[b]]) |>
-    pickoffgame::run_analysis_pipeline() |>
+for (b in 1:bags) {
+  logger::log_info("Analyizing bootstrap sample {b}/{bags}")
+  pickoffgame::run_analysis_pipeline(
+    game_state = game_state,
+    bootstrap_index = b,
+    bootstrap_resample = bootstrap_resample,
+    bootstrap_simulate = bootstrap_simulate,
+    bootstrap_fit_original = fit_runner_outcome
+  ) |>
     saveRDS(glue::glue("output/bootstrap/{b}.rds"))
 }

@@ -13,6 +13,12 @@
 #'   \code{pre_balls}, \code{pre_strikes}, \code{lead_distance_centered}, 
 #'   \code{sprint_speed_centered}, \code{arm_strength_centered}, 
 #'   \code{pitcher_id}, \code{runner_id}, and \code{catcher_id}.
+#' @param bootstrap_index integer, optional, indicating the index of the bootstrap sample
+#'   to use. If NULL (default), game model is estimated using original data.
+#' @param bootstrap_simulate optimal list of bootstrap parametric simulations from
+#'   \code{glmmTMB:::simulate.glmmTMB}, ignored if \code{bootstrap_index} is NULL.
+#' @param bootstrap_fit_original optional list of original fitted \code{glmmTMB} objects
+#'   for refitting, ignored if \code{bootstrap_index} is NULL.
 #' @param verbose Logical. If \code{TRUE}, logs estimation progress to the console. 
 #'   Defaults to \code{FALSE}.
 #' @param include_po_attempt logical, should pickoff attempt model be estimated?
@@ -33,6 +39,9 @@
 #' @importFrom logger log_info
 #' @export
 estimate_runner_outcome_model <- function(data,
+                                          bootstrap_index = NULL,
+                                          bootstrap_simulate = NULL,
+                                          bootstrap_fit_original = NULL,
                                           verbose = FALSE,
                                           include_po_attempt = TRUE,
                                           include_po_success = TRUE,
@@ -48,50 +57,78 @@ estimate_runner_outcome_model <- function(data,
     if (verbose) {
       logger::log_info("  Estimating GLMM for PO attempt probability")    # 2 minutes
     }
-    fit_po_attempt <- glmmTMB::glmmTMB(
-      formula = is_po_attempt ~ year + pre_outs + pre_balls + pre_strikes + pre_disengagements +
-        lead_distance_centered + (1 | pitcher_id),
-      data = data,
-      family = binomial()
-    )
+    if (is.null(bootstrap_index)) {
+      fit_po_attempt <- glmmTMB::glmmTMB(
+        formula = is_po_attempt ~ year + pre_outs + pre_balls + pre_strikes + pre_disengagements +
+          lead_distance_centered + (1 | pitcher_id),
+        data = data,
+        family = binomial()
+      )
+    } else {
+      fit_po_attempt <- glmmTMB::refit(
+        object = bootstrap_fit_original$po_attempt,
+        newresp = bootstrap_simulate$po_attempt[[glue::glue("sim_{bag}")]]
+      )
+    }
   }
   
   if (include_po_success) {
     if (verbose) {
       logger::log_info("  Estimating GLMM for PO success probability")    # 0 minutes
     }
-    fit_po_success <- glmmTMB::glmmTMB(
-      formula = is_po_success ~ lead_distance_centered + (1 | pitcher_id),
-      data = data |>
-        dplyr::filter(is_po_attempt),
-      family = binomial()
-    )
+    if (is.null(bootstrap_index)) {
+      fit_po_success <- glmmTMB::glmmTMB(
+        formula = is_po_success ~ lead_distance_centered + (1 | pitcher_id),
+        data = data |>
+          dplyr::filter(is_po_attempt),
+        family = binomial()
+      )
+    } else {
+      fit_po_success <- glmmTMB::refit(
+        object = bootstrap_fit_original$po_success,
+        newresp = bootstrap_simulate$po_success[[glue::glue("sim_{bag}")]]
+      )
+    }
   }
 
   if (include_sb_attempt) {
     if (verbose) {
       logger::log_info("  Estimating GLMM for SB attempt probability")    # 7 minutes
     }
-    fit_sb_attempt <- glmmTMB::glmmTMB(
-      is_sb_attempt ~ pre_outs + pre_balls + pre_strikes + pre_disengagements +
-        sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
-      data = data |>
-        dplyr::filter(!is_po_attempt),
-      family = binomial()
-    )
+    if (is.null(bootstrap_index)) {
+      fit_sb_attempt <- glmmTMB::glmmTMB(
+        is_sb_attempt ~ pre_outs + pre_balls + pre_strikes + pre_disengagements +
+          sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
+        data = data |>
+          dplyr::filter(!is_po_attempt),
+        family = binomial()
+      )
+    } else {
+      fit_sb_attempt <- glmmTMB::refit(
+        object = bootstrap_fit_original$sb_attempt,
+        newresp = bootstrap_simulate$sb_attempt[[glue::glue("sim_{bag}")]]
+      )
+    }
   }
   
   if (include_sb_success) {
     if (verbose) {
       logger::log_info("  Estimating GLMM for SB success probability")    # 1 minute
     }
-    fit_sb_success <- glmmTMB::glmmTMB(
-      is_sb_success ~ year + lead_distance_centered +
-        sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
-      data = data |>
-        dplyr::filter(is_sb_attempt),
-      family = binomial
-    )
+    if (is.null(bootstrap_index)) {
+      fit_sb_success <- glmmTMB::glmmTMB(
+        is_sb_success ~ year + lead_distance_centered +
+          sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
+        data = data |>
+          dplyr::filter(is_sb_attempt),
+        family = binomial
+      )
+    } else {
+      fit_sb_success <- glmmTMB::refit(
+        object = bootstrap_fit_original$sb_success,
+        newresp = bootstrap_simulate$sb_success[[glue::glue("sim_{bag}")]]
+      )
+    }
   }
 
   return(
