@@ -20,7 +20,7 @@
 #' @importFrom dplyr arrange mutate filter summarize select starts_with n
 #' @importFrom stats predict weighted.mean
 #' @export
-validate_runner_outcome_model <- function(data_glmer, folds = 10, verbose = FALSE) {
+validate_runner_outcome_model <- function(data_glmer, folds = 20, verbose = FALSE) {
 
   pred_cv <- data_glmer |>
     dplyr::arrange(year, sample(1:dplyr::n())) |>   # stratify folds by year
