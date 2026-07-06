@@ -52,13 +52,17 @@ for (outcome in names(fit_runner_outcome)) {
 }
 
 for (b in 1:bags) {
-  logger::log_info("Analyizing bootstrap sample {b}/{bags}")
-  pickoffgame::run_analysis_pipeline(
+  logger::log_info("Analyzing bootstrap sample {b}/{bags}")
+  result <- pickoffgame::run_analysis_pipeline(
     game_state = game_state,
     bootstrap_index = b,
     bootstrap_resample = bootstrap_resample,
     bootstrap_simulate = bootstrap_simulate,
     bootstrap_fit_original = fit_runner_outcome
-  ) |>
-    saveRDS(glue::glue("output/bootstrap/{b}.rds"))
+  )
+  # remove large objects before saving to file
+  result$data_glmer <- NULL
+  result$fit_runner_outcome <- NULL
+  gc()
+  saveRDS(result, glue::glue("output/bootstrap/{b}.rds"))
 }
