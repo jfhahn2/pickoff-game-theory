@@ -67,7 +67,7 @@ estimate_runner_outcome_model <- function(data,
     } else {
       fit_po_attempt <- glmmTMB::refit(
         object = bootstrap_fit_original$po_attempt,
-        newresp = bootstrap_simulate$po_attempt[[glue::glue("sim_{bag}")]]
+        newresp = bootstrap_simulate$po_attempt[[glue::glue("sim_{bootstrap_index}")]]
       )
     }
   }
@@ -86,7 +86,7 @@ estimate_runner_outcome_model <- function(data,
     } else {
       fit_po_success <- glmmTMB::refit(
         object = bootstrap_fit_original$po_success,
-        newresp = bootstrap_simulate$po_success[[glue::glue("sim_{bag}")]]
+        newresp = bootstrap_simulate$po_success[[glue::glue("sim_{bootstrap_index}")]]
       )
     }
   }
@@ -106,7 +106,7 @@ estimate_runner_outcome_model <- function(data,
     } else {
       fit_sb_attempt <- glmmTMB::refit(
         object = bootstrap_fit_original$sb_attempt,
-        newresp = bootstrap_simulate$sb_attempt[[glue::glue("sim_{bag}")]]
+        newresp = bootstrap_simulate$sb_attempt[[glue::glue("sim_{bootstrap_index}")]]
       )
     }
   }
@@ -126,7 +126,7 @@ estimate_runner_outcome_model <- function(data,
     } else {
       fit_sb_success <- glmmTMB::refit(
         object = bootstrap_fit_original$sb_success,
-        newresp = bootstrap_simulate$sb_success[[glue::glue("sim_{bag}")]]
+        newresp = bootstrap_simulate$sb_success[[glue::glue("sim_{bootstrap_index}")]]
       )
     }
   }

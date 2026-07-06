@@ -47,7 +47,7 @@ results <- pickoffgame::run_analysis_pipeline(
 
 # WRITE RESULTS TO FILE ----
 
-data.table::fwrite(data_glmer, file = "output/data/data_glmer.csv")
+data.table::fwrite(results$data_glmer, file = "output/data/data_glmer.csv")
 
 if (validate_glmer_models) {
   data.table::fwrite(
