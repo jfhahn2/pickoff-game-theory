@@ -101,7 +101,7 @@ extract_model_fit <- function(model) {
     dplyr::mutate(
       estimate = paste(
         ifelse(type == "random", "", glue::glue("${sprintf('%.3f', Estimate)}$")),
-        glue::glue("$\\pm{sprintf('%.3f', `Std. Error`)}$")
+        glue::glue("{{\\color{{gray}} $\\pm{sprintf('%.3f', `Std. Error`)}$}}")
       )
     ) |>
     dplyr::select(type, variable, estimate)
@@ -399,7 +399,7 @@ policy_zsg_se <- policy_zsg_boot |>
   dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
   dplyr::mutate(
     count = glue::glue("{balls}-{strikes}"),
-    policy = glue::glue("{sprintf('%.1f', mean)}' $\\pm$ {sprintf('%.1f', sd)}'")
+    policy = glue::glue("{sprintf('%.1f', mean)}' {{\\color{{gray}} $\\pm$ {sprintf('%.1f', sd)}'}}")
   ) |>
   dplyr::arrange(strikes, balls, outs, disengagements) |>
   dplyr::select(outs, count, disengagements, policy)
@@ -443,7 +443,7 @@ policy_mdp_se <- policy_mdp_boot |>
   dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
   dplyr::mutate(
     count = glue::glue("{balls}-{strikes}"),
-    policy = glue::glue("{sprintf('%.1f', mean)}' $\\pm$ {sprintf('%.1f', sd)}'")
+    policy = glue::glue("{sprintf('%.1f', mean)}' {{\\color{{gray}}$\\pm$ {sprintf('%.1f', sd)}'}}")
   ) |>
   dplyr::arrange(strikes, balls, outs, disengagements) |>
   dplyr::select(outs, count, disengagements, policy)
@@ -484,11 +484,11 @@ lead_increase_long <- policy_mdp_boot |>
   dplyr::filter(pre_bases == 100, !(first == 0 & pre_balls == 0 & pre_strikes == 0)) |>
   dplyr::mutate(
     increase_1 = glue::glue(
-      "{sprintf('%.1f', `0_mean`)}'' $\\pm$ {sprintf('%.1f', `0_sd`)}''"
+      "{sprintf('%.1f', `0_mean`)}'' {{\\color{{gray}}$\\pm$ {sprintf('%.1f', `0_sd`)}''}}"
     ),
     increase_1 = ifelse(pre_balls == 3 & pre_strikes == 2 & pre_outs == 2, NA, increase_1),
     increase_2 = glue::glue(
-      "{sprintf('%.1f', `1_mean`)}'' $\\pm$ {sprintf('%.1f', `1_sd`)}''"
+      "{sprintf('%.1f', `1_mean`)}'' {{\\color{{gray}}$\\pm$ {sprintf('%.1f', `1_sd`)}''}}"
     ),
     increase_2 = ifelse(pre_balls == 3 & pre_strikes == 2 & pre_outs == 2, NA, increase_2)
   )
@@ -569,7 +569,9 @@ policy_mdp_skill_boot |>
   dplyr::mutate(
     pct_runner = glue::glue("{100 * pct_runner}$^\\text{{th}}$"),
     pct_battery = glue::glue("{100 * pct_battery}$^\\text{{th}}$"),
-    increase = glue::glue("{sprintf('%.1f', increase_mean)}'' $\\pm$ {sprintf('%.1f', increase_sd)}''")
+    increase = glue::glue(
+      "{sprintf('%.1f', increase_mean)}'' {{\\color{{gray}}$\\pm$ {sprintf('%.1f', increase_sd)}''}}"
+    )
   ) |>
   dplyr::select(pct_runner, pct_battery, increase) |>
   tidyr::pivot_wider(names_from = pct_battery, values_from = increase) |>
