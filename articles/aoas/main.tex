@@ -283,8 +283,7 @@
   \label{sec:transition-probability-model}
 
     \revision{
-      To infer the two-player sequential game model using empirical data, it is critical to estimate the transition probabilities $p(\cdot \mid s,a_\text{R},a_\text{P})$. In other words, we must understand how the runner's chosen lead distance and the pitcher's chosen action (pickoff or pitch) influence the stochastic transitions between game states. For states with trivial action space ($a_\text{R} = a_\text{P} = \delta$), we simply use the empirical transition probabilities between states observed in the data. For more intersting states, we decompose the state transition into (1) a runner outcome and (2) a conditional state transition, given the runner outcome. While the runner outcome depends on runner and pitcher actions, we assume that the state transition is conditionally indepedent of the actions, given the runner outcome. In other words, the actions only influence the state transition through the runner outcome. We address the validity of this assumption in Section \ref{sec:sensitivity}.
-      % TODO: Add a section addressing validity of assumptions
+      To infer the two-player sequential game model using empirical data, it is critical to estimate the transition probabilities $p(\cdot \mid s,a_\text{R},a_\text{P})$. In other words, we must understand how the runner's chosen lead distance and the pitcher's chosen action (pickoff or pitch) influence the stochastic transitions between game states. For states with trivial action space ($a_\text{R} = a_\text{P} = \delta$), we simply use the empirical transition probabilities between states observed in the data. For more intersting states, we decompose the state transition into (1) a runner outcome and (2) a conditional state transition, given the runner outcome. While the runner outcome depends on runner and pitcher actions, we assume that the state transition is conditionally indepedent of the actions, given the runner outcome. In other words, the actions only influence the state transition through the runner outcome.
     }
 
     Throughout \revision{this section}, we use $s_i = (b_i, c_i, d_i, o_i)$ to denote the state of the game at the beginning of each observed play $i \in \{1, ..., n\}$ (which can be a pitch or a pickoff attempt). We use $\mathcal{H}^R$, $\mathcal{H}^P$, and $\mathcal{H}^C$ to denote the sets of runners, pitchers and catchers, respectively. On play $i$:
@@ -296,15 +295,16 @@
       \item $z_i^C \in \mathbb{R^+}$ is the arm strength of catcher $h_i^C$.
     \end{itemize}
     
-    When the play begins, we use $\ell_i \in \mathbb{R}^+$ to denote the lead distance (in feet) taken by the first-base runner; and we use $p_i \in \{0, 1\}$ to denote whether the pitcher attempts (1) or does not attempt (0) a pickoff. We use $r_i \in \{\mbox{P}^+,\, \mbox{P}^-,\, \mbox{S}^+,\, \mbox{S}^-,\, \mbox{N}\} \equiv \mathcal{R}$ to denote the runner outcome, where
+    When the play begins, we use $\ell_i \in \mathbb{R}^+$ to denote the lead distance (in feet) taken by the first-base runner; and we use $p_i \in \{0, 1\}$ to denote whether the pitcher attempts (1) or does not attempt (0) a pickoff. We use $r_i \in \revision{\{\mbox{PO}^+,\, \mbox{PO}^-,\, \mbox{SB}^+,\, \mbox{SB}^-,\, \mbox{NG},\, \mbox{GI}\}} \equiv \mathcal{R}$ to denote the runner outcome, where
     \begin{itemize}
-      \item $\mbox{P}^+$ represents a successful pickoff attempt (runner is out);
-      \item $\mbox{P}^-$ represents an unsuccessful pickoff attempt (runner is safe);
-      \item $\mbox{S}^+$ represents a successful stolen base attempt (runner is safe);
-      \item $\mbox{S}^-$ represents an unsuccessful stolen base attempt (runner is out); and
-      \item $\mbox{N}$ represents no runner action (a pitch with no stolen base attempt).
+      \item \revision{$\mbox{PO}^+$} represents a successful pickoff attempt (runner is out);
+      \item \revision{$\mbox{PO}^-$} represents an unsuccessful pickoff attempt (runner is safe);
+      \item \revision{$\mbox{SB}^+$} represents a successful stolen base attempt (runner is safe);
+      \item \revision{$\mbox{SB}^-$} represents an unsuccessful stolen base attempt (runner is out); and
+      \item \revision{$\mbox{NG}$ represents a pitch with the runner not going;} and
+      \item \revision{$\mbox{GI}$ represents a pitch with the runner going but interrupted by a batter event.}
     \end{itemize}
-    If there is no runner on first base, then $\ell_i$ and $r_i$ are undefined.
+    \revision{For example, a runner going on the pitch might be interrupted by a batted ball (fair or foul) or a walk causing the runner to freely advance to the next base. In these cases, the official scorebook does not acknowledge a stolen base attempt by the runner. We distinguish between NG and GI because the conditional distributions of state transitions differ between these two events. We do not define} $\ell_i$ and $r_i$ \revision{for plays with} no runner on first base.
     
     \revision{
       Using $\mathcal{E}$ to denote the event $\{S_i = s, \ell_i = a_\text{R}, p_i = a_\text{P}\}$ for states $s$ with nontrivial action space, the law of total probability decomposes the transition probability function as
@@ -318,85 +318,91 @@
     \subsection{\revision{Runner outcome model}}
     \label{sec:prob-runner-outcome}
 
-      There are $|\mathcal{R}| = 5$ possible outcomes for the runner with respect to the run game, \revision{and they have a hierarchical structure illustrated by Figure \ref{fig:runner-outcome-tree}. We leverage this hierarchy to decompose the runner outcome probability into four components.} Using $R_i$ to denote the random variable governing the probability distribution over $r_i$,
+      There are $|\mathcal{R}| = \revision{6}$ possible outcomes for the runner with respect to the run game, \revision{and they have a hierarchical structure illustrated by Figure \ref{fig:runner-outcome-tree}. We leverage this hierarchy to decompose the runner outcome probability into five components.} Using $R_i$ to denote the random variable governing the probability distribution over $r_i$,
       \begin{itemize}
-        \item $\phi_i = \mathbb{P}(R_i \in \{\mbox{P}^+,\, \mbox{P}^-\})$ is the pickoff attempt probability;
-        \item $\phi_i^+ = \mathbb{P}(R_i \in \{\mbox{P}^+\} \mid R_i \in \{\mbox{P}^+,\, \mbox{P}^-\})$ is the pickoff success probability;
-        \item $\psi_i = \mathbb{P}(R_i \in \{\mbox{S}^+,\, \mbox{S}^-\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-, N\})$ is the stolen base attempt probability; and
-        \item $\psi_i^+ = \mathbb{P}(R_i \in \{\mbox{S}^+\} \mid R_i \in \{\mbox{S}^+,\, \mbox{S}^-\})$ is the stolen base success probability.
+        \item $\phi_i = \mathbb{P}(R_i \in \{\revision{\mbox{PO}^+,\, \mbox{PO}^-}\})$ is the pickoff attempt probability;
+        \item $\phi_i^+ = \mathbb{P}(R_i \in \{\revision{\mbox{PO}^+}\} \mid R_i \in \{\revision{\mbox{PO}^+,\, \mbox{PO}^-}\})$ is the pickoff success probability;
+        \item $\psi_i = \mathbb{P}(R_i \in \{\revision{\mbox{GI},\, \mbox{SB}^+,\, \mbox{SB}^-}\} \mid R_i \revision{\notin \{\mbox{PO}^+,\, \mbox{PO}^-\})}$ is the \revision{runner going} probability;
+        \item \revision{$\nu_i = \mathbb{P}(R_i \in \{\mbox{GI}\} \mid R_i \in \{\mbox{GI}, \mbox{SB}^+,\, \mbox{SB}^-\})$ is the batter interruption probability; and}
+        \item $\psi_i^+ = \mathbb{P}(R_i \in \{\mbox{SB}^+\} \mid R_i \in \{\mbox{SB}^+,\, \mbox{SB}^-\})$ is the stolen base success probability.
       \end{itemize}
 
       \revision{
         \begin{figure}
           \begin{tikzpicture}
-            \node (R)  at ( 0.0,  0) {$\mathcal{R}$};
-            \node (P)  at ( 1.5, -1) {P};
-            \node (RP) at (-1.5, -1) {$\mathcal{R} -$ P};
-            \node (P+) at ( 2.0, -2) {P$^+$};
-            \node (P-) at ( 1.0, -2) {P$^-$};
-            \node (S)  at (-1.0, -2) {S};
-            \node (N)  at (-2.0, -2) {N};
-            \node (S+) at (-0.5, -3) {S$^+$};
-            \node (S-) at (-1.5, -3) {S$^-$};
-            \draw[->] (R)  -- node[right] {\tiny $\phi_i$} (P);
-            \draw[->] (R)  -- (RP);
-            \draw[->] (P)  -- node[right] {\tiny $\phi_i^+$} (P+);
-            \draw[->] (P)  -- (P-);
-            \draw[->] (RP) -- node[right] {\tiny $\psi_i$} (S);
-            \draw[->] (RP) -- (N);
-            \draw[->] (S)  -- node[right] {\tiny $\psi_i^+$} (S+);
-            \draw[->] (S)  -- (S-);
+            \node (R)   at ( 0.0,  0) {$\mathcal{R}$};
+            \node (PO)  at ( 2, 1) {PO};
+            \node (P)   at (2, -1) {P};
+            \node (PO+) at ( 4.0, 1.5) {PO$^+$};
+            \node (PO-) at ( 4, 0.5) {PO$^-$};
+            \node (G)   at (4, -0.5) {G};
+            \node (NG)  at (4, -1.5) {NG};
+            \node (GI)  at (6, 0) {GI};
+            \node (SB)  at (6, -1) {SB};
+            \node (SB+) at (8, -0.5) {SB$^+$};
+            \node (SB-) at (8, -1.5) {SB$^-$};
+            \draw[->] (R)  -- node[above] {\scriptsize $\phi_i$} (PO);
+            \draw[->] (R)  -- (P);
+            \draw[->] (PO) -- node[above] {\scriptsize $\phi_i^+$} (PO+);
+            \draw[->] (PO) -- (PO-);
+            \draw[->] (P)  -- node[above] {\scriptsize $\psi_i$} (G);
+            \draw[->] (P)  -- (NG);
+            \draw[->] (G)  -- node[above] {\scriptsize $\nu_i$} (GI);
+            \draw[->] (G)  -- (SB);
+            \draw[->] (SB) -- node[above] {\scriptsize $\psi_i^+$} (SB+);
+            \draw[->] (SB) -- (SB-);
           \end{tikzpicture}
           \caption{
             \revision{
-              \it A diagram of the runner outcome hierarchy. P represents \{P$^+$, P$^-$\}, and S represents \{S$^+$, S$^-$\}. Each right-moving edge is labeled with the conditional probability of the right child node given the parent node. The conditional probability of the left child is one minus the conditional probability of the right child.
+              \it A diagram of the runner outcome hierarchy. Each upward-moving edge is labeled with the conditional probability of the top child node given the parent node. The conditional probability of the bottom child is one minus the conditional probability of the top child. The sets PO (pickoff attempt), P (pitch), G (runner going) and SB (stolen base attempt) are subsets of the runner outcome set $\mathcal R$.
             }
           }
           \label{fig:runner-outcome-tree}
         \end{figure}
 
-        Each of these probabilities depends on the play's contextual covariates and player skills, for which the subscript $i$ accounts. If the pitcher has agency, then the pickoff attempt probability depends only on pitcher action, $\phi_i = p_i$. However, it is useful for some applications to remove the pitcher's agency, as described in Section \ref{sec:prob-po-attempt}, so we keep the notation general. The runner outcome probability comprises the products of the component probabilities:
+        Each of these probabilities depends on the play's contextual covariates and player skills, for which the subscript $i$ accounts. If the pitcher has agency, then the pickoff attempt probability depends only on pitcher action, $\phi_i = p_i$. However, it is useful for some applications to remove the pitcher's agency, as described in Section \ref{sec:prob-pickoff-attempt}, so we keep the notation general. The runner outcome probability comprises the products of the component probabilities:
         \begin{align}
           \label{eqn:prob-runner-outcome-two-player}
           \begin{split}
             \mathbb{P}(R_i = r \mid \mathcal{E}) =
             \begin{cases}
-              \phi_i \cdot \phi_i^+                            & \mbox{if } r = \mbox{P}^+\\
-              \phi_i \cdot (1 - \phi_i^+)                      & \mbox{if } r = \mbox{P}^-\\
-              (1 - \phi_i) \cdot \psi_i \cdot \psi_i^+         & \mbox{if } r = \mbox{S}^+\\
-              (1 - \phi_i) \cdot \psi_i \cdot (1 - \psi_i^+)   & \mbox{if } r = \mbox{S}^-\\
-              (1 - \phi_i) \cdot (1 - \psi_i)                  & \mbox{if } r = \mbox{N}\\
+              \phi_i \cdot \phi_i^+                                             & \mbox{if } r = \mbox{PO}^+\\
+              \phi_i \cdot (1 - \phi_i^+)                                       & \mbox{if } r = \mbox{PO}^-\\
+              (1 - \phi_i) \cdot \psi_i \cdot \nu_i                             & \mbox{if } r = \mbox{GI}\\
+              (1 - \phi_i) \cdot \psi_i \cdot (1 - \nu_i) \cdot \psi_i^+        & \mbox{if } r = \mbox{SB}^+\\
+              (1 - \phi_i) \cdot \psi_i \cdot (1 - \nu_i) \cdot (1 - \psi_i^+)  & \mbox{if } r = \mbox{SB}^-\\
+              (1 - \phi_i) \cdot (1 - \psi_i)                                   & \mbox{if } r = \mbox{NG}\\
             \end{cases}.
           \end{split}
         \end{align}
       }
 
-      \revision{We estimate the component binomial outcome probabilities using GLMMs} \citep{stroup_generalized_2012}. Mixed-effects models allow us to incorporate player random effects along with fixed effects for game state variables and lead distance. Player random effects are particularly appropriate for this setting because they yield player skill estimates which go beyond measurable characteristics like sprint speed and are regularized towards a common mean. \revision{Sections \ref{sec:prob-po-attempt} through \ref{sec:prob-sb-success} detail the model specifications.}
+      \revision{We estimate the component binomial outcome probabilities using GLMMs} \citep{stroup_generalized_2012}. Mixed-effects models allow us to incorporate player random effects along with fixed effects for game state variables and lead distance. Player random effects are particularly appropriate for this setting because they yield player skill estimates which go beyond measurable characteristics like sprint speed and are regularized towards a common mean. \revision{Sections \ref{sec:prob-pickoff-attempt} through \ref{sec:prob-stolen-base} detail the model specifications.}
 
       \subsubsection{Pickoff attempt probability}
-      \label{sec:prob-po-attempt}
+      \label{sec:prob-pickoff-attempt}
 
         \revision{
           In the two-player sequential game model, there is no need to estimate pickoff attempt probability because it is a deterministic decision made by the pitcher. However, as we discuss in Section \ref{sec:discussion}, modeling the pickoff decision as stochastic rather than antagonistic results in different, and perhaps more immediately actionable, insights for the runner. From the runner's perspective, this approach models the pitcher's action as a stochastic response to the runner's lead distance. In this section we present a probability model for pickoff attempts, which forms the basis for the results in Section \ref{sec:results-one-player}.
         }
 
-        We model $\phi_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements (as a categorical), and lead distance; and with a random effect for the pitcher.
+        We model $\phi_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements (\revision{all as} categorical), and lead distance \revision{(numeric)}; and with a random effect for the pitcher.
         \begin{align}
-          \label{eqn:prob-po-attempt}
+          \label{eqn:prob-pickoff-attempt}
           \begin{split}
-            \log\left(\frac{\phi_i}{1 - \phi_i}\right) &= \alpha + \beta^B c_i^B + \beta^S c_i^S +
-              \beta^O o_i + \beta^D_{d_i} + \beta^L \ell_i + \gamma^P_{h_i^P}\\
+            \log\left(\frac{\phi_i}{1 - \phi_i}\right) &= \alpha + \revision{\beta^B_{c_i^B} + \beta^S_{c_i^S} +
+              \beta^O_{o_i}} + \beta^D_{d_i} + \beta^L \ell_i + \gamma^P_{h_i^P}\\
             \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P.
           \end{split}
         \end{align}
-        This model has seven fixed, unknown parameters: the intercept $\alpha$; the five slopes $\beta^B$, $\beta^S$, $\beta^O$, $\beta^D$, and $\beta^L$; and the variance parameter $\sigma^2_P$. The number of random effects is $|\mathcal{H}^P|$\revision{, and we interpret them as latent individual tendencies to attempt pickoffs.}
+        This model has \revision{eleven} fixed, unknown parameters: the intercept $\alpha$; \revision{three $\beta^B$'s, two $\beta^S$'s, two $\beta^O$'s, two $\beta^D$'s}, and $\beta^L$; and the variance parameter $\sigma^2_P$. The number of random effects is $|\mathcal{H}^P|$\revision{, and we interpret them as latent individual tendencies to attempt pickoffs.}
         
       \subsubsection{Pickoff success probability}
-      \label{sec:prob-po-success}
+      \label{sec:prob-pickoff-success}
 
         We model $\phi_i^+$ using a mixed-effects logistic regression with a fixed effect for lead distance and a random effect for pitcher.
         \begin{align}
-          \label{eqn:prob-po-success}
+          \label{eqn:prob-pickoff-success}
           \begin{split}
             \log\left(\frac{\phi_i^+}{1 - \phi_i^+}\right) &= \alpha + \beta^L \ell_i + \gamma^P_{h_i^P},\\
             \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P.
@@ -404,17 +410,17 @@
         \end{align}
         This model has three fixed, unknown parameters: the intercept $\alpha$, the slope $\beta^L$, and the variance parameters $\sigma^2_P$. The number of random effects is $|\mathcal{H}^P|$\revision{, and we interpret them as latent individual pickoff skill.}
 
-      \subsubsection{Stolen base attempt probability}
-      \label{sec:prob-sb-attempt}
+      \subsubsection{\revision{Runner going} probability}
+      \label{sec:prob-runner-going}
 
         Modeling the runner's decision to attempt a stolen base \revision{presents empirical challenges. While classical game theory might frame this as a deterministic decision, this model aligns poorly with real-life decisions made by baserunners. We posit that the decision is a response to latent environment variables (e.g., the pitcher's body language or timing between pitches) that we do not observe in the data available. Therefore, we treat the decision as stochastic given player skills and contextual factors. Further, we exclude lead distance from this model to avoid a paradoxical situation in which the optimal action for the runner would be to shorten their lead to reduce the probability of an ill-advised stolen base attempt.}
 
-        We model $\psi_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements (as a categorical), runner sprint speed, and catcher arm strength; and with random effects for runner, pitcher, and catcher.
+        We model $\psi_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements, runner sprint speed \revision{(numeric)}, and catcher arm strength \revision{(numeric)}; and with random effects for runner, pitcher, and catcher.
         \begin{align}
-          \label{eqn:prob-sb-attempt}
+          \label{eqn:prob-runner-going}
           \begin{split}
-            \log\left(\frac{\psi_i}{1 - \psi_i}\right) &= \alpha + \beta^B c_i^B + \beta^S c_i^S +
-              \beta^O o_i + \beta^D_{d_i} + (\beta^R z_i^R + \gamma^R_{h_i^R}) +
+            \log\left(\frac{\psi_i}{1 - \psi_i}\right) &= \alpha + \revision{\beta^B_{c_i^B} + \beta^S_{c_i^S} +
+              \beta^O_{o_i}} + \beta^D_{d_i} + (\beta^R z_i^R + \gamma^R_{h_i^R}) +
               \gamma^P_{h_i^P} + (\beta^C z_i^C + \gamma^C_{h_i^C}),\\
             \gamma^R_{h} &\sim \mathcal{N}(0, \sigma^2_R) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^R,\\
             \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P,\\
@@ -422,14 +428,32 @@
           \end{split}
         \end{align}
  
-        We interpret $(\beta^R z_i^R + \gamma^R_{h_i^R})$ as the effect of runner $h_i^R$ on the attempt probability, combining the effect of the runner's \revision{measured} sprint speed with \revision{a latent effect representing the individual's tendency to attempt a steal}. By including a fixed effect for sprint speed, we are effectively regularizing the runner effects toward priors based on their sprint speeds. The interpretation of $(\beta^C z_i^C + \gamma^C_{h_i^C})$ for catchers is similar: Each catcher has an estimated effect regularized toward a prior based on their arm strength.
+        We interpret $(\beta^R z_i^R + \gamma^R_{h_i^R})$ as the effect of runner $h_i^R$ on the \revision{runner going} probability, combining the effect of the runner's \revision{measured} sprint speed with \revision{a latent effect representing the individual's tendency to attempt a steal}. By including a fixed effect for sprint speed, we are effectively regularizing the runner effects toward priors based on their sprint speeds. The interpretation of $(\beta^C z_i^C + \gamma^C_{h_i^C})$ for catchers is similar: Each catcher has an estimated effect regularized toward a prior based on their arm strength.
+      
+      \subsubsection{\revision{Batter interruption probability}}
+      \label{sec:prob-going-interrupt}
+
+        \revision{
+          We model $\nu_i$ using a mixed-effects logistic regression with fixed effects for balls, strikes, outs, disengagements, runner sprint speed, and catcher arm strength; and with random effects for runner, pitcher, and catcher.
+          \begin{align}
+            \label{eqn:prob-runner-going}
+            \begin{split}
+              \log\left(\frac{\nu_i}{1 - \nu_i}\right) &= \alpha + \revision{\beta^B_{c_i^B} + \beta^S_{c_i^S} +
+                \beta^O_{o_i}} + \beta^D_{d_i} + (\beta^R z_i^R + \gamma^R_{h_i^R}) +
+                \gamma^P_{h_i^P} + (\beta^C z_i^C + \gamma^C_{h_i^C}),\\
+              \gamma^R_{h} &\sim \mathcal{N}(0, \sigma^2_R) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^R,\\
+              \gamma^P_{h} &\sim \mathcal{N}(0, \sigma^2_P) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^P,\\
+              \gamma^C_{h} &\sim \mathcal{N}(0, \sigma^2_C) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^C.
+            \end{split}
+          \end{align}
+        }
       
       \subsubsection{Stolen base success probability}
-      \label{sec:prob-sb-success}
+      \label{sec:prob-stolen-base}
 
         We model $\psi_i^+$ using a mixed-effects logistic regression with fixed effects for lead distance, runner sprint speed, and catcher arm strength; and with random effects for runner, pitcher, and catcher.
         \begin{align}
-          \label{eqn:prob-sb-success}
+          \label{eqn:prob-stolen-base}
           \begin{split}
             \log\left(\frac{\psi_i^+}{1 - \psi_i^+}\right) &= \alpha + \beta^L \ell_i + (\beta^R z_i^R + \gamma^R_{h_i^R}) +
               \gamma^P_{h_i^P} + (\beta^C z_i^C + \gamma^C_{h_i^C}),\\
@@ -438,7 +462,7 @@
             \gamma^C_{h} &\sim \mathcal{N}(0, \sigma^2_C) \hspace{4mm} \mbox{\it i.i.d.} \hspace{4mm} \forall h \in \mathcal{H}^C.
           \end{split}
         \end{align}
-        As in (\ref{eqn:prob-sb-attempt}), we interpret $(\beta^R z_i^R + \gamma^R_{h_i^R})$ as the runner effect regularized toward a prior based on sprint speed and $(\beta^C z_i^C + \gamma^C_{h_i^C})$ as the catcher effect regularized toward a prior based on arm strength. \revision{Through these terms we account for both measurable skills and latent skills that influence the probability of a successful stolen base.}
+        As in (\ref{eqn:prob-runner-going}), we interpret $(\beta^R z_i^R + \gamma^R_{h_i^R})$ as the runner effect regularized toward a prior based on sprint speed and $(\beta^C z_i^C + \gamma^C_{h_i^C})$ as the catcher effect regularized toward a prior based on arm strength. \revision{Through these terms we account for both measurable skills and latent skills that influence the probability of a successful stolen base.}
 
     \subsection{\revision{Conditional state transition model}}
     \label{sec:prob-state-transition}
@@ -484,7 +508,7 @@
     \subsection{Runner outcome probability model}
     \label{sec:results-multilevel-model}
 
-      \revision{We implemented the GLMMs from Section \ref{sec:prob-runner-outcome} in R using the package glmmTMB \citep{brooks_glmmtmb_2017}.} Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-sb-success} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected. \revision{In 20-fold cross-validation, the component GLMMs explained 5.2\% of deviance in pickoff attempt probability; 8.9\% of deviance in pickoff success probability; 10.1\% of deviance in stolen base attempt probability; and 3.0\% of deviance in stolen base success probability.}
+      \revision{We implemented the GLMMs from Section \ref{sec:prob-runner-outcome} in R using the package glmmTMB \citep{brooks_glmmtmb_2017}.} Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-stolen-base} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected. \revision{In 20-fold cross-validation, the component GLMMs explained 5.2\% of deviance in pickoff attempt probability; 8.9\% of deviance in pickoff success probability; 10.1\% of deviance in stolen base attempt probability; and 3.0\% of deviance in stolen base success probability.}
 
       \begin{table}
         \resizebox{\textwidth}{!}{
@@ -503,20 +527,20 @@
         \includegraphics[width = 0.4\textwidth]{prob_po_attempt_light.pdf}
         \includegraphics[width = 0.4\textwidth]{prob_po_success_light.pdf}
         \caption{
-          \it Pickoff attempt probability (left) and success probability (right) modeled as functions of lead distance. The left figure corresponds to the model detailed from Section \ref{sec:prob-po-attempt}, assuming zero balls, zero strikes, zero outs, and a median pitcher random effect. The right figure corresponds to the model from Section \ref{sec:prob-po-success}, which includes only an intercept, a fixed effect for lead distance and a random effect for pitcher identity.
+          \it Pickoff attempt probability (left) and success probability (right) modeled as functions of lead distance. The left figure corresponds to the model detailed from Section \ref{sec:prob-pickoff-attempt}, assuming zero balls, zero strikes, zero outs, and a median pitcher random effect. The right figure corresponds to the model from Section \ref{sec:prob-pickoff-success}, which includes only an intercept, a fixed effect for lead distance and a random effect for pitcher identity.
         }
         \label{fig:prob-pickoff}
       \end{figure}
 
-      Figure \ref{fig:prob-sb-success} shows stolen base success probability modeled as a function of lead distance, split by season and by runner skill. We observe that, conditioned on lead distance, even 10$^\text{th}$-percentile runners in 2023 had higher success probabilities than the median runner in 2022, which is likely attributable to rule changes making it easier to steal bases in 2023. Within the range covering most lead distances, the difference between the 90$^\text{th}$-percentile runner and the median runner is just under 5 percentage points of success probability, similar to the difference between the median runner and the 10$^\text{th}$-percentile runner. Base-out state and battery (i.e. pitcher and catcher) skill also influence stolen base success probability although they are not shown in this visualization.
+      Figure \ref{fig:prob-stolen-base} shows stolen base success probability modeled as a function of lead distance, split by season and by runner skill. We observe that, conditioned on lead distance, even 10$^\text{th}$-percentile runners in 2023 had higher success probabilities than the median runner in 2022, which is likely attributable to rule changes making it easier to steal bases in 2023. Within the range covering most lead distances, the difference between the 90$^\text{th}$-percentile runner and the median runner is just under 5 percentage points of success probability, similar to the difference between the median runner and the 10$^\text{th}$-percentile runner. Base-out state and battery (i.e. pitcher and catcher) skill also influence stolen base success probability although they are not shown in this visualization.
       
       \begin{figure}
         \centering
         \includegraphics[width = 0.7\textwidth]{prob_sb_success_light.pdf}
         \caption{
-          \it Stolen base success probability modeled as function of lead distance, split by season and runner effect (combining the fixed effect of runner sprint speed and the random effect of runner identity). This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-sb-success}, assuming zero balls, zero strikes, zero outs, and a median value for the combined effect of pitcher identity (random effect), catcher arm strength (fixed effect), and catcher identity (random effect).
+          \it Stolen base success probability modeled as function of lead distance, split by season and runner effect (combining the fixed effect of runner sprint speed and the random effect of runner identity). This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-stolen-base}, assuming zero balls, zero strikes, zero outs, and a median value for the combined effect of pitcher identity (random effect), catcher arm strength (fixed effect), and catcher identity (random effect).
         }
-        \label{fig:prob-sb-success}
+        \label{fig:prob-stolen-base}
       \end{figure}
 
       A novel \revision{applied result} of these runner outcome probability models \revision{stems from} the combination of fixed effects for measurable player characteristics (catcher arm strength and runner sprint speed) and random effects for player identities. This feature allows us to answer questions such as: How important are these measurable characteristics for player performance outcomes? And to what extent do players over- or under-perform what is expected from their measurable characteristics? The combination of the fixed effect and the random effect gives us an estimate (which we call the combined effect) of each player's skill, regularized toward what is expected from their measurable characteristics.
@@ -573,7 +597,7 @@
 
       \revision{The results in Tables \ref{tab:lead-by-count-zsg} and \ref{tab:policy-by-outs-zsg} provide guidance to runners for choosing lead distances that are unexploitable from a game theory perspective. However,} pitchers may be unlikely to adapt their strategy to the optimal policy in the short term. Runner actions are already observable by the defense, and current pitcher behavior seems more conservative than optimal, as noted in Section \ref{sec:results-two-player}. After all, the pitcher has the additional cognitive burden of contending with the batter. In light of this, \revision{runners may achieve better results by choosing a policy to exploit observed pitcher behavior.}
 
-      \revision{We consider replacing the pitcher's agency in the two-player sequential game with the probability model described in Section \ref{sec:prob-po-attempt}. The pickoff decision becomes a stochastic response to the runner's lead distance, resulting in a one-player MDP. As with the two-player game, we implement value iteration to find the optimal runner policy given observed pitcher behavior.} Table \ref{tab:lead-by-count-one-player} reports how the optimal policy varies by count and prior disengagements.
+      \revision{We consider replacing the pitcher's agency in the two-player sequential game with the probability model described in Section \ref{sec:prob-pickoff-attempt}. The pickoff decision becomes a stochastic response to the runner's lead distance, resulting in a one-player MDP. As with the two-player game, we implement value iteration to find the optimal runner policy given observed pitcher behavior.} Table \ref{tab:lead-by-count-one-player} reports how the optimal policy varies by count and prior disengagements.
 
       \begin{table}
         \inputtable{policy_by_count_mdp.tex}
