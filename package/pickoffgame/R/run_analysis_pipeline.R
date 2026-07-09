@@ -73,13 +73,13 @@ run_analysis_pipeline <- function(game_state,
   for (outcome in names(fit_runner_outcome)) {
     percentile_players[[outcome]] <- pickoffgame::extract_percentile_players(
       object = fit_runner_outcome[[outcome]],
-      data = data_glmer
+      data = data_glmer,
+      flip = outcome %in% c("pickoff_attempt", "pickoff_success", "going_interrupt")
     )
   }
 
   # ESTIMATE GAME MODELS ----
   logger::log_info("Estimating game models")                # 10 minutes
-  # TODO: decide whether to include 2022 in this section
 
   policy_mdp <- pickoffgame::estimate_game_model(
     data = game_state,

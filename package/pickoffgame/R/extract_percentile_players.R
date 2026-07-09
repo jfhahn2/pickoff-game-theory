@@ -12,6 +12,8 @@
 #'   and \code{arm_strength_centered}.
 #' @param percentile A numeric vector of percentiles to extract. Defaults to 
 #'   \code{c(0.1, 0.5, 0.9)}.
+#' @param flip logical, should percentiles be flipped so that larger numbers are better for the
+#'   battery and smaller numbers are better for the runner? Defaults to FALSE.
 #'
 #' @return A list with two elements:
 #'   \itemize{
@@ -25,7 +27,7 @@
 #' @importFrom tibble as_tibble
 #' @importFrom dplyr rename left_join mutate arrange slice n select
 #' @export
-extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.9)) {
+extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.9), flip = FALSE) {
 
   ranef <- glmmTMB::ranef(object)$cond
 
@@ -76,7 +78,8 @@ extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.
 
   percentile_runner <- data |>
     dplyr::mutate(runner_effect = ranef_runner + sprint_speed_effect * sprint_speed_centered) |>
-    dplyr::arrange(runner_effect) |>
+    # If necessary, flip percentiles so that negative values are better for the runner
+    dplyr::arrange(ifelse(flip, -1, 1) * runner_effect) |>
     dplyr::slice(round(percentile * dplyr::n())) |>
     dplyr::select(runner_id, sprint_speed_centered) |>
     dplyr::mutate(pct_runner = percentile, .before = 1)
@@ -85,7 +88,8 @@ extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.
     dplyr::mutate(
       battery_effect = ranef_pitcher + ranef_catcher + arm_strength_effect * arm_strength_centered
     ) |>
-    dplyr::arrange(-battery_effect) |>  # negative battery effects represent stronger batteries
+    # If necessary, flip percentiles so that postive values are better for the battery
+    dplyr::arrange(ifelse(flip, 1, -1) * battery_effect) |>
     dplyr::slice(round(percentile * dplyr::n())) |>
     dplyr::select(pitcher_id, catcher_id, arm_strength_centered) |>
     dplyr::mutate(pct_battery = percentile, .before = 1)
