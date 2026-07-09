@@ -61,7 +61,7 @@ estimate_conditional_transition_probability <- function(data) {
         state = pre_state_reduced,
         new_disengagements = pre_disengagements
       ),
-      post_disengagements = pre_disengagements + ifelse(runner_outcome %in% c("P+", "P-"), 1, 0),
+      post_disengagements = pre_disengagements + ifelse(runner_outcome %in% c("PO+", "PO-"), 1, 0),
       is_end_of_pa = post$first == 1,
       is_runner_movement = pre$bases != post$bases,
       post_state = dplyr::case_when(
