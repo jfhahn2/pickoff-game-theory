@@ -47,7 +47,9 @@ This data-cleaning function processes the raw inputs via the following steps:
 \item \strong{Data Merging:} Executes sequential left joins across all inputs using tracking, game, and play identifiers.
 \item \strong{Imputation:} Replaces missing arm strength and sprint speed records with their respective sample means.
 \item \strong{Covariate Centering:} Centers sprint speed and arm strength around their means, and subtracts 10 from lead distance to improve lme4 regression convergence.
-\item \strong{Outcome Mapping:} Classifies plays into mutually exclusive categories: "P+" (successful pickoff), "P-" (failed pickoff), "S+" (stolen base), "S-" (caught stealing), or "N" (no pickoff or steal attempt).
+\item \strong{Outcome Mapping:} Classifies plays into mutually exclusive categories:
+"PO+" (successful pickoff), "PO-" (failed pickoff), "SB+" (stolen base),
+"SB-" (caught stealing), "NG" (not going), or "GI" (going, interrupted).
 \item \strong{Sparsity Reduction:} Recodes low-frequency player IDs (<500 plays for pitchers/catchers, <10 for runners) to a common baseline identifier ("0").
 \item \strong{Disengagement Correction:} Recalculates pre- and post-disengagement counts within play stints, forcing resets to zero when runners advance or a plate appearance ends.
 \item \strong{State Construction:} Generates string codes representing the structural bases, outs, count, and disengagement levels before and after each play.

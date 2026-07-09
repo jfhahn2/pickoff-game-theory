@@ -9,7 +9,7 @@ prep_runner_outcome_data(data)
 \arguments{
 \item{data}{A data frame containing play-by-play baseball data. Expected
 columns include \code{pre_runner_1b_id}, \code{is_1b_only},
-\code{is_full_count_two_outs}, \code{is_sb_attempt}, \code{runner_id},
+\code{is_full_count_two_outs}, \code{is_runner_going}, \code{runner_id},
 \code{year}, and \code{pre_disengagements}.}
 }
 \value{
