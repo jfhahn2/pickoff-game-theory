@@ -21,7 +21,8 @@ estimate_conditional_transition_probability <- function(data) {
 
   # Compute empirical transition probabilities between reduced states
   transition_conditional_observed <- data |>
-    dplyr::filter(type %in% c("pickoff", "pitch")) |>   # TODO: decide whether to keep this
+    # By commenting out the line below, we include non-pickoff stepoffs and automatic balls/strikes
+#    dplyr::filter(type %in% c("pickoff", "pitch")) |>
     dplyr::group_by(pre_state_reduced, runner_outcome, post_state_reduced) |>
     dplyr::summarize(n = dplyr::n(), reward = mean(runs_on_play), .groups = "drop") |>
     dplyr::group_by(pre_state_reduced, runner_outcome) |>
