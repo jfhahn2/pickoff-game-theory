@@ -87,8 +87,6 @@ wrangle_data <- function(play,
         !is_pickoff_attempt & is_runner_going & !is_going_interrupt & !is_stolen_base ~ "SB-",
         !is_pickoff_attempt & !is_runner_going ~ "NG"           # not going
       ),
-      # TODO: reset disengagement counter for runner movement
-      #       (and set post-disengagements to zero for final pitch of pa)
       # If the play ends the inning, the post-state reports the number of runs scored on the play
       pre_bases = paste0(
         as.numeric(!is.na(pre_runner_1b_id)),

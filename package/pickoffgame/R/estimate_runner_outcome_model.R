@@ -82,7 +82,7 @@ estimate_runner_outcome_model <- function(data,
     }
     if (is.null(bootstrap_index)) {
       fit_pickoff_success <- glmmTMB::glmmTMB(
-        formula = is_pickoff_success ~ lead_distance_centered + (1 | pitcher_id),
+        formula = is_pickoff_success ~ year + lead_distance_centered + (1 | pitcher_id),
         data = data |>
           dplyr::filter(is_pickoff_attempt),
         family = binomial()
@@ -101,7 +101,7 @@ estimate_runner_outcome_model <- function(data,
     }
     if (is.null(bootstrap_index)) {
       fit_runner_going <- glmmTMB::glmmTMB(
-        is_runner_going ~ pre_outs + pre_balls + pre_strikes + pre_disengagements +
+        is_runner_going ~ year + pre_outs + pre_balls + pre_strikes + pre_disengagements +
           sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
         data = data |>
           dplyr::filter(!is_pickoff_attempt),
@@ -121,7 +121,7 @@ estimate_runner_outcome_model <- function(data,
     }
     if (is.null(bootstrap_index)) {
       fit_going_interrupt <- glmmTMB::glmmTMB(
-        is_going_interrupt ~ pre_outs + pre_balls + pre_strikes + pre_disengagements +
+        is_going_interrupt ~ year + pre_outs + pre_balls + pre_strikes + pre_disengagements +
           sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
         data = data |>
           dplyr::filter(is_runner_going),
