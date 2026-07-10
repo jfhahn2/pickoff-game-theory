@@ -10,18 +10,19 @@ estimate_runner_outcome_model(
   bootstrap_simulate = NULL,
   bootstrap_fit_original = NULL,
   verbose = FALSE,
-  include_po_attempt = TRUE,
-  include_po_success = TRUE,
-  include_sb_attempt = TRUE,
-  include_sb_success = TRUE
+  include_pickoff_attempt = TRUE,
+  include_pickoff_success = TRUE,
+  include_runner_going = TRUE,
+  include_going_interrupt = TRUE,
+  include_stolen_base = TRUE
 )
 }
 \arguments{
 \item{data}{A data frame containing play-by-play baseball data. Required
 columns include \code{pre_runner_1b_id}, \code{is_1b_only},
-\code{is_full_count_two_outs}, \code{is_sb_attempt}, \code{runner_id},
-\code{year}, \code{pre_disengagements}, \code{is_po_attempt},
-\code{is_po_success}, \code{is_stolen_base}, \code{pre_outs},
+\code{is_full_count_two_outs}, \code{is_going_interrupt}, \code{runner_id},
+\code{year}, \code{pre_disengagements}, \code{is_pickoff_attempt},
+\code{is_pickoff_success}, \code{is_stolen_base}, \code{pre_outs},
 \code{pre_balls}, \code{pre_strikes}, \code{lead_distance_centered},
 \code{sprint_speed_centered}, \code{arm_strength_centered},
 \code{pitcher_id}, \code{runner_id}, and \code{catcher_id}.}
@@ -38,21 +39,24 @@ for refitting, ignored if \code{bootstrap_index} is NULL.}
 \item{verbose}{Logical. If \code{TRUE}, logs estimation progress to the console.
 Defaults to \code{FALSE}.}
 
-\item{include_po_attempt}{logical, should pickoff attempt model be estimated?}
+\item{include_pickoff_attempt}{logical, should pickoff attempt model be estimated?}
 
-\item{include_po_success}{logical, should pickoff success model be estimated?}
+\item{include_pickoff_success}{logical, should pickoff success model be estimated?}
 
-\item{include_sb_attempt}{logical, should stolen base attempt model be estimated?}
+\item{include_runner_going}{logical, should runner going model be estimated?}
 
-\item{include_sb_success}{logical, should stolen base success model be estimated?}
+\item{include_going_interrupt}{logical, should batter interruption model be estimated?}
+
+\item{include_stolen_base}{logical, should stolen base success model be estimated?}
 }
 \value{
 A named list containing four fitted \code{glmerMod} objects:
 \itemize{
-\item \code{po_attempt}: GLMM for the probability of a pickoff attempt.
-\item \code{po_success}: GLMM for the probability of a successful pickoff.
-\item \code{sb_attempt}: GLMM for the probability of a stolen base attempt.
-\item \code{sb_success}: GLMM for the probability of a successful stolen base.
+\item \code{pickoff_attempt}: GLMM for the probability of a pickoff attempt.
+\item \code{pickoff_success}: GLMM for the probability of a successful pickoff.
+\item \code{runner_going}: GLMM for the probability of the runner going.
+\item \code{going_interrupt}: GLMM for the probability of a batter interruption.
+\item \code{stolen_base}: GLMM for the probability of a successful stolen base.
 }
 }
 \description{

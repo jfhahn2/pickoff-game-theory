@@ -19,8 +19,9 @@ actions. Must include columns such as \code{is_1b_only},
 and \code{action_runner}.}
 
 \item{fit_runner_outcome}{A named list of fitted model objects (e.g., from
-\code{lme4} or \code{glm}) corresponding to \code{po_attempt},
-\code{po_success}, \code{sb_attempt}, and \code{sb_success}.}
+\code{lme4} or \code{glm}) corresponding to \code{pickoff_attempt},
+\code{pickoff_success}, \code{runner_going}, \code{going_interrupt}, and
+\code{stolen_base}.}
 
 \item{percentile_players}{A list of tables of representative players corresponding
 to skill percentiles, from \code{\link{extract_percentile_players}}. Each table
@@ -36,14 +37,14 @@ battery's ability when \code{percentile_players} is provided.}
 }
 \value{
 A data frame containing the \code{pre_state}, \code{action_runner},
-\code{action_pitcher}, \code{runner_outcome} (e.g., "P+", "S+"), and
+\code{action_pitcher}, \code{runner_outcome} (e.g., "PO+", "SB+"), and
 the resulting probability \code{prob}.
 }
 \description{
 Predicts stolen base and pickoff attempt and success probabilties from fitted lme4
 models and converts these conditional probabilities to overall runner outcome
-probabilities (successful pickoff P+, unsuccessful pickoff P-, successful steal S+,
-unsuccessful steal S-, or no runner involvement N).
+probabilities (successful pickoff PO+, unsuccessful pickoff PO-, successful steal SB+,
+unsuccessful steal SB-, not going NG, or going interrupted GI).
 }
 \details{
 Calculates the probabilities of various runner outcomes (pickoff success/failure,

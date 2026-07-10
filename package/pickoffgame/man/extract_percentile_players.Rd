@@ -4,7 +4,12 @@
 \alias{extract_percentile_players}
 \title{Extract representative players at specified percentiles}
 \usage{
-extract_percentile_players(object, data, percentile = c(0.1, 0.5, 0.9))
+extract_percentile_players(
+  object,
+  data,
+  percentile = c(0.1, 0.5, 0.9),
+  flip = FALSE
+)
 }
 \arguments{
 \item{object}{A fitted model object (e.g., \code{glmerMod}) containing
@@ -17,6 +22,9 @@ and \code{arm_strength_centered}.}
 
 \item{percentile}{A numeric vector of percentiles to extract. Defaults to
 \code{c(0.1, 0.5, 0.9)}.}
+
+\item{flip}{logical, should percentiles be flipped so that larger numbers are better for the
+battery and smaller numbers are better for the runner? Defaults to FALSE.}
 }
 \value{
 A list with two elements:

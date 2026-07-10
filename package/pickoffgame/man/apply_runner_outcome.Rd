@@ -10,8 +10,8 @@ apply_runner_outcome(pre_state_reduced, runner_outcome)
 \item{pre_state_reduced}{Character string representing the initial reduced state
 formatted as "bases_outs_ballsstrikes" (e.g., "100_1_21").}
 
-\item{runner_outcome}{Character string indicating the outcome: \code{"P+"} (successful pickoff),
-\code{"P-"} (failed pickoff), \code{"S+"} (stolen base), or \code{"S-"} (caught stealing).}
+\item{runner_outcome}{Character string indicating the outcome: \code{"PO+"} (successful pickoff),
+\code{"PO-"} (failed pickoff), \code{"SB+"} (stolen base), or \code{"SB-"} (caught stealing).}
 }
 \value{
 A character string representing the updated reduced post-state, or \code{"0"}
@@ -24,10 +24,10 @@ base occupancy and out counts to determine the resulting reduced post-state.
 \details{
 This function transitions states for plays involving a runner on first base:
 \itemize{
-\item \code{"P+"} (Successful Pickoff): Bases clear (\code{"000"}), outs increment by 1.
-\item \code{"P-"} (Failed Pickoff): Runner remains on first (\code{"100"}), outs unchanged.
-\item \code{"S+"} (Stolen Base): Runner advances to second (\code{"010"}), outs unchanged.
-\item \code{"S-"} (Caught Stealing): Bases clear (\code{"000"}), outs increment by 1.
+\item \code{"PO+"} (Successful Pickoff): Bases clear (\code{"000"}), outs increment by 1.
+\item \code{"PO-"} (Failed Pickoff): Runner remains on first (\code{"100"}), outs unchanged.
+\item \code{"SB+"} (Stolen Base): Runner advances to second (\code{"010"}), outs unchanged.
+\item \code{"SB-"} (Caught Stealing): Bases clear (\code{"000"}), outs increment by 1.
 }
 If the play results in a third out, the function returns a terminal state identifier \code{"0"}.
 }

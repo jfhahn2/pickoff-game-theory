@@ -7,9 +7,9 @@
 #'
 #' @param data A data frame containing play-by-play baseball data. Required 
 #'   columns include \code{pre_runner_1b_id}, \code{is_1b_only}, 
-#'   \code{is_full_count_two_outs}, \code{is_sb_attempt}, \code{runner_id}, 
-#'   \code{year}, \code{pre_disengagements}, \code{is_po_attempt}, 
-#'   \code{is_po_success}, \code{is_stolen_base}, \code{pre_outs}, 
+#'   \code{is_full_count_two_outs}, \code{is_going_interrupt}, \code{runner_id}, 
+#'   \code{year}, \code{pre_disengagements}, \code{is_pickoff_attempt}, 
+#'   \code{is_pickoff_success}, \code{is_stolen_base}, \code{pre_outs}, 
 #'   \code{pre_balls}, \code{pre_strikes}, \code{lead_distance_centered}, 
 #'   \code{sprint_speed_centered}, \code{arm_strength_centered}, 
 #'   \code{pitcher_id}, \code{runner_id}, and \code{catcher_id}.
@@ -21,17 +21,19 @@
 #'   for refitting, ignored if \code{bootstrap_index} is NULL.
 #' @param verbose Logical. If \code{TRUE}, logs estimation progress to the console. 
 #'   Defaults to \code{FALSE}.
-#' @param include_po_attempt logical, should pickoff attempt model be estimated?
-#' @param include_po_success logical, should pickoff success model be estimated?
-#' @param include_sb_attempt logical, should stolen base attempt model be estimated?
-#' @param include_sb_success logical, should stolen base success model be estimated?
+#' @param include_pickoff_attempt logical, should pickoff attempt model be estimated?
+#' @param include_pickoff_success logical, should pickoff success model be estimated?
+#' @param include_runner_going logical, should runner going model be estimated?
+#' @param include_going_interrupt logical, should batter interruption model be estimated?
+#' @param include_stolen_base logical, should stolen base success model be estimated?
 #'
 #' @return A named list containing four fitted \code{glmerMod} objects:
 #'   \itemize{
-#'     \item \code{po_attempt}: GLMM for the probability of a pickoff attempt.
-#'     \item \code{po_success}: GLMM for the probability of a successful pickoff.
-#'     \item \code{sb_attempt}: GLMM for the probability of a stolen base attempt.
-#'     \item \code{sb_success}: GLMM for the probability of a successful stolen base.
+#'     \item \code{pickoff_attempt}: GLMM for the probability of a pickoff attempt.
+#'     \item \code{pickoff_success}: GLMM for the probability of a successful pickoff.
+#'     \item \code{runner_going}: GLMM for the probability of the runner going.
+#'     \item \code{going_interrupt}: GLMM for the probability of a batter interruption.
+#'     \item \code{stolen_base}: GLMM for the probability of a successful stolen base.
 #'   }
 #'
 #' @importFrom lme4 glmer
@@ -43,100 +45,123 @@ estimate_runner_outcome_model <- function(data,
                                           bootstrap_simulate = NULL,
                                           bootstrap_fit_original = NULL,
                                           verbose = FALSE,
-                                          include_po_attempt = TRUE,
-                                          include_po_success = TRUE,
-                                          include_sb_attempt = TRUE,
-                                          include_sb_success = TRUE) {
+                                          include_pickoff_attempt = TRUE,
+                                          include_pickoff_success = TRUE,
+                                          include_runner_going = TRUE,
+                                          include_going_interrupt = TRUE,
+                                          include_stolen_base = TRUE) {
 
-  fit_po_attempt <- NULL
-  fit_po_success <- NULL
-  fit_sb_attempt <- NULL
-  fit_sb_success <- NULL
+  fit_pickoff_attempt <- NULL
+  fit_pickoff_success <- NULL
+  fit_runner_going <- NULL
+  fit_going_interrupt <- NULL
+  fit_stolen_base <- NULL
 
-  if (include_po_attempt) {
+  if (include_pickoff_attempt) {
     if (verbose) {
-      logger::log_info("  Estimating GLMM for PO attempt probability")    # 2 minutes
+      logger::log_info("  Estimating GLMM for PO attempt probability")
     }
     if (is.null(bootstrap_index)) {
-      fit_po_attempt <- glmmTMB::glmmTMB(
-        formula = is_po_attempt ~ year + pre_outs + pre_balls + pre_strikes + pre_disengagements +
+      fit_pickoff_attempt <- glmmTMB::glmmTMB(
+        formula = is_pickoff_attempt ~ year + pre_outs + pre_balls + pre_strikes + pre_disengagements +
           lead_distance_centered + (1 | pitcher_id),
         data = data,
         family = binomial()
       )
     } else {
-      fit_po_attempt <- glmmTMB::refit(
-        object = bootstrap_fit_original$po_attempt,
-        newresp = bootstrap_simulate$po_attempt[[glue::glue("sim_{bootstrap_index}")]]
+      fit_pickoff_attempt <- glmmTMB::refit(
+        object = bootstrap_fit_original$pickoff_attempt,
+        newresp = bootstrap_simulate$pickoff_attempt[[glue::glue("sim_{bootstrap_index}")]]
       )
     }
   }
   
-  if (include_po_success) {
+  if (include_pickoff_success) {
     if (verbose) {
-      logger::log_info("  Estimating GLMM for PO success probability")    # 0 minutes
+      logger::log_info("  Estimating GLMM for PO success probability")
     }
     if (is.null(bootstrap_index)) {
-      fit_po_success <- glmmTMB::glmmTMB(
-        formula = is_po_success ~ lead_distance_centered + (1 | pitcher_id),
+      fit_pickoff_success <- glmmTMB::glmmTMB(
+        formula = is_pickoff_success ~ lead_distance_centered + (1 | pitcher_id),
         data = data |>
-          dplyr::filter(is_po_attempt),
+          dplyr::filter(is_pickoff_attempt),
         family = binomial()
       )
     } else {
-      fit_po_success <- glmmTMB::refit(
-        object = bootstrap_fit_original$po_success,
-        newresp = bootstrap_simulate$po_success[[glue::glue("sim_{bootstrap_index}")]]
+      fit_pickoff_success <- glmmTMB::refit(
+        object = bootstrap_fit_original$pickoff_success,
+        newresp = bootstrap_simulate$pickoff_success[[glue::glue("sim_{bootstrap_index}")]]
       )
     }
   }
 
-  if (include_sb_attempt) {
+  if (include_runner_going) {
     if (verbose) {
-      logger::log_info("  Estimating GLMM for SB attempt probability")    # 7 minutes
+      logger::log_info("  Estimating GLMM for runner going probability")
     }
     if (is.null(bootstrap_index)) {
-      fit_sb_attempt <- glmmTMB::glmmTMB(
-        is_sb_attempt ~ pre_outs + pre_balls + pre_strikes + pre_disengagements +
+      fit_runner_going <- glmmTMB::glmmTMB(
+        is_runner_going ~ pre_outs + pre_balls + pre_strikes + pre_disengagements +
           sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
         data = data |>
-          dplyr::filter(!is_po_attempt),
+          dplyr::filter(!is_pickoff_attempt),
         family = binomial()
       )
     } else {
-      fit_sb_attempt <- glmmTMB::refit(
-        object = bootstrap_fit_original$sb_attempt,
-        newresp = bootstrap_simulate$sb_attempt[[glue::glue("sim_{bootstrap_index}")]]
+      fit_runner_going <- glmmTMB::refit(
+        object = bootstrap_fit_original$runner_going,
+        newresp = bootstrap_simulate$runner_going[[glue::glue("sim_{bootstrap_index}")]]
+      )
+    }
+  }
+
+  if (include_going_interrupt) {
+    if (verbose) {
+      logger::log_info("  Estimating GLMM for SB attempt probability")
+    }
+    if (is.null(bootstrap_index)) {
+      fit_going_interrupt <- glmmTMB::glmmTMB(
+        is_going_interrupt ~ pre_outs + pre_balls + pre_strikes + pre_disengagements +
+          sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
+        data = data |>
+          dplyr::filter(is_runner_going),
+        family = binomial()
+      )
+    } else {
+      fit_going_interrupt <- glmmTMB::refit(
+        object = bootstrap_fit_original$going_interrupt,
+        newresp = bootstrap_simulate$going_interrupt[[glue::glue("sim_{bootstrap_index}")]]
       )
     }
   }
   
-  if (include_sb_success) {
+  if (include_stolen_base) {
     if (verbose) {
-      logger::log_info("  Estimating GLMM for SB success probability")    # 1 minute
+      logger::log_info("  Estimating GLMM for SB success probability")
     }
     if (is.null(bootstrap_index)) {
-      fit_sb_success <- glmmTMB::glmmTMB(
-        is_sb_success ~ year + lead_distance_centered +
+      fit_stolen_base <- glmmTMB::glmmTMB(
+        is_stolen_base ~ year + lead_distance_centered +
           sprint_speed_centered + (1 | runner_id) + (1 | pitcher_id) + arm_strength_centered + (1 | catcher_id),
         data = data |>
-          dplyr::filter(is_sb_attempt),
+          dplyr::filter(is_runner_going & !is_going_interrupt),
         family = binomial
       )
     } else {
-      fit_sb_success <- glmmTMB::refit(
-        object = bootstrap_fit_original$sb_success,
-        newresp = bootstrap_simulate$sb_success[[glue::glue("sim_{bootstrap_index}")]]
+      fit_stolen_base <- glmmTMB::refit(
+        object = bootstrap_fit_original$stolen_base,
+        newresp = bootstrap_simulate$stolen_base[[glue::glue("sim_{bootstrap_index}")]]
       )
     }
   }
 
   return(
     list(
-      po_attempt = fit_po_attempt,
-      po_success = fit_po_success,
-      sb_attempt = fit_sb_attempt,
-      sb_success = fit_sb_success
+      pickoff_attempt = fit_pickoff_attempt,
+      pickoff_success = fit_pickoff_success,
+      runner_going = fit_runner_going,
+      going_interrupt = fit_going_interrupt,
+      stolen_base = fit_stolen_base
     )
   )
 }

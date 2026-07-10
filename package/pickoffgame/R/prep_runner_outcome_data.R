@@ -7,7 +7,7 @@
 #'
 #' @param data A data frame containing play-by-play baseball data. Expected 
 #'   columns include \code{pre_runner_1b_id}, \code{is_1b_only}, 
-#'   \code{is_full_count_two_outs}, \code{is_sb_attempt}, \code{runner_id}, 
+#'   \code{is_full_count_two_outs}, \code{is_runner_going}, \code{runner_id}, 
 #'   \code{year}, and \code{pre_disengagements}.
 #'
 #' @return A processed data frame filtered to relevant base-stealing contexts, with 
@@ -37,12 +37,14 @@ prep_runner_outcome_data <- function(data) {
       # Exclude full count with two outs because runners because these are not really steal attempts
       !is_full_count_two_outs,
       # We include only runners who attempted at least three stolen bases in our sample
-      sum(is_sb_attempt) >= 3,
+      sum(is_runner_going & !is_going_interrupt) >= 3,    # TODO: Can we relax this filter?
       # The runner taking the lead from first base should match the runner on first base
       runner_id == pre_runner_1b_id | runner_id == 0
     ) |>
     dplyr::ungroup() |>
     dplyr::mutate(
+      pre_balls = as.factor(pre_balls),
+      pre_strikes = as.factor(pre_strikes),
       pre_disengagements = dplyr::case_when(
         # Before 2023, there was no limit on disengagements, equivalent to zero pre-disengagments
         year < 2023 ~ 0,
@@ -51,6 +53,6 @@ prep_runner_outcome_data <- function(data) {
         TRUE ~ pre_disengagements
       ) |>
         as.factor(),
-      year = as.factor(year),
+      year = as.factor(year)
     )
 }

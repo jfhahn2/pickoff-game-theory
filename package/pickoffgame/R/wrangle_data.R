@@ -10,7 +10,9 @@
 #'   \item \strong{Data Merging:} Executes sequential left joins across all inputs using tracking, game, and play identifiers.
 #'   \item \strong{Imputation:} Replaces missing arm strength and sprint speed records with their respective sample means.
 #'   \item \strong{Covariate Centering:} Centers sprint speed and arm strength around their means, and subtracts 10 from lead distance to improve lme4 regression convergence.
-#'   \item \strong{Outcome Mapping:} Classifies plays into mutually exclusive categories: "P+" (successful pickoff), "P-" (failed pickoff), "S+" (stolen base), "S-" (caught stealing), or "N" (no pickoff or steal attempt).
+#'   \item \strong{Outcome Mapping:} Classifies plays into mutually exclusive categories:
+#'     "PO+" (successful pickoff), "PO-" (failed pickoff), "SB+" (stolen base),
+#'     "SB-" (caught stealing), "NG" (not going), or "GI" (going, interrupted).
 #'   \item \strong{Sparsity Reduction:} Recodes low-frequency player IDs (<500 plays for pitchers/catchers, <10 for runners) to a common baseline identifier ("0").
 #'   \item \strong{Disengagement Correction:} Recalculates pre- and post-disengagement counts within play stints, forcing resets to zero when runners advance or a plate appearance ends.
 #'   \item \strong{State Construction:} Generates string codes representing the structural bases, outs, count, and disengagement levels before and after each play.
@@ -66,22 +68,24 @@ wrangle_data <- function(play,
         batter_description == "In Play" ~ batter_event,
         TRUE ~ batter_description
       ),
-      is_po_attempt = type == "pickoff",
+      is_pickoff_attempt = type == "pickoff",
       # There are a couple of rare plays in which a pickoff is labelled as successful but there are
       # no outs on the play. We choose to define this as an unsuccessful pickoff attempt.
-      is_po_success = dplyr::coalesce(is_pickoff, FALSE) & (post_outs - pre_outs) > 0,
-      is_sb_attempt = !is_po_attempt & (is_stolen_base | is_caught_stealing),
-      is_sb_success = is_sb_attempt & is_stolen_base,
+      is_pickoff_success = dplyr::coalesce(is_pickoff, FALSE) & (post_outs - pre_outs) > 0,
+      is_runner_going = !is.na(runner_going) | is_stolen_base | is_caught_stealing,
+      is_going_interrupt = is_runner_going & !(is_stolen_base | is_caught_stealing),
       is_1b_only = !is.na(pre_runner_1b_id) & is.na(pre_runner_2b_id) & is.na(pre_runner_3b_id),
       is_full_count_two_outs = (pre_balls == 3) & (pre_strikes == 2) & (pre_outs == 2),
       runner_outcome = dplyr::case_when(
         # we consider only runner outcome with 1B occupied 2B & 3B empty, not full count two outs
-        !is_1b_only | is_full_count_two_outs ~ "N",
-        is_po_attempt & is_po_success ~ "P+",
-        is_po_attempt & !is_po_success ~ "P-",
-        is_sb_attempt & is_sb_success ~ "S+",
-        is_sb_attempt & !is_sb_success ~ "S-",
-        !is_po_attempt & !is_sb_attempt ~ "N"
+        !is_1b_only | is_full_count_two_outs ~ "NG",            # not going
+        is_pickoff_attempt & is_pickoff_success ~ "PO+",        # successful pickoff
+        is_pickoff_attempt & !is_pickoff_success ~ "PO-",       # unsuccessful pickoff
+        # The next case handles foul balls, walks, balls in play, etc.
+        !is_pickoff_attempt & is_runner_going & is_going_interrupt ~ "GI",  # going, interrupted
+        !is_pickoff_attempt & is_runner_going & !is_going_interrupt & is_stolen_base ~ "SB+",
+        !is_pickoff_attempt & is_runner_going & !is_going_interrupt & !is_stolen_base ~ "SB-",
+        !is_pickoff_attempt & !is_runner_going ~ "NG"           # not going
       ),
       # TODO: reset disengagement counter for runner movement
       #       (and set post-disengagements to zero for final pitch of pa)
