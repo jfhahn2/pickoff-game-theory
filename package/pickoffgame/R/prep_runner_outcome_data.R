@@ -37,12 +37,13 @@ prep_runner_outcome_data <- function(data) {
       # Exclude full count with two outs because runners because these are not really steal attempts
       !is_full_count_two_outs,
       # We include only runners who attempted at least three stolen bases in our sample
-      sum(is_runner_going & !is_going_interrupt) >= 3,    # TODO: Can we relax this filter?
+#      sum(is_runner_going & !is_going_interrupt) >= 3,    # TODO: Can we relax this filter?
       # The runner taking the lead from first base should match the runner on first base
       runner_id == pre_runner_1b_id | runner_id == 0
     ) |>
     dplyr::ungroup() |>
     dplyr::mutate(
+      pre_outs = as.factor(pre_outs),
       pre_balls = as.factor(pre_balls),
       pre_strikes = as.factor(pre_strikes),
       pre_disengagements = dplyr::case_when(
