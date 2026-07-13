@@ -10,7 +10,11 @@
 #' @param players Character string. Specifies the game type: \code{"one"} 
 #'   (Markov decision process) or \code{"two"} (stochastic zero-sum game). 
 #'   Defaults to \code{"one"}.
-#' @param fixed_policy
+#' @param fixed_policy A table with two columsn \code{pre_state} and
+#'   \code{lead_distance} specifying a fixed policy. When specified, this
+#'   function estimates the value function corresponding to a Markov reward
+#'   process whose transition probabilities are determined by the fixed policy.
+#'   Defaults to NULL, in which case the policy is optimized, not pre-fixed.
 #' @param percentile_players A list of player performance data frames (from 
 #'   \code{extract_percentile_players}) used to set specific runner/battery 
 #'   skill levels. Defaults to \code{NULL}.
