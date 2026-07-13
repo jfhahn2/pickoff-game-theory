@@ -1,0 +1,393 @@
+%% Template for the submission to:
+%%   The Annals of Applied Statistics [AOAS]
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% In this template, the places where you   %%
+%% need to fill in your information are     %%
+%% indicated by '???'.                      %%
+%%                                          %%
+%% Please do not use \input{...} to include %%
+%% other tex files. Submit your LaTeX       %%
+%% manuscript as one .tex document.         %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[aoas]{imsart}
+
+%% Packages
+\RequirePackage{amsthm,amsmath,amsfonts,amssymb}
+\RequirePackage[authoryear]{natbib}
+\usepackage{graphicx, hyperref, tikz, xcolor}
+%\RequirePackage[colorlinks,citecolor=blue,urlcolor=blue]{hyperref}%% uncomment this for coloring bibliography citations and linked URLs
+%\RequirePackage{graphicx}%% uncomment this for including figures
+
+\startlocaldefs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% Uncomment next line to change            %%
+%% the type of equation numbering           %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\numberwithin{equation}{section}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% For Axiom, Claim, Corollary, Hypothesis, %%
+%% Lemma, Theorem, Proposition              %%
+%% use \theoremstyle{plain}                 %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\theoremstyle{plain}
+\newtheorem{axiom}{Axiom}
+\newtheorem{claim}[axiom]{Claim}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% For Assumption, Definition, Example,     %%
+%% Notation, Property, Remark, Fact         %%
+%% use \theoremstyle{definition}            %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem*{example}{Example}
+\newtheorem*{fact}{Fact}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Please put your definitions here:        %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\graphicspath{{../../output/figures/}}
+\newcommand{\tablepath}{../../output/tables/}
+\newcommand{\inputtable}[1]{\input{\tablepath #1}}
+\newcommand{\defeq}{\stackrel{\text{def}}{=}}
+\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
+\newcommand{\revision}[1]{{\color{orange} #1}}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+
+\endlocaldefs
+
+\begin{document}
+
+\begin{frontmatter}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% Enter the title of your article here     %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{
+  Technical results for ``Strategies under a pickoff limit in Major League Baseball: A zero-sum sequential game with multilevel models''
+}
+\runtitle{Technical results}
+
+\begin{aug}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Only one address is permitted per author. %%
+%% Only division, organization and e-mail is %%
+%% included in the address.                  %%
+%% Additional information such as            %%
+%% identifying the corresponding author must %%
+%% be included in in the Acknowledgments     %%
+%% section if necessary.                     %%
+%% ORCID can be inserted by command:         %%
+%% \orcid{0000-0000-0000-0000}               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\author[A]{\fnms{Scott}~\snm{Powers}\ead[label=e1]{scott.powers@rice.edu}}
+\author[B]{\fnms{Sivaramakrishnan}~\snm{Ramani}\ead[label=e2]{sivaramakrishnan.ramani@rice.edu}}
+\author[A]{\fnms{Jacob}~\snm{Hahn}\ead[label=e3]{jacob.f.hahn@rice.edu}}
+\author[B]{\fnms{Andrew J.}~\snm{Schaefer}\ead[label=e4]{andrew.schaefer@rice.edu}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Addresses                                %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\address[A]{Department of Sport Management, Rice University\printead[presep={,\ }]{e1,e3}}
+\address[B]{Department of Computational Applied Mathematics and Operations Research, Rice University\printead[presep={,\ }]{e2,e4}}
+\end{aug}
+
+\end{frontmatter}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Please use \tableofcontents for articles %%
+%% with 50 pages and more                   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Main text entry area:
+
+
+
+\section*{Technical results}
+    % \label{sec:appendix}
+    We present a formal description of the sequential game described in Section 2 and the related optimality characterizations.
+    
+    Recall from Section 2, the action space of the runner and pitcher are denoted by $A_{\text{R}}$ and $A_\text{P}$, respectively. The sets $\mathbb{F}_\text{R}, \mathbb{K}_\text{P}$, and $\mathbb{F}_\text{P}$ defined below will be used to rigorously define a policy. 
+        \begingroup
+        \allowdisplaybreaks
+        \begin{align*}
+            \mathbb{F}_\text{R} &\defeq \left\{f: {\cal S} \to \cup_{s \in {\cal S}}A_{\text{R}}(s) \big| f(s) \in A_{\text{R}}(s)\right\}\\
+            \mathbb{K}_\text{P} &\defeq \left\{(s,a_\text{R})\big| s \in {\cal S}, a_\text{R} \in A_\text{R}(s)\right\}\\
+            \mathbb{F}_\text{P} &\defeq \left\{f: \mathbb{K}_\text{P} \to \cup_{(s,a_\text{R}) \in \mathbb{K}_\text{P}} A_\text{P}(s,a_\text{R}) \big| f(s,a_\text{R}) \in A_\text{P}(s,a_\text{R})\right\}.
+        \end{align*}
+        \endgroup
+    
+       \noindent The set $\mathbb{F}_\text{R}$ is the set of all deterministic decision rules for the runner. Recall that a deterministic decision rule for the pitcher takes as input a state and a runner action, and maps it to an allowable action for the pitcher. The set $\mathbb{K}_\text{P}$ includes the set of all possible state and runner action pairs. The set $\mathbb{F}_\text{P}$ then captures the set of all deterministic decision rules for the pitcher. A deterministic, Markovian policy for the runner is a sequence $\pi = (\pi_0,\pi_1,\ldots,)$ such that $\pi_t \in \mathbb{F}_\text{R}$ for all integers $t \geq 0$. A deterministic, stationary policy for the runner is a sequence $\pi = (\pi_0,\pi_1,\ldots,)$ such that $\pi_t = \bar\pi \in \mathbb{F}_\text{R}$ for all integers $t \geq 0$. That is a stationary policy employs the same decision rule in all time-stages. Similarly, a deterministic, Markovian policy for the pitcher is a sequence $\tilde\pi = (\tilde\pi_0,\tilde\pi_1,\ldots,)$ such that $\tilde\pi_t \in \mathbb{F}_\text{P}$ for all integers $t \geq 0$. Finally, a deterministic, stationary policy for the pitcher is a sequence $\tilde\pi = (\tilde\pi_0,\tilde\pi_1,\ldots,)$ such that $\tilde\pi_t = \hat\pi \in \mathbb{F}_\text{P}$ for all integers $t \geq 0$. Consistent with the notation used in Section 2, we denote the set of deterministic, stationary policies for the runner and pitcher by $\Pi_\text{R}$ and $\Pi_\text{P}$, respectively. Following this style of notation, we denote the set of deterministic, Markovian policies for the pitcher and runner by $\overline\Pi_\text{R}$ and $\overline\Pi_\text{P}$, respectively. Clearly, $\Pi_\text{R} \subseteq \overline\Pi_\text{R}$ and $\Pi_\text{P} \subseteq \overline\Pi_\text{P}$.
+    
+       The optimal value function is then defined as
+       \begingroup
+       \allowdisplaybreaks
+       \begin{equation}
+            \label{eqn:sg_val_extended}
+            V^*(s) \defeq \max_{\pi_\text{R} \in \overline\Pi_\text{R}}\min_{\pi_\text{P} \in \overline\Pi_\text{P}}V^{\pi_\text{R},\pi_\text{P}}(s) \ \forall s \in S.
+       \end{equation}
+       \endgroup
+       The policy space in the right-hand side of \eqref{eqn:sg_val_extended} is over the larger class of deterministic, Markovian policies rather than deterministic, stationary policies as in (6). With an abuse of notation, we overload $V^*$ to denote the optimal value function in (6) and \eqref{eqn:sg_val_extended}. The reason for this choice is that under Assumptions \ref{assum:game_halts} and \ref{assum:transition_pby_continuous}, Proposition \ref{lem:stationary_pol_optimal} proves that there exists  deterministic, stationary policies for the runner and pitcher that attain the respective maximum and minimum in \eqref{eqn:sg_val_extended}. That is, the policy spaces in the right-hand side of \eqref{eqn:sg_val_extended} can be restricted to the smaller class of deterministic, stationary policies as in (6) without affecting the optimal value in \eqref{eqn:sg_val_extended}. 
+        
+       As alluded in Section (2), we assume that an inning eventually halts. This can be mathematically captured via the following condition.
+       \begin{assumption}\label{assum:game_halts}
+           There exists $m \in \mathbb{N}$ such that 
+           \begingroup
+           \allowdisplaybreaks
+           \begin{align*}
+                \rho &\defeq \sup_{\pi_\text{R} \in \overline\Pi_\text{R}, \pi_\text{P} \in \overline\Pi_\text{P}, s \in {\cal S}} \rho(\pi_\text{R},\pi_\text{P},s) < 1,\\
+                \text{ where }       \rho(\pi_\text{R},\pi_\text{P},s) &\defeq \mathbb{P}^{\pi_\text{R}, \pi_\text{P}}[S_m \neq \Delta|S_0=s] \ \forall \pi_\text{R} \in \overline\Pi_\text{R}, \, \overline\pi_\text{P} \in \Pi_\text{P}, \, s \in {\cal S}.          
+           \end{align*}
+           \endgroup
+       \end{assumption}
+       \noindent Assumption \ref{assum:game_halts} states that regardless of the policies and the starting state, there is a positive probability (at least $1-\rho$) that an inning ends after no more than $m \in \mathbb{N}$ plays.
+    
+       Under Assumption \ref{assum:game_halts}, we prove that the expected number of runs scored by the batter, $V^{\pi_\text{R},\pi_\text{P}}$ is finite. Our proof is based on standard arguments used in the analyses of undiscounted problems \cite[Section 7.2]{bertsekas_dynamic_2012}. We present it here for completeness.  
+    
+       \begin{lemma}
+           \label{lem:sg_pol_val_well_defined}
+           Suppose Assumption \ref{assum:game_halts} holds. Then $V^{\pi_\text{R},\pi_\text{P}}(s)$ is well-defined for all $\pi_\text{R} \in \overline\Pi_\text{R}, \pi_\text{P} \in \overline\Pi_\text{P}$, and $s \in {\cal S}$. Also, $V^{\pi_\text{R},\pi_\text{P}}$ is uniformly bounded over $\overline\Pi_\text{R} \times \overline\Pi_\text{P} \times {\cal S}$.  
+       \end{lemma}       
+       \begin{proof}{Proof}
+           Fix a $\pi_\text{R} \in \overline\Pi_\text{R}, \pi_\text{P} \in \overline\Pi_\text{P}$, and $s \in {\cal S}$. Then 
+           \begingroup
+           \allowdisplaybreaks
+           \begin{align*}
+               V^{\pi_\text{R},\pi_\text{P}}(s) &= \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=0}^\infty r(S_{t+1}|S_t) \Big| S_0 = s\right] = \lim_{t \to \infty} \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{j=0}^{t-1} r(S_{j+1}|S_j) \Big| S_0 = s\right],
+           \end{align*}
+           \endgroup
+           where the second equality follows by the monotone convergence theorem since the rewards are nonnegative. Under Assumption \ref{assum:game_halts}, it follows by standard Markov chain arguments that
+           \[
+           \mathbb{P}^{\pi_\text{R}, \pi_\text{P}}[S_{km} \neq \Delta|S_0=s] \leq \rho^k \ \forall k \in \mathbb{N}.
+           \]
+           Hence, the expected total rewards earned between periods $km$ and $(k+1)m - 1$ is upper bounded by $m\rho^k \max_{s,s' \in {\cal S}}r(s'|s)$. Therefore
+           \[
+           V^{\pi_\text{R},\pi_\text{P}}(s) \leq \sum_{k=0}^\infty m\rho^k \max_{s,s' \in {\cal S}}r(s'|s) = \frac{m \max_{s,s' \in {\cal S}}r(s'|s)}{1-\rho},
+           \]
+           thereby establishing the existence of $V^{\pi_\text{R},\pi_\text{P}}(s)$. The uniform bound follows since the above upper bound on $V^{\pi_\text{R},\pi_\text{P}}(s)$ is independent of $\pi_\text{R},\pi_\text{P}$, and $s$.\qed
+       \end{proof}
+       
+        We present optimality characterizations in Theorem \ref{lem:vi_convergence} and Propositions \ref{lem:bellman_equations} to  \ref{lem:policy_iteration}. These results and their proofs are similar to the undiscounted problem in the single-player case \cite[Section 7.2]{bertsekas_dynamic_2012} and the zero-sum stochastic game with simultaneous moves \cite{patek_stochastic_1999}. We state and prove our results for completeness and to outline the minor differences. 
+      \begin{definition}\label{defn:sg_operators}
+        \normalfont
+        Consider the sequential game defined in Section (2). Fix a $u \in \mathbb{R}^{\abs{\cal S}}$ with $u(\Delta) = 0$.
+        \begin{enumerate}
+            \item For any $\pi_\text{R} \in \Pi_\text{R}$ and $\pi_\text{P} \in \Pi_\text{P}$, the evaluation operator $T_{\pi_\text{R},\pi_{\text{P}}}$ on $\mathbb{R}^{\abs{\cal S}}$ is defined as
+            \begingroup
+            \allowdisplaybreaks
+            \begin{align}
+            \label{eqn:eval_operator}
+            (T_{\pi_\text{R},\pi_{\text{P}}} u)(s) &\defeq \mathbb{E}_{s' \sim p(\cdot|s,\pi_\text{R}(s),\pi_\text{P}(s,\pi_\text{R}(s)))}\left[r(s'|s) + u(s')\right] \ \forall s \in {\cal S}.
+            \end{align}
+            \endgroup
+            \item The optimality operator $T$ on $\mathbb{R}^{\abs{\cal S}}$ is defined as
+            \begingroup
+            \allowdisplaybreaks
+            \begin{align}
+            \label{eqn:bellman_operator}
+            (T u)(s) &\defeq \max_{a_\text{R} \in A_\text{R}(s)}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\mathbb{E}_{s' \sim p(\cdot|s,a_\text{R},a_\text{P})}\left[r(s'|s) + u(s')\right] \ \forall s \in {\cal S}.
+            \end{align}
+            \endgroup
+        \end{enumerate}       
+       \end{definition}
+
+       
+          \begin{theorem}
+           \label{lem:vi_convergence}
+           Consider the sequential game defined in Section (2). Fix a $u_0 \in \mathbb{R}^{\abs{\cal S}}$ with $u_0(\Delta) = 0$. Suppose Assumption \ref{assum:game_halts} holds. Then
+           \begin{enumerate}%[(a)]
+               \item $\lim_{k \to \infty}u_k(s) = V^*(s)$ for all $s \in {\cal S}$, where $u_{k} \defeq Tu_{k-1} \ \forall k \in \mathbb{N}$.
+               \item For any $\pi_\text{R} \in \Pi_\text{R}$ and $\pi_\text{P} \in \Pi_\text{P}$, we have $\lim_{k \to \infty}\tilde u_k(s) = V^{\pi_\text{R},\pi_\text{P}}(s)$ for all $s \in {\cal S}$, where $\tilde u_k \defeq T_{\pi_\text{R},\pi_\text{P}}\tilde u_{k-1} \ \forall k \in \mathbb{N}$ and $\tilde u_0 \defeq u_0$.
+           \end{enumerate}
+       \end{theorem}
+       \begin{proof}{Proof}       
+           Consider part $(a)$.  Let $\pi_\text{R} = (\mu_0,\mu_1,\ldots,)$ and $\pi_\text{P} = (\nu_0,\nu_1,\ldots)$ be any  deterministic, Markovian (may not be stationary) policies for the runner and pitcher, respectively. Let $m \in \mathbb{N}$ be as defined in Assumption \ref{assum:game_halts}. Fix $s_0 \in {\cal S}$. For any $K \in \mathbb{N}$, we have
+           \begingroup
+           \allowdisplaybreaks
+           \begin{align}
+           \nonumber
+               V^{\pi_\text{R},\pi_\text{P}}(s_0) &= \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=0}^{mK-1} r(S_{t+1}|S_t) + \sum_{t=mK}^\infty r(S_{t+1}|S_t) \Big| S_0 = s_0\right]\\
+               \nonumber
+               &= \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=0}^{mK-1} r(S_{t+1}|S_t) + u_0(S_{mK-1}) \Big| S_0 = s_0\right] -\\           \label{eqn:vi_convergence_temp1}
+               &\qquad \qquad \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[ u_0(S_{mK-1})\Big| S_0 = s_0\right] + \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=mK}^\infty r(S_{t+1}|S_t) \Big| S_0 = s_0\right].
+           \end{align}
+           \endgroup
+           Using similar arguments as in the proof of Lemma \ref{lem:sg_pol_val_well_defined}, it follows that $\mathbb{E}^{\pi_\text{R},\pi_\text{P}}\big[\sum_{t=mK}^\infty r(S_{t+1}|S_t) \Big| S_0 = s_0\big] \leq \sum_{k=K}^\infty m \rho^k \max_{s,s' \in {\cal S}}r(s'|s) = m\rho^K\max_{s,s' \in {\cal S}}r(s'|s)/(1-\rho)$. Next, $\abs{\mathbb{E}^{\pi_\text{R},\pi_\text{P}}\big[ u_0(S_{mK-1})\Big| S_0 = s_0\big]} = \abs{\sum_{s' \in {\cal S}}\mathbb{P}^{\pi_\text{R},\pi_\text{P}}[S_{mK-1}=s']u_0(s')} \leq \sum_{s' \in {\cal S}-\Delta}\mathbb{P}^{\pi_\text{R},\pi_\text{P}}[S_{mK-1}=s'] \left(\max_{s' \in {\cal S}-\Delta}\abs{u_0(s')}\right) + \mathbb{P}^{\pi_\text{R},\pi_\text{P}}[S_{mK-1}=\Delta]u_0(\Delta) \leq \rho^K \max_{s' \in {\cal S}-\Delta}\abs{u_0(s')}$, where the last inequality is due to Assumption \ref{assum:game_halts}. Utilizing these two bounds in \eqref{eqn:vi_convergence_temp1} gives us
+           \begin{align*}
+           &\mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=0}^{mK-1} r(S_{t+1}|S_t) + u_0(S_{mK-1}) \Big| S_0 = s_0\right] -\rho^K \max_{s' \in {\cal S}-\Delta}\abs{u_0(s')} \leq  V^{\pi_\text{R},\pi_\text{P}}(s_0) \leq\\
+           &\qquad \mathbb{E}^{\pi_\text{R},\pi_\text{P}}\left[\sum_{t=0}^{mK-1} r(S_{t+1}|S_t) + u_0(S_{mK-1}) \Big| S_0 = s_0\right] +\rho^K \max_{s' \in {\cal S}-\Delta}\abs{u_0(s')} + \frac{m\rho^K\max_{s,s' \in {\cal S}}r(s'|s)}{(1-\rho)}.
+           \end{align*}
+           From the definition of the operator $T$ in \eqref{eqn:bellman_operator}, it follows that $\max_{\pi_{\text{R}}}\min_{\pi_\text{P}}\mathbb{E}^{\pi_\text{R},\pi_\text{P}}\big[\sum_{t=0}^{mK-1} r(S_{t+1}|S_t) + u_0(S_{mK-1}) \big| S_0 = s_0\big] = u_k$. Hence, taking the minimum over all pitcher policies followed by taking the maximum over all runner policies in the above chain and then passing to limit $K \to \infty$ gives us $\lim_{K \to \infty}u_{Km}(s_0) = V^*(s_0)$. From Assumption \ref{assum:game_halts}, it follows that $\abs{u_{Km+t} - u_{Km}} \leq m \rho^K \max_{s,s' \in {\cal S}}r(s'|s)$ for all $t=1,\ldots,m$. This along with $\lim_{K \to \infty}u_{Km}(s_0) = V^*(s_0)$ establishes our claim that $\lim_{k \to \infty}u_k(s_0) = V^*(s_0)$.
+    
+           The proof of part $(b)$ follows via similar arguments as that of part $(a)$.\qed
+       \end{proof}
+    
+    Theorem \ref{lem:vi_convergence}(a) is value iteration for our sequential game. The computational experiments in Section 4 use value iteration to solve our sequential game after a suitable discretization of the runner's action space. Apart from serving as an algorithmic device, Theorem \ref{lem:vi_convergence} also enables proving the optimality of deterministic, stationary policies. This result established in Proposition \ref{lem:stationary_pol_optimal} uses the claim in Proposition \ref{lem:bellman_equations}, which in turn relies on the below assumption.
+    
+       \begin{assumption}
+           \label{assum:transition_pby_continuous}
+           The transition probability $p(\cdot|s,a_\text{R},a_\text{P})$ satisfies the following conditions. Fix $s \in {\cal S}$. Consider sequences $\{a_\text{R}^k\} \in A_\text{R}(s)$ and $\{a_\text{P}^k\} \in A_\text{P}(s,a_\text{R}^k)$ such that $\lim_{k \to \infty}a_\text{R}^k = a_\text{R} \in A_\text{R}(s)$ and  $\lim_{k \to \infty}a_\text{P}^k = a_\text{P} \in A_\text{P}(s,a_\text{R})$. Then $\lim_{k \to \infty}p(s'|s,a_\text{R}^k,a_\text{P}^k) = p(s'|s,a_\text{R},a_\text{P})$ for all $s' \in {\cal S}$.
+       \end{assumption}
+       \noindent Assumption \ref{assum:transition_pby_continuous} is a continuity condition imposed on the transition probabilities when viewed as a function of the runner and pitcher actions. Propositions  \ref{lem:bellman_equations} to \ref{lem:policy_iteration} rely upon this assumption to prove their stated claims. Our construction of transition probabilities in Section (3) satisfy this assumption. Note that this assumption trivially holds if the action space of the runner $A_\text{R}(s)$ is finite for all $s \in {\cal S}$.
+    
+       \begin{proposition}
+           \label{lem:bellman_equations}
+           Consider the sequential game defined in Section (2). Suppose Assumptions \ref{assum:game_halts} and \ref{assum:transition_pby_continuous} hold. Then
+           \begin{enumerate}%[(a)]
+               \item The optimal value function $V^*$ is the unique solution to $u = Tu$, i.e., 
+           \begingroup
+           \allowdisplaybreaks
+           \begin{equation}
+               \label{eqn:bellman_equation}
+               V^*(s) = \max_{a_\text{R} \in A_\text{R}(s)}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\mathbb{E}_{s' \sim p(\cdot|s,a_\text{R},a_\text{P})}\left[r(s'|s) + V^*(s')\right] \ \forall s \in {\cal S}.
+           \end{equation}
+           \endgroup
+           \item For any $\pi_\text{R} \in \Pi_\text{R}$ and $\pi_\text{P} \in \Pi_\text{P}$, the function $V^{\pi_\text{R},\pi_\text{P}}$ is the unique solution to $u = T_{\pi_\text{R},\pi_\text{P}}u$, i.e., 
+           \begingroup
+           \allowdisplaybreaks
+           \begin{equation}
+           \label{eqn:bellman_eval}
+               V^{\pi_\text{R},\pi_\text{P}}(s) =   \mathbb{E}_{s' \sim p(\cdot|s,\pi_\text{R}(s),\pi_\text{P}(s,\pi_\text{R}(s)))}\left[r(s'|s) + V^{\pi_\text{R},\pi_\text{P}}(s')\right] \ \forall s \in {\cal S}.          
+           \end{equation}
+           \endgroup
+           \end{enumerate}
+       \end{proposition}
+       \begin{proof}{Proof}
+           We first establish part $(a)$. Consider arbitrary $u_0 \in \mathbb{R}^{\abs{\cal S}}$ with $u_0(\Delta) = 0$ and define $u_{k} = Tu_{k-1} \ \forall k \in \mathbb{N}$. By Theorem \ref{lem:vi_convergence}, $\lim_{k \to \infty}u_k(s) = V^*(s)$ for all $s \in {\cal S}$. Passing to limit $k \to \infty$ in $u_k = Tu_{k-1}$,  we have for all $s \in {\cal S}$ 
+           \begingroup
+           \allowdisplaybreaks
+           \begin{align}
+           \nonumber
+           V^*(s) &= \lim_{k\to\infty}\max_{a_\text{R} \in A_\text{R}(s)}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\mathbb{E}_{s' \sim p(\cdot|s,a_\text{R},a_\text{P})}\left[r(s'|s) + u_{k-1}(s')\right]\\
+           \label{eqn:bellman_equation_temp1}
+           &= \lim_{k \to \infty}\max_{a_\text{R} \in A_\text{R}(s)}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\left[r(s'|s) + u_{k-1}(s')\right]p(s'|s,a_\text{R},a_\text{P}).
+           \end{align}
+           \endgroup
+           We prove that $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ converges to $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P})$ uniformly over $A_\text{R}(s)$ for each $s \in {\cal S}$.
+           
+           Fix a $s \in {\cal S}$. If $s = (b,c,o,d)$ is such that $b \neq (1,0,0)$, then from (1) and (2),  $A_\text{R}(s) = \{\delta\}$ and $ A_\text{P}(a_\text{R},s) = \{\delta\}$. As a result, $p(\cdot|s,a_\text{R},a_\text{P}) = p(\cdot|s)$, and hence the convergence is independent of $a_\text{R}$ and $a_\text{P}$. Suppose the component $b$ equals $(1,0,0)$. Let $\{a_\text{R}^k\} \in A_\text{R}(s)$ be such that $\lim_{k \to \infty}a_\text{R}^k = a_\text{R} \in A_\text{R}(s)$. Then from  (2), $A_\text{P}(a_\text{R}^k,s) = \{0,1\}$ for all $k \in \mathbb{N}$. Therefore
+           \begingroup
+           \allowdisplaybreaks
+           \begin{align*}
+           &\lim_{k \to \infty}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R}^k)}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R}^k,a_\text{P}) \\
+           &= \lim_{k \to \infty}\min\Bigg(\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R}^k,0),\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R}^k,1)\Bigg)\\
+           &= \min\Bigg(\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},0),\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},1)\Bigg)\\
+           &= \min_{a_\text{P} \in A_\text{P}(s,a_\text{R}^k)}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P}),
+           \end{align*}
+           \endgroup
+           where the second equality follows from Assumption \ref{assum:transition_pby_continuous} and the convergence of $u_{k-1}$ to $V^*$ established in Theorem \ref{lem:vi_convergence}. We have established the continuous convergence of the sequence of functions $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ over $A_\text{R}(s)$. Next, the set $A_\text{R}(s)$ in (1)  is compact. Hence, by Theorem 5 in Subsection X, Section 21 in  \cite{kuratowski_topology_2014}, $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ converges to $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P})$ uniformly over $A_\text{R}(s)$.
+    
+           Utilizing this uniform convergence in \eqref{eqn:bellman_equation_temp1} gives us 
+           \begin{align*}
+           &\lim_{k \to \infty}\max_{a_\text{R} \in A_\text{R}(s)}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\left[r(s'|s) + u_{k-1}(s')\right]p(s'|s,a_\text{R},a_\text{P})\\
+           &= \max_{a_\text{R} \in A_\text{R}(s)}\lim_{k \to \infty}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\left[r(s'|s) + u_{k-1}(s')\right]p(s'|s,a_\text{R},a_\text{P})\\
+           &= \max_{a_\text{R} \in A_\text{R}(s)}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\mathbb{E}_{s' \sim p(\cdot|s,a_\text{R},a_\text{P})}\left[r(s'|s) + V^*(s')\right],
+           \end{align*}
+           thereby establishing \eqref{eqn:bellman_equation}. The uniqueness of $V^*$ follows from the value iteration convergence result established in Theorem \ref{lem:vi_convergence}.
+    
+           Regarding part $(b)$, for each $s \in {\cal S}$, set $A_\text{R}(s) = \{\pi_\text{R}(s)\}$ and $A_\text{P}(s,\pi_\text{R}(s)) = \{\pi_\text{P}(s,\pi_\text{R}(s))\}$. The claim then  follows from part $(a)$.\qed
+       \end{proof}
+    
+       \begin{proposition}
+           \label{lem:stationary_pol_optimal}
+           Consider the sequential game defined in Section 2. Suppose Assumptions \ref{assum:game_halts} and \ref{assum:transition_pby_continuous} hold. Then a stationary pair $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ is an equilibrium policy if and only if $\pi_\text{R}^*(s)$ and $\pi_\text{P}^*(s,\pi_\text{R}^*(s))$ attain the maximum and minimum in \eqref{eqn:bellman_equation} for all $s \in {\cal S}$.
+       \end{proposition}
+       \begin{proof}{Proof}
+           Suppose $\pi_\text{R}^*(s)$ and $\pi_\text{P}^*(s,\pi_\text{R}^*(s))$ attain the maximum and minimum in \eqref{eqn:bellman_equation} for all $s \in {\cal S}$. Then \eqref{eqn:bellman_equation} becomes
+           \[
+           V^*(s) = \mathbb{E}_{s' \sim p(\cdot|s,\pi_\text{R}^*(s),\pi_\text{P}^*(s,\pi_\text{R}^*(s)))}\left[r(s'|s) + V^*(s')\right] = (T_{\pi_\text{R}^*,\pi_\text{P}^*}V^*)(s)  \ \forall s \in {\cal S},
+           \]
+           where the second equality follows by the definition of $T_{\pi_\text{R}^*,\pi_\text{P}^*}$ in \eqref{eqn:eval_operator}. By Proposition  \ref{lem:bellman_equations}(b), we then get $V^*(s)=V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) \ \forall s \in {\cal S}$. Hence, $(\pi_\text{R}^*,\pi_\text{P}^*)$ is an equilibrium policy. Conversely, suppose $(\pi_\text{R}^*,\pi_\text{P}^*)$ is an equilibrium policy. Then $V^*(s) = V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) \ \forall s \in {\cal S}$. From parts $(a)$ and $(b)$ of Proposition   \ref{lem:bellman_equations}, it follows that $\pi_\text{R}^*(s)$ and $\pi_\text{P}^*(s,\pi_\text{R}^*(s))$ attain the maximum and minimum in \eqref{eqn:bellman_equation} for all $s \in {\cal S}$.\qed
+       \end{proof}
+    
+    The next result states and proves the policy iteration algorithm for our two-player zero-sum sequential game.
+       \begin{proposition}
+           \label{lem:policy_iteration}
+           Consider the sequential game defined in Section 2 and suppose Assumptions \ref{assum:game_halts} and \ref{assum:transition_pby_continuous} hold. Starting from any $\pi_\text{R}^0 \in \Pi_\text{R}$, define the following updates for all $k \geq 0$.
+           \begin{align*}
+              % \label{eqn:update-value-two-player}
+              V^{\pi_{\text{R}}^k}(s) &\defeq \min_{\pi_\text{P} \in \Pi_\text{P}} V^{\pi_\text{R}^k,\pi_\text{P}}(s) && \forall s \in \mathcal{S}, \mbox{ and}\\
+              \label{eqn:update-policy-two-player}
+              \pi_\text{R}^{k+1}(s) &\in \argmax_{a_\text{R} \in A_\text{R}(s)} \left\{\min_{a_\text{p} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in \mathcal{S}}[r(s'|s) + V^{\pi_{\text{R}}^k}(s')] p(s'|s,a_\text{R},a_\text{P})\right\} && \forall s \in \mathcal{S}.
+            \end{align*}
+            Then $V^{\pi_\text{R}^k} \uparrow V^*$. 
+       \end{proposition}
+       \begin{proof}{Proof}
+           For any $\pi_\text{R} \in \Pi_\text{R}$, define the operator $T_{\pi_\text{R}}$ on $\mathbb{R}^{\abs{\cal S}}$ as 
+           \begingroup
+           \allowdisplaybreaks
+           \begin{equation}
+               \label{eqn:policy_iteration_temp1}
+               (T_{\pi_\text{R}} u )(s) \defeq \min_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}(s))}\sum_{s' \in S}\left[r(s'|s) + u(s')\right]p(s'|s,\pi_\text{R}(s),a_\text{P}) \ \forall s \in {\cal S}.
+           \end{equation}
+           \endgroup
+           Since $\pi_\text{R}$ is stationary, the best response of the pitcher corresponding to $\pi_\text{R}$ reduces to solving a MDP. Denote the value of this MDP as $V^{\pi_\text{R}}$, i.e., $V^{\pi_\text{R}}(s) \defeq \min_{\pi_\text{P} \in \Pi_\text{P}} V^{\pi_\text{R},\pi_\text{P}}(s) \ \forall s \in {\cal S}$. Using similar arguments as in the proof of Theorem  \ref{lem:vi_convergence}, it follows that $\lim_{k \to \infty}T_{\pi_\text{R}}^k u = V^{\pi_\text{R}}$, where $T_{\pi_\text{R}}^k$ is the composition of $T_{\pi_\text{R}}$ taken with itself $k$ times.  Also, using arguments similar to the proof of Proposition  \ref{lem:bellman_equations}, it follows that $V^{\pi_\text{R}}$ is the unique fixed point of $T_{\pi_\text{R}}$.
+    
+           Note that the policy sequence $\pi_\text{R}^k$ generated by our algorithm satisfies  
+           \begingroup
+           \allowdisplaybreaks
+           \begin{equation}
+           \label{eqn:pi_iteration_temp2}
+           T_{\pi_\text{R}^{k+1}}V^{\pi_\text{R}^k} = TV^{\pi_\text{R}^k} \ \forall k \in \mathbb{N} \cup \{0\}.
+           \end{equation}
+           \endgroup
+           Next, we observe that the sequence of functions $V^{\pi_\text{R}^k}$ correspond to the optimal value function of the pitcher's best response MDP. Hence, $V^{\pi_\text{R}^k} = T_{\pi_\text{R}^k} V^{\pi_\text{R}^k}$ for all integers $k \geq 0$. Since $Tu \geq T_{\pi_\text{R}}u$ for all $\pi_\text{R} \in \Pi_\text{R}$ and $u \in \mathbb{R}^{\abs{\cal S}}$, it follows that $V^{\pi_\text{R}^k} = T_{\pi_\text{R}^k} V^{\pi_\text{R}^k} \leq T V^{\pi_\text{R}^k}$ for all integers $k \geq 0$. Utilizing this in \eqref{eqn:pi_iteration_temp2} gives us
+           \[
+               T_{\pi_\text{R}^{k+1}}V^{\pi_\text{R}^k} = TV^{\pi_\text{R}^k} \geq V^{\pi_\text{R}^k} \ \forall k \in \mathbb{N} \cup \{0\}.
+           \]
+          Repeatedly applying $T_{\pi_\text{R}^{k+1}}$ in the above chain of expression, we get for any $j \in \mathbb{N}$ that $T_{\pi_\text{R}^{k+1}}^j V^{\pi_\text{R}^k} \geq TV^{\pi_\text{R}^k} \geq V^{\pi_\text{R}^k} \ \forall k \in \mathbb{N} \cup \{0\}$. Passing to limit $j \to \infty$ and noting that $\lim_{j \to \infty}T_{\pi_\text{R}^{k+1}}^j V^{\pi_\text{R}^k} = V^{\pi_\text{R}^{k+1}}$ gives us
+           \begingroup
+           \allowdisplaybreaks
+           \begin{equation}
+           \label{eqn:policy_iteration_temp2}
+               V^{\pi_\text{R}^{k+1}} \geq TV^{\pi_\text{R}^k} \geq V^{\pi_\text{R}^k} \ \forall k \in \mathbb{N} \cup \{0\}.
+           \end{equation}
+           \endgroup
+           By Lemma  \ref{lem:sg_pol_val_well_defined}, it follows that $V^{\pi_\text{R}}$ is uniformly bounded over $\Pi_\text{R}$ and ${\cal S}$. Hence, $V^{\pi_\text{R}^k} \uparrow \bar V \in \mathbb{R}^{\abs{\cal S}}$. We prove that $\bar V = V^*$. Using arguments similar to the ones used in the proof of Proposition  \ref{lem:bellman_equations}, it follows that $T$ is a  continuous operator on $\mathbb{R}^{\abs{\cal S}}$, i.e., $T u^k \to T u$ for all $u^k \to u$. Hence, passing to limit $k \to \infty$ in \eqref{eqn:policy_iteration_temp2} gives us $T \bar V = \bar V$. From Proposition  \ref{lem:bellman_equations}(a), it follows that $\bar V = V^*$, thereby completing the proof.\qed
+       \end{proof}
+    
+       If the state- and action-spaces are all finite, the convergence in th policy iteration algorithm happens in a finite number of steps. In that case, the policy obtained in the last iterate, say, $\pi_\text{R}^*$, is optimal for the runner. The pitcher's optimal policy (best response), $\pi_\text{P}^*$, can then be obtained as 
+       \[
+       \pi_\text{P}^*(s,\pi_\text{R}^*(s)) \in \argmin_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}^*(s))}[r(s'|s) + V^*(s')] p(s'|s,\pi_\text{R}^*(s),a_\text{P}) \ \forall s \in {\cal S}, \pi_\text{R}^*(s) \in A_\text{R}(s).
+       \]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                  The Bibliography                       %%
+%%                                                         %%
+%%  imsart-nameyear.bst  will be used to                   %%
+%%  create a .BBL file for submission.                     %%
+%%                                                         %%
+%%  Note that the displayed Bibliography will not          %%
+%%  necessarily be rendered by Latex exactly as specified  %%
+%%  in the online Instructions for Authors.                %%
+%%                                                         %%
+%%  MR numbers will be added by VTeX.                      %%
+%%                                                         %%
+%%  Use \cite{...} to cite references in text.             %%
+%%                                                         %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% if your bibliography is in bibtex format, uncomment commands:
+\bibliographystyle{imsart-nameyear} % Style BST file
+% This nastiness for the bibliography to work both locally and on Overleaf
+% https://tex.stackexchange.com/questions/623701/path-for-bib-file-working-simultaneously-in-texstudio-and-overleaf
+\bibliography{\ifnum\pdfstrcmp{\jobname}{output}=0 articles/bibliography\else ../bibliography\fi}
+
+%% or include bibliography directly:
+% \begin{thebibliography}{}
+% \bibitem[\protect\citeauthoryear{???}{???}]{b1}
+% \end{thebibliography}
+
+\end{document}
