@@ -26,11 +26,6 @@ solve_optimal_policy <- function(transition,
 
   players <- match.arg(players)
 
-  if (players == "one") {
-    transition <- transition |>
-      dplyr::filter(action_pitcher == "stochastic")
-  }
-
   state <- transition |>
     dplyr::distinct(state = pre_state) |>
     dplyr::mutate(value = 0)

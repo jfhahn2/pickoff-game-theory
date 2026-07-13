@@ -115,7 +115,7 @@ predict_runner_outcome_prob <- function(runner_outcome_grid,
         runner_outcome == "PO+" ~ prob_pickoff_attempt * prob_pickoff_success,
         runner_outcome == "PO-" ~ prob_pickoff_attempt * (1 - prob_pickoff_success),
         runner_outcome == "NG"  ~ (1 - prob_pickoff_attempt) * (1 - prob_runner_going),
-        runner_outcome == "GI" ~ (1 - prob_pickoff_attempt) * prob_runner_going * prob_going_interrupt,
+        runner_outcome == "GI"  ~ (1 - prob_pickoff_attempt) * prob_runner_going * prob_going_interrupt,
         runner_outcome == "SB+" ~ (1 - prob_pickoff_attempt) * prob_runner_going * (1 - prob_going_interrupt) * prob_stolen_base,
         runner_outcome == "SB-" ~ (1 - prob_pickoff_attempt) * prob_runner_going * (1 - prob_going_interrupt) * (1 - prob_stolen_base)
       )
