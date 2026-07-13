@@ -80,6 +80,7 @@ extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.
     dplyr::mutate(runner_effect = ranef_runner + sprint_speed_effect * sprint_speed_centered) |>
     # If necessary, flip percentiles so that negative values are better for the runner
     dplyr::arrange(ifelse(flip, -1, 1) * runner_effect) |>
+    dplyr::filter(!is.na(runner_effect)) |>     # exclude players not explicitly estimated
     dplyr::slice(round(percentile * dplyr::n())) |>
     dplyr::select(runner_id, sprint_speed_centered) |>
     dplyr::mutate(pct_runner = percentile, .before = 1)
@@ -90,6 +91,7 @@ extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.
     ) |>
     # If necessary, flip percentiles so that postive values are better for the battery
     dplyr::arrange(ifelse(flip, 1, -1) * battery_effect) |>
+    dplyr::filter(!is.na(battery_effect)) |>    # exclude players not explicitly estimated
     dplyr::slice(round(percentile * dplyr::n())) |>
     dplyr::select(pitcher_id, catcher_id, arm_strength_centered) |>
     dplyr::mutate(pct_battery = percentile, .before = 1)

@@ -30,18 +30,14 @@
 #' @export
 prep_runner_outcome_data <- function(data) {
    data |>
-    dplyr::group_by(pre_runner_1b_id) |>
     dplyr::filter(
       # For modeling purposes, we consider only plays in which only first base is occupied
       is_1b_only,
       # Exclude full count with two outs because runners because these are not really steal attempts
       !is_full_count_two_outs,
-      # We include only runners who attempted at least three stolen bases in our sample
-#      sum(is_runner_going & !is_going_interrupt) >= 3,    # TODO: Can we relax this filter?
       # The runner taking the lead from first base should match the runner on first base
       runner_id == pre_runner_1b_id | runner_id == 0
     ) |>
-    dplyr::ungroup() |>
     dplyr::mutate(
       pre_outs = as.factor(pre_outs),
       pre_balls = as.factor(pre_balls),
