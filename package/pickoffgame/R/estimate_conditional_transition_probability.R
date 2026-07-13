@@ -38,14 +38,16 @@ estimate_conditional_transition_probability <- function(data) {
     dplyr::mutate(pre = pickoffgame::deconstruct_state(pre_state_reduced)) |>
     # When the action space is null, we don't need to fill in conditional transitions
     dplyr::filter(pre$bases == "100", !(pre$outs == 2 & pre$balls == 3 & pre$strikes == 2)) |>
-    dplyr::anti_join(
-      y = transition_conditional_observed,
-      by = c("pre_state_reduced", "runner_outcome")
-    ) |>
+    # Perform this mutate before the anti-join in case the anti-join wipes out all of the rows.
+    # This happens when we hack this function to remove the conditioning on runner outcome.
     dplyr::mutate(
       post_state_reduced = pickoffgame::apply_runner_outcome(pre_state_reduced, runner_outcome),
       prob = 1,
       reward = 0
+    ) |>
+    dplyr::anti_join(
+      y = transition_conditional_observed,
+      by = c("pre_state_reduced", "runner_outcome")
     )
   
   # This is where we append disengagements back onto the state. The logic is tricky and might be
@@ -73,21 +75,17 @@ estimate_conditional_transition_probability <- function(data) {
           state = post_state_reduced,
           new_disengagements = 0
         ),
-        # If the pre-state is not 1B occupied, 2B & 3B empty, then post-disengagements must be zero
-        # because we only count disengagements with 1B occupied, 2B & 3B empty
-        pre$bases != "100" ~ pickoffgame::update_state(
+        # If third disengagement with no runner movement, advance runners and reset disengagements
+        !is_runner_movement & (post_disengagements == 3) ~ pickoffgame::update_state(
           state = post_state_reduced,
-          new_disengagements = 0
-        ),
-        # Assuming pre_bases == "100", then post_bases = "010" and post_disengements = 0
-        post_disengagements == 3 ~ pickoffgame::update_state(
-          state = post_state_reduced,
-          new_bases = "010",
+          new_bases = paste0(0, substring(pre$bases, 1, 2)),
           new_disengagements = 0
         ),
         TRUE ~ pickoffgame::update_state(post_state_reduced, new_disengagements = post_disengagements)
       )
     ) |>
+    # Remove impossible states (first play of the PA but there are already disengagements)
+    dplyr::filter(!(pre$first == 1 & pre_disengagements > 0)) |>
     dplyr::select(pre_state, runner_outcome, post_state, prob, reward)
 
   return(transition_conditional)
