@@ -144,7 +144,7 @@
 
     \begin{figure}
       \centering
-      \includegraphics[width = 0.8\textwidth]{leads_overall_light.pdf}
+      \includegraphics[width = 10cm]{leads_overall_light.pdf}
       \caption{
         \it The league-wide distribution of lead distance from first base when second base is unoccupied, comparing 2022 with 2023. The 2023 data are split by prior disengagements because, beginning in 2023, pitchers were limited to three disengagements, influencing pitcher and runner behavior. In 2022, there was no limit on the number of disengagements.
       }
@@ -247,7 +247,7 @@
 
     Our sequential game models the progression of an inning as follows. Let $s \in {\cal S}$ denote the state of the sequential game from which a play begins. Upon observing this state, the first-base runner picks an action $a_\text{R} \in A_\text{R}(s)$. The pitcher observes the state $s$ and the first-base runner's action $a_\text{R}$, and then picks an action $a_\text{P} \in A_\text{P}(s,a_\text{R})$. After playing $a_\text{R}$ and $a_\text{P}$, the sequential game then transitions into state $s'$ with probability $p(s'|s,a_\text{R},a_\text{P})$ and the batting team collects a reward $r(s'|s,a_\text{R},a_\text{P})$ in the zero-sum game. A play then begins from $s'$, and the process repeats. The goal of the batting team is to maximize (through the actions of the first-base runner) the expected total rewards over the plays in the inning while the goal of the fielding team is to minimize (through the actions of the pitcher) the expected total rewards obtained by the batting team.
 
-    Intuitively, any sound strategy for the first-base runner and the pitcher depends on the state of the sequential game (for the pitcher, it also depends on the actions played by the first-base runner). This is formally captured using the concept of policy. A (deterministic, stationary) policy for the first-base runner is a decision-rule that prescribes the action to be played in every possible state. Similarly, a (deterministic, stationary) policy for the pitcher is a decision-rule that prescribes the action to be played for every possible state and the corresponding actions of the first-base runner in those states. A mathematical treatment of policies is presented in the Appendix. We denote the set of policies for the runner and pitcher by $\Pi_\text{R}$ and $\Pi_\text{P}$, respectively.
+    Intuitively, any sound strategy for the first-base runner and the pitcher depends on the state of the sequential game (for the pitcher, it also depends on the actions played by the first-base runner). This is formally captured using the concept of policy. A (deterministic, stationary) policy for the first-base runner is a decision-rule that prescribes the action to be played in every possible state. Similarly, a (deterministic, stationary) policy for the pitcher is a decision-rule that prescribes the action to be played for every possible state and the corresponding actions of the first-base runner in those states. A mathematical treatment of policies is presented in the Supplementary Material. We denote the set of policies for the runner and pitcher by $\Pi_\text{R}$ and $\Pi_\text{P}$, respectively.
 
     The concept of policies allows us to mathematically characterize the runs scored in an inning. Suppose the first-base runner and the pitcher employ policies $\pi_\text{R} \in \Pi_\text{R}$ and $\pi_\text{P} \in \Pi_\text{P}$, respectively. Assuming the play starts from a state $s \in {\cal S}$, the expected total runs scored (by the batting team) in an inning then equals 
     \begin{align}
@@ -257,7 +257,7 @@
        % &\quad \forall s \in {\cal S},
     \end{align}
     % TODO: Fix missing lemma number
-    where $\mathbb{E}^{\pi_\text{R},\pi_\text{P}}$ denotes the expectation with respect to the distribution induced by $\pi_\text{R}$ and $\pi_{\text{P}}$. Observe that, unlike the typical sequential games studied in the literature, we do not discount the rewards. This is because our optimization objective is rest-of-inning expected runs, which by definition does not discount runs scored on later plays. Though the undiscounted case is more realistic in our setup, it might lead to technical issues since $V^{\pi_\text{R},\pi_\text{P}}(s)$ in \eqref{eqn:sg_pol_val} can potentially be infinite. However, all innings eventually end. As a result, the infinite series appearing inside the expectation in the right-hand side of \eqref{eqn:sg_pol_val} can be approximated with arbitrary precision by truncating the sum at some finite $T \in \mathbb{N}$, and hence we can expect $V^{\pi_\text{R},\pi_\text{P}}(s)$ to take finite values. This reasoning is rigorously justified in Lemma \ref{lem:sg_pol_val_well_defined} in the Appendix. Therefore, in the rest of the paper, we take $V^{\pi_\text{R},\pi_\text{P}}(s)$ to be a finite number for all $\pi_\text{R} \in \Pi_\text{R}, \pi_\text{P} \in \Pi_\text{P}$, and $s \in {\cal S}$. 
+    where $\mathbb{E}^{\pi_\text{R},\pi_\text{P}}$ denotes the expectation with respect to the distribution induced by $\pi_\text{R}$ and $\pi_{\text{P}}$. Observe that, unlike the typical sequential games studied in the literature, we do not discount the rewards. This is because our optimization objective is rest-of-inning expected runs, which by definition does not discount runs scored on later plays. Though the undiscounted case is more realistic in our setup, it might lead to technical issues since $V^{\pi_\text{R},\pi_\text{P}}(s)$ in \eqref{eqn:sg_pol_val} can potentially be infinite. However, all innings eventually end. As a result, the infinite series appearing inside the expectation in the right-hand side of \eqref{eqn:sg_pol_val} can be approximated with arbitrary precision by truncating the sum at some finite $T \in \mathbb{N}$, and hence we can expect $V^{\pi_\text{R},\pi_\text{P}}(s)$ to take finite values. This reasoning is rigorously justified in Lemma \ref{lem:sg_pol_val_well_defined} in the Supplementary Material. Therefore, in the rest of the paper, we take $V^{\pi_\text{R},\pi_\text{P}}(s)$ to be a finite number for all $\pi_\text{R} \in \Pi_\text{R}, \pi_\text{P} \in \Pi_\text{P}$, and $s \in {\cal S}$. 
    
     The goal of the batting team is to select a policy that will maximize the expected total runs scored by them. At the same time, the fielding team minimizes the expected total runs scored by the batting team by employing a suitable policy. Taking the rational behavior of both the players into account, the maximum runs scored by the batting team when a play begins from state $s \in {\cal S}$ is given as 
     \begin{equation}
@@ -266,7 +266,7 @@
     \end{equation}
     We call $V^*$ the \emph{optimal value function}. In our context, $V^*$ is the maximum expected total runs scored in an inning by the batting team, which, by the zero-sum property of the game, equals the minimum expected total runs incurred by the fielding team. A policy pair $(\pi_\text{R}^*,\pi_\text{P}^*) \in \Pi_\text{R} \times \Pi_\text{P}$ such that $V^{\pi_\text{R}^*,\pi_\text{P}^*}(s) = V^*(s) \ \forall s \in {\cal S}$ is called an equilibrium policy. That is, $\pi_\text{R}^*$ is a policy for the batting team that maximizes the expected total runs scored by them, and $\pi_\text{P}^*$ is a policy for the fielding team that minimizes the expected total runs incurred by them. In other words, $\pi_\text{R}^*$ is an optimal policy for the batting team and $\pi_\text{P}^*$ is an optimal policy for the fielding team. 
 
-    A characterization of optimality conditions for \eqref{eqn:sg_val} including a dynamic programming equation is presented in the Appendix. In our computational experiments in Section \ref{sec:results}, we use value iteration to solve \eqref{eqn:sg_val}. The value iteration algorithm is as follows. Starting from an arbitrary $V^0 \in \mathbb{R}^{\abs{\cal S}}$ with $V^0(\Delta) = 0$, iteratively obtain $V^k$ via the following updates
+    A characterization of optimality conditions for \eqref{eqn:sg_val} including a dynamic programming equation is presented in the Supplementary Material. In our computational experiments in Section \ref{sec:results}, we use value iteration to solve \eqref{eqn:sg_val}. The value iteration algorithm is as follows. Starting from an arbitrary $V^0 \in \mathbb{R}^{\abs{\cal S}}$ with $V^0(\Delta) = 0$, iteratively obtain $V^k$ via the following updates
     \begin{align}
     \label{eqn:vi_algorithm}
       V^k(s) &\defeq \max_{a_\text{R} \in A_\text{R}(s)} \min_{a_\text{p} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in \mathcal{S}}[r(s'|s) + V^{k-1}(s')] p(s'|s,a_\text{R},a_\text{P}) \quad \forall s \in \mathcal{S}.
@@ -275,7 +275,7 @@
     {\bf Theorem 1} (Informal) {\it 
     The iterates $V^k$ generated in \eqref{eqn:vi_algorithm} converge to the optimal value function $V^*$.}
      
-    \noindent This result is proved in the Appendix. Furthermore, the proof of Theorem 1 also establishes a convergence rate of the form $\abs{V^k(s) - V^*(s)} \leq O(\rho^k)$ for all $s \in {\cal S}$ and a $\rho \in (0,1)$.
+    \noindent This result is proved in the Supplementary Material. Furthermore, the proof of Theorem 1 also establishes a convergence rate of the form $\abs{V^k(s) - V^*(s)} \leq O(\rho^k)$ for all $s \in {\cal S}$ and a $\rho \in (0,1)$.
     
     We note that fixing a pitcher policy reduces our two-player sequential game to a \revision{one}-player MDP whose objective is to optimize the lead distance for the first-base runner. Optimality criterion similar to the two-player sequential game also exists for MDP with undiscounted rewards \citep[Section 7.2]{bertsekas_dynamic_2012}. Numerical experiments using this decision  model for a specific pitcher policy are presented in Section \ref{sec:results-one-player}. These results may provide more immediately actionable insights for lead distance selection, as we discuss in Section \ref{sec:discussion}.
 
@@ -511,7 +511,7 @@
       \revision{We implemented the GLMMs from Section \ref{sec:prob-runner-outcome} in R using the package glmmTMB \citep{brooks_glmmtmb_2017}.} Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-stolen-base} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected. \revision{In 20-fold cross-validation, the component GLMMs explained 5.2\% of deviance in pickoff attempt probability; 8.9\% of deviance in pickoff success probability; 10.1\% of deviance in stolen base attempt probability; and 3.0\% of deviance in stolen base success probability.}
 
       \begin{table}
-        \resizebox{\textwidth}{!}{
+        \resizebox{15cm}{!}{
           \inputtable{model_summary.tex}
         }
         \caption{
@@ -524,8 +524,8 @@
  
       \begin{figure}
         \centering
-        \includegraphics[width = 0.4\textwidth]{prob_po_attempt_light.pdf}
-        \includegraphics[width = 0.4\textwidth]{prob_po_success_light.pdf}
+        \includegraphics[width = 6cm]{prob_po_attempt_light.pdf}
+        \includegraphics[width = 6cm]{prob_po_success_light.pdf}
         \caption{
           \it Pickoff attempt probability (left) and success probability (right) modeled as functions of lead distance. The left figure corresponds to the model detailed from Section \ref{sec:prob-pickoff-attempt}, assuming zero balls, zero strikes, zero outs, and a median pitcher random effect. The right figure corresponds to the model from Section \ref{sec:prob-pickoff-success}, which includes only an intercept, a fixed effect for lead distance and a random effect for pitcher identity.
         }
@@ -536,7 +536,7 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.7\textwidth]{prob_sb_success_light.pdf}
+        \includegraphics[width = 10cm]{prob_sb_success_light.pdf}
         \caption{
           \it Stolen base success probability modeled as function of lead distance, split by season and runner effect (combining the fixed effect of runner sprint speed and the random effect of runner identity). This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-stolen-base}, assuming zero balls, zero strikes, zero outs, and a median value for the combined effect of pitcher identity (random effect), catcher arm strength (fixed effect), and catcher identity (random effect).
         }
@@ -549,8 +549,8 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 0.4\textwidth]{effect_catcher_light.pdf}
-        \includegraphics[width = 0.4\textwidth]{effect_runner_light.pdf}
+        \includegraphics[width = 6cm]{effect_catcher_light.pdf}
+        \includegraphics[width = 6cm]{effect_runner_light.pdf}
         \caption{
           \it
           (Left) The relationship between arm strength and catcher combined effect on stolen base success probability (relative to average, on the log-odds scale). The combined effect is the sum of the fixed effect due to arm strength and the catcher random effect.
@@ -665,10 +665,6 @@
       Ultimately, this paper addressed a timely problem of substantive interest in the baseball industry, achieving meaningful results. By leveraging compelling tracking data to model individual behavior and distill practical insights, our approach is related to a broader class of problems. In addition to sports leagues considering rule changes, this framework is relevant to any setting in which a regulator controls the rules under which competitors operate. Where high-fidelity data are available regarding competitor behavior, a similar approach can help regulators anticipate the consequences of rational competitor behavior.
     }
 
-  \section*{Acknowledgments}
-
-    Major League Baseball trademarks and copyrights are used with permission of MLB Advanced Media, L.P. All rights reserved. The authors thank Mallesh Pai of Rice University for constructive discussions during conceptualization of the problem and early implementation of the solution.
-
   \section*{Code and data availability}
 
     Code related to this paper is available at \url{https://github.com/jfhahn2/pickoff-game-theory}. Lead distance data are not publicly available and were obtained from MLB Advanced Media. All other data are publicly available and may be downloaded using the R package sabRmetrics \citep{powers_sabrmetrics_2025}.
@@ -682,9 +678,10 @@
 %% should be provided in the                %%
 %% Acknowledgements section.                %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{acks}[Acknowledgments]
-% The authors would like to thank ...
-%\end{acks}
+\begin{acks}[Acknowledgments]
+  Major League Baseball trademarks and copyrights are used with permission of MLB Advanced Media, L.P. All rights reserved. The authors thank Mallesh Pai of Rice University for constructive discussions during conceptualization of the problem and early implementation of the solution.
+\end{acks}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Funding information, if any,             %%
 %% should be provided in the                %%
@@ -706,10 +703,10 @@
 %% available to the reader on Project       %%
 %% Euclid with the published article.       %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{supplement}
-%\stitle{???}
-%\sdescription{???.}
-%\end{supplement}
+\begin{supplement}
+  \stitle{Technical results}
+  \sdescription{???.}
+\end{supplement}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                  The Bibliography                       %%
