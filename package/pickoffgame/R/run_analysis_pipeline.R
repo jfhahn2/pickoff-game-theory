@@ -81,6 +81,18 @@ run_analysis_pipeline <- function(game_state,
   # ESTIMATE GAME MODELS ----
   logger::log_info("Estimating game models")                # 10 minutes
 
+  policy_observed <- data_glmer |>
+    dplyr::filter(year == 2023, !is.na(lead_distance)) |>
+    dplyr::group_by(pre_state) |>
+    dplyr::summarize(lead_distance = round(mean(lead_distance), 1))
+
+  policy_mrp <- pickoffgame::estimate_game_model(
+    data = game_state,
+    fit_runner_outcome = fit_runner_outcome,
+    players = "one",
+    fixed_policy = policy_observed
+  )
+
   policy_mdp <- pickoffgame::estimate_game_model(
     data = game_state,
     fit_runner_outcome = fit_runner_outcome,
@@ -118,6 +130,7 @@ run_analysis_pipeline <- function(game_state,
       data_glmer = data_glmer,
       runner_outcome_model_validation = runner_outcome_model_validation,
       fit_runner_outcome = fit_runner_outcome,
+      policy_mrp = policy_mrp,
       policy_mdp = policy_mdp,
       policy_zsg = policy_zsg,
       policy_mdp_skill = policy_mdp_skill

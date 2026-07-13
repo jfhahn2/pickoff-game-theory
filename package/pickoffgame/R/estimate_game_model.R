@@ -10,6 +10,7 @@
 #' @param players Character string. Specifies the game type: \code{"one"} 
 #'   (Markov decision process) or \code{"two"} (stochastic zero-sum game). 
 #'   Defaults to \code{"one"}.
+#' @param fixed_policy
 #' @param percentile_players A list of player performance data frames (from 
 #'   \code{extract_percentile_players}) used to set specific runner/battery 
 #'   skill levels. Defaults to \code{NULL}.
@@ -28,11 +29,23 @@
 estimate_game_model <- function(data,
                                 fit_runner_outcome,
                                 players = c("one", "two"),
+                                fixed_policy = NULL,
                                 percentile_players = NULL,
                                 runner_percentile = NULL,
                                 battery_percentile = NULL) {
 
   players <- match.arg(players)
+
+  action_space_runner <- seq(from = 0, to = 20, by = 0.1)
+  action_space_pitcher <- c("pickoff", "pitch", "stochastic")
+
+  if (players == "one") {
+    action_space_pitcher <- "stochastic"
+  }
+
+  if (!is.null(fixed_policy)) {
+    action_space_runner <- 0    # this will be replaced later
+  }
 
   transition_conditional <- data |>
     pickoffgame::estimate_conditional_transition_probability()
@@ -41,8 +54,8 @@ estimate_game_model <- function(data,
     dplyr::distinct(pre_state) |>
     tidyr::expand_grid(
       runner_outcome = unique(transition_conditional$runner_outcome),
-      action_runner = seq(from = 0, to = 30, by = 0.1),
-      action_pitcher = c("pickoff", "pitch", "stochastic")
+      action_runner = action_space_runner,
+      action_pitcher = action_space_pitcher
     ) |>
     dplyr::mutate(
       year = factor(2023, levels = c(2022, 2023)),
@@ -61,6 +74,12 @@ estimate_game_model <- function(data,
       (is_1b_only & !is_full_count_two_outs) | action_runner == 0,
       (is_1b_only & !is_full_count_two_outs) | action_pitcher == "stochastic"
     )
+  
+  if (!is.null(fixed_policy)) {
+    runner_outcome_grid <- runner_outcome_grid |>
+      dplyr::left_join(fixed_policy, by = "pre_state") |>
+      dplyr::mutate(action_runner = dplyr::coalesce(lead_distance, 0))
+  }
   
   runner_outcome_prob <- predict_runner_outcome_prob(
     runner_outcome_grid = runner_outcome_grid,
