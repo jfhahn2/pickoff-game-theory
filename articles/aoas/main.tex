@@ -144,7 +144,7 @@
 
     \begin{figure}
       \centering
-      \includegraphics[width = 10cm]{leads_overall_light.pdf}
+      \includegraphics[width = 0.8\linewidth]{leads_overall_light.pdf}
       \caption{
         \it The league-wide distribution of lead distance from first base when second base is unoccupied, comparing 2022 with 2023. The 2023 data are split by prior disengagements because, beginning in 2023, pitchers were limited to three disengagements, influencing pitcher and runner behavior. In 2022, there was no limit on the number of disengagements.
       }
@@ -216,12 +216,12 @@
     \begin{align}
       \label{eqn:pitcher_action_space}
       \begin{split}
-        &A_{\text{P}}(s,a_\text{R}) \defeq
+        A_{\text{P}}(s,a_\text{R}) \defeq&
         \begin{cases}
           {\cal P} \text{ if } s = (b,c,d,o) \text{ with } b = (1,0,0) \\
           \{\delta\} \text{ if } s = (b,c,d,o) \text{ with } b \neq (1,0,0), \text{ or } s \in {\cal P} {\cup} \{\Delta\},
-        \end{cases}
-        \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s),
+        \end{cases}\\
+        &\quad \forall s \in {\cal S}, a_\text{R} \in A_\text{R}(s),
       \end{split}
     \end{align} 
     where ${\cal P} \defeq \{0,1\}$, with $p = 1$ corresponding to a pickoff attempt and $0$ otherwise.  Here, $\delta$ is a dummy element that captures the lack of agency. We note that the state of our sequential game progresses even when no actions are played by both players. We will model this through appropriate transition probabilities.  
@@ -511,7 +511,7 @@
       \revision{We implemented the GLMMs from Section \ref{sec:prob-runner-outcome} in R using the package glmmTMB \citep{brooks_glmmtmb_2017}.} Table \ref{tab:model-summary} summarizes the results of estimating the runner outcome probability models detailed in Section \ref{sec:prob-runner-outcome}. Figures \ref{fig:prob-pickoff} and \ref{fig:prob-stolen-base} illustrate the relationship between lead distance and runner outcome probabilities for the models which include lead distance. For each of these three models, the direction of the relationship between lead distance and outcome probability is as expected. \revision{In 20-fold cross-validation, the component GLMMs explained 5.2\% of deviance in pickoff attempt probability; 8.9\% of deviance in pickoff success probability; 10.1\% of deviance in stolen base attempt probability; and 3.0\% of deviance in stolen base success probability.}
 
       \begin{table}
-        \resizebox{15cm}{!}{
+        \resizebox{\linewidth}{!}{
           \inputtable{model_summary.tex}
         }
         \caption{
@@ -524,8 +524,8 @@
  
       \begin{figure}
         \centering
-        \includegraphics[width = 6cm]{prob_po_attempt_light.pdf}
-        \includegraphics[width = 6cm]{prob_po_success_light.pdf}
+        \includegraphics[width = 0.4\linewidth]{prob_pickoff_attempt_light.pdf}
+        \includegraphics[width = 0.4\linewidth]{prob_pickoff_success_light.pdf}
         \caption{
           \it Pickoff attempt probability (left) and success probability (right) modeled as functions of lead distance. The left figure corresponds to the model detailed from Section \ref{sec:prob-pickoff-attempt}, assuming zero balls, zero strikes, zero outs, and a median pitcher random effect. The right figure corresponds to the model from Section \ref{sec:prob-pickoff-success}, which includes only an intercept, a fixed effect for lead distance and a random effect for pitcher identity.
         }
@@ -536,7 +536,7 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 10cm]{prob_sb_success_light.pdf}
+        \includegraphics[width = 0.8\linewidth]{prob_stolen_base_light.pdf}
         \caption{
           \it Stolen base success probability modeled as function of lead distance, split by season and runner effect (combining the fixed effect of runner sprint speed and the random effect of runner identity). This figure shows the probability estimated by the model detailed in Section \ref{sec:prob-stolen-base}, assuming zero balls, zero strikes, zero outs, and a median value for the combined effect of pitcher identity (random effect), catcher arm strength (fixed effect), and catcher identity (random effect).
         }
@@ -549,8 +549,8 @@
       
       \begin{figure}
         \centering
-        \includegraphics[width = 6cm]{effect_catcher_light.pdf}
-        \includegraphics[width = 6cm]{effect_runner_light.pdf}
+        \includegraphics[width = 0.4\linewidth]{effect_catcher_light.pdf}
+        \includegraphics[width = 0.4\linewidth]{effect_runner_light.pdf}
         \caption{
           \it
           (Left) The relationship between arm strength and catcher combined effect on stolen base success probability (relative to average, on the log-odds scale). The combined effect is the sum of the fixed effect due to arm strength and the catcher random effect.
