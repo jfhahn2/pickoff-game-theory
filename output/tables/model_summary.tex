@@ -1,24 +1,28 @@
-\begin{tabular}{l|rrrr}
-&\multicolumn{4}{c}{Estimated Effect on Log-Odds}\\
-Variable & PO Attempt & PO Success & SB Attempt & SB Success \\
-% latex table generated in R 4.5.0 by xtable 1.8-4 package
-% Mon Oct 13 19:45:10 2025
+\begin{tabular}{l|rrrrr}
+&\multicolumn{5}{c}{Estimated Effect on Log-Odds}\\
+Variable & Pickoff Attempt & Pickoff Success & Runner Going & Batter Interruption & Stolen Base \\
+% latex table generated in R 4.5.0 by xtable 1.8-8 package
+% Tue Jul 14 12:56:19 2026
   \hline
-{\it Intercept} & $-4.574$ $\pm0.064$ & $-13.091$ $\pm1.141$ & $-15.537$ $\pm1.199$ & $1.157$ $\pm1.481$ \\ 
+{\it Intercept} & $-2.42$ {\color{gray} $\pm0.03$} & $-5.27$ {\color{gray} $\pm0.15$} & $-4.87$ {\color{gray} $\pm0.06$} & $-0.87$ {\color{gray} $\pm0.08$} & $0.68$ {\color{gray} $\pm0.08$} \\ 
    \hline
-{\it Fixed Effects} &  &  &  &  \\ 
-  Lead Distance (ft) & $0.241$ $\pm0.006$ & $0.777$ $\pm0.094$ &  & $0.052$ $\pm0.028$ \\ 
-  Balls & $-0.097$ $\pm0.011$ &  & $0.272$ $\pm0.021$ &  \\ 
-  Strikes & $0.028$ $\pm0.011$ &  & $0.013$ $\pm0.025$ &  \\ 
-  Outs & $-0.017$ $\pm0.010$ &  & $0.107$ $\pm0.024$ &  \\ 
-  Year (2023 vs. 2022) & $-0.485$ $\pm0.020$ &  &  & $0.311$ $\pm0.081$ \\ 
-  Disengagements (1 vs. 0) & $-0.724$ $\pm0.046$ &  & $0.914$ $\pm0.044$ &  \\ 
-  Disengagements (2 vs. 0) & $-2.010$ $\pm0.269$ &  & $1.668$ $\pm0.093$ &  \\ 
-  Runner Sprint Speed (ft/s) &  &  & $0.426$ $\pm0.029$ & $0.130$ $\pm0.036$ \\ 
-  Catcher Arm Strength (mi/h) &  &  & $-0.009$ $\pm0.011$ & $-0.054$ $\pm0.014$ \\ 
+{\it Fixed Effects} &  &  &  &  &  \\ 
+  Year (2023 vs. 2022) & $-0.46$ {\color{gray} $\pm0.02$} & $0.75$ {\color{gray} $\pm0.13$} & $-0.11$ {\color{gray} $\pm0.03$} & $-0.09$ {\color{gray} $\pm0.06$} & $0.26$ {\color{gray} $\pm0.08$} \\ 
+  Outs (1 vs. 0) & $0.09$ {\color{gray} $\pm0.02$} &  & $0.27$ {\color{gray} $\pm0.03$} & $-0.10$ {\color{gray} $\pm0.06$} &  \\ 
+  Outs (2 vs. 0) & $-0.07$ {\color{gray} $\pm0.02$} &  & $0.46$ {\color{gray} $\pm0.03$} & $0.14$ {\color{gray} $\pm0.06$} &  \\ 
+  Balls (1 vs. 0) & $-0.04$ {\color{gray} $\pm0.02$} &  & $0.17$ {\color{gray} $\pm0.03$} & $0.11$ {\color{gray} $\pm0.06$} &  \\ 
+  Balls (2 vs. 0) & $-0.35$ {\color{gray} $\pm0.03$} &  & $-0.02$ {\color{gray} $\pm0.04$} & $0.23$ {\color{gray} $\pm0.07$} &  \\ 
+  Balls (3 vs. 0) & $-0.41$ {\color{gray} $\pm0.04$} &  & $1.70$ {\color{gray} $\pm0.04$} & $1.57$ {\color{gray} $\pm0.08$} &  \\ 
+  Strikes (1 vs. 0) & $0.05$ {\color{gray} $\pm0.02$} &  & $0.19$ {\color{gray} $\pm0.03$} & $0.54$ {\color{gray} $\pm0.06$} &  \\ 
+  Strikes (2 vs. 0) & $0.03$ {\color{gray} $\pm0.02$} &  & $0.86$ {\color{gray} $\pm0.03$} & $1.13$ {\color{gray} $\pm0.07$} &  \\ 
+  Disengagements (1 vs. 0) & $-0.68$ {\color{gray} $\pm0.04$} &  & $0.84$ {\color{gray} $\pm0.04$} & $-0.15$ {\color{gray} $\pm0.07$} &  \\ 
+  Disengagements (2 vs. 0) & $-1.84$ {\color{gray} $\pm0.23$} &  & $1.54$ {\color{gray} $\pm0.08$} & $-0.06$ {\color{gray} $\pm0.13$} &  \\ 
+  Lead Distance (ft) & $0.22$ {\color{gray} $\pm0.00$} & $0.65$ {\color{gray} $\pm0.05$} &  &  & $0.14$ {\color{gray} $\pm0.03$} \\ 
+  Runner Sprint Speed (ft/s) &  &  & $0.60$ {\color{gray} $\pm0.02$} & $-0.15$ {\color{gray} $\pm0.02$} & $0.18$ {\color{gray} $\pm0.04$} \\ 
+  Catcher Arm Strength (mi/h) &  &  & $-0.02$ {\color{gray} $\pm0.01$} & $0.01$ {\color{gray} $\pm0.01$} & $-0.06$ {\color{gray} $\pm0.01$} \\ 
    \hline
-{\it Random Effects} &  &  &  &  \\ 
-  Pitcher &  $\pm0.579$ &  $\pm1.167$ &  $\pm0.503$ &  $\pm0.359$ \\ 
-  Runner &  &  &  $\pm0.529$ &  $\pm0.261$ \\ 
-  Catcher &  &  &  $\pm0.197$ &  $\pm0.215$ \\ 
+{\it Random Effects} &  &  &  &  &  \\ 
+  Pitcher &  {\color{gray} $\pm0.60$} &  {\color{gray} $\pm0.93$} &  {\color{gray} $\pm0.58$} &  {\color{gray} $\pm0.17$} &  {\color{gray} $\pm0.30$} \\ 
+  Runner &  &  &  {\color{gray} $\pm0.67$} &  {\color{gray} $\pm0.22$} &  {\color{gray} $\pm0.29$} \\ 
+  Catcher &  &  &  {\color{gray} $\pm0.17$} &  {\color{gray} $\pm0.11$} &  {\color{gray} $\pm0.23$} \\ 
 \end{tabular}
