@@ -43,6 +43,8 @@ estimate_conditional_transition_probability <- function(data) {
     dplyr::mutate(
       post_state_reduced = pickoffgame::apply_runner_outcome(pre_state_reduced, runner_outcome),
       prob = 1,
+      # The unobserved conditional transitions are only stolen base and pickoff attempts, and we
+      # assume that these transitions do not result in runs being scored (for unobserved cases).
       reward = 0
     ) |>
     dplyr::anti_join(
@@ -50,42 +52,53 @@ estimate_conditional_transition_probability <- function(data) {
       by = c("pre_state_reduced", "runner_outcome")
     )
   
-  # This is where we append disengagements back onto the state. The logic is tricky and might be
-  # worth revisiting. For example, we do not correctly handle the (rare) case where bases, count and
-  # outs stay the same (and it's not a new batter). In this case, we should increment disengagements.
+  # This is where we append disengagements back onto the state.
+  # The logic is tricky and is always worth revisiting.
   transition_conditional <- transition_conditional_observed |>
     dplyr::bind_rows(transition_conditional_unobserved) |>
-    # Expand reduced state to full state by tacking on disengagements
-    tidyr::expand_grid(pre_disengagements = 0:2) |>
+    # Expand reduced state to full state by tacking on disengagements and first indicator
+    tidyr::expand_grid(pre_disengagements = 0:2, pre_first = 0:1) |>
     dplyr::mutate(
       pre = pickoffgame::deconstruct_state(pre_state_reduced),
       post = pickoffgame::deconstruct_state(post_state_reduced),
       pre_state = pickoffgame::update_state(
         state = pre_state_reduced,
+        new_first = pre_first,
         new_disengagements = pre_disengagements
       ),
       post_disengagements = pre_disengagements + ifelse(runner_outcome %in% c("PO+", "PO-"), 1, 0),
-      is_end_of_pa = post$first == 1,
+      pre_account_offense = stringr::str_count(pre$bases, "1") + pre$outs,
+      post_account_offense = stringr::str_count(post$bases, "1") + post$outs + round(reward),
+      post_first = dplyr::case_when(
+        post_account_offense > pre_account_offense ~ 1,
+        TRUE ~ 0
+      ),
       is_runner_movement = pre$bases != post$bases,
       post_state = dplyr::case_when(
         # If the reduced post-state is a terminal end-of-inning state, do not append disengagements
         nchar(post_state_reduced) == 1 ~ post_state_reduced,
         # If the transition is end of plate appearance or runner movement, reset disengagements
-        is_end_of_pa | is_runner_movement ~ pickoffgame::update_state(
+        (post_first == 1) | is_runner_movement ~ pickoffgame::update_state(
           state = post_state_reduced,
+          new_first = post_first,
           new_disengagements = 0
         ),
         # If third disengagement with no runner movement, advance runners and reset disengagements
         !is_runner_movement & (post_disengagements == 3) ~ pickoffgame::update_state(
           state = post_state_reduced,
+          new_first = post_first,
           new_bases = paste0(0, substring(pre$bases, 1, 2)),
           new_disengagements = 0
         ),
-        TRUE ~ pickoffgame::update_state(post_state_reduced, new_disengagements = post_disengagements)
+        TRUE ~ pickoffgame::update_state(
+          state = post_state_reduced,
+          new_first = post_first,
+          new_disengagements = post_disengagements
+        )
       )
     ) |>
     # Remove impossible states (first play of the PA but there are already disengagements)
-    dplyr::filter(!(pre$first == 1 & pre_disengagements > 0)) |>
+    dplyr::filter(!(pre_first == 1 & (pre$balls + pre$strikes + pre_disengagements > 0))) |>
     dplyr::select(pre_state, runner_outcome, post_state, prob, reward)
 
   return(transition_conditional)
