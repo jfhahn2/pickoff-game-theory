@@ -97,7 +97,9 @@ wrangle_data <- function(play,
         as.numeric(!is.na(post_runner_1b_id)),
         as.numeric(!is.na(post_runner_2b_id)),
         as.numeric(!is.na(post_runner_3b_id))
-      )
+      ),
+      pre_account_offense = stringr::str_count(pre_bases, "1") + pre_outs,
+      post_account_offense = stringr::str_count(post_bases, "1") + post_outs + runs_on_play
     ) |>
     # Replace small-sample player identifers with "replacement" identifier
     dplyr::group_by(pitcher_id) |>
@@ -117,9 +119,13 @@ wrangle_data <- function(play,
     dplyr::group_by(game_id, event_index) |>
     dplyr::mutate(
       is_first_play_of_event = 1:dplyr::n() == 1,
-      is_last_play_of_event = 1:dplyr::n() == dplyr::n(),
+      is_last_play_of_event = (1:dplyr::n() == dplyr::n()),
+      # Check that it's the last pitch of the event AND that the offensive accounting has changed.
+      # For example, offensive accounting does not change on a walkoff wild pitch. In this case,
+      # we do not want to treat this as the end of a plate appearance.
+      is_end_of_pa = is_last_play_of_event & (post_account_offense != pre_account_offense),
       pre_first = as.integer(is_first_play_of_event),
-      post_first = as.integer(is_last_play_of_event),
+      post_first = as.integer(is_end_of_pa),
       # Within each event, group plays into stints between runner movement
       disengagement_stint = ((!is_last_play_of_event) & (pre_bases != post_bases)) |>
         dplyr::lag(1) |>
@@ -134,7 +140,7 @@ wrangle_data <- function(play,
       pre_disengagements = ifelse(year < 2023, 0, pre_disengagements - disengagements_reset),
       # Disengagement counter resets if plate appearance ends or if runners move
       post_disengagements = ifelse(
-        test = (year < 2023) | is_last_play_of_event | (pre_bases != post_bases),
+        test = (year < 2023) | is_end_of_pa | (pre_bases != post_bases),
         yes = 0,
         no = post_disengagements - disengagements_reset
       )
@@ -142,19 +148,19 @@ wrangle_data <- function(play,
     dplyr::ungroup() |>
     dplyr::mutate(
       # Reset count at the end of a plate appearance
-      post_balls = ifelse(is_last_play_of_event, 0, post_balls),
-      post_strikes = ifelse(is_last_play_of_event, 0, post_strikes),
-      pre_state = construct_state(pre_first, pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements),
-      pre_state_reduced = construct_state(pre_first, pre_bases, pre_outs, pre_balls, pre_strikes),
+      post_balls = ifelse(is_end_of_pa, 0, post_balls),
+      post_strikes = ifelse(is_end_of_pa, 0, post_strikes),
+      pre_state = construct_state(pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements, pre_first),
+      pre_state_reduced = construct_state(pre_bases, pre_outs, pre_balls, pre_strikes),
       post_state = ifelse(
         test = post_outs == 3,
         yes = as.character(runs_on_play),
-        no = construct_state(post_first, post_bases, post_outs, post_balls, post_strikes, post_disengagements)
+        no = construct_state(post_bases, post_outs, post_balls, post_strikes, post_disengagements, post_first)
       ),
       post_state_reduced = ifelse(
         test = post_outs == 3,
         yes = as.character(runs_on_play),
-        no = construct_state(post_first, post_bases, post_outs, post_balls, post_strikes)
+        no = construct_state(post_bases, post_outs, post_balls, post_strikes)
       )
     ) |>
     # We exclude step-offs, intentional balls, automatic balls/strikes
