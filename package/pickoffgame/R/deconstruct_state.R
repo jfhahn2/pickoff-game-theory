@@ -2,8 +2,8 @@
 #'
 #' Extracts bases, outs, balls, strikes and disengagements from game state string
 #'
-#' @param state Character string formatted as "{bases}_{outs}_{balls}{strikes}_{disengagements}"
-#' (e.g., "100_1_21_0").
+#' @param state Character string formatted as "{bases}_{outs}_{balls}{strikes}_{disengagements}_{first}"
+#' (e.g., "100_1_21_0_0").
 #'
 #' @return A single-row tibble with the following columns:
 #' \itemize{
@@ -13,25 +13,27 @@
 #'   \item \code{strikes}: Integer count of strikes (index 8).
 #'   \item \code{disengagements}: Integer count of prior disengagements (index 10). 
 #'   Returns \code{NA} if the input string does not contain a tenth character.
+#'   \item \code{first}: Binary 0/1 indicator of first pitch of play (index 12). 
+#'   Returns \code{NA} if the input string does not contain a twelfth character.
 #' }
 #'
 #' @importFrom tibble tibble
 #' @export
 deconstruct_state <- function(state) {
-  first <- substring(state, 1, 1)
-  bases <- substring(state, 3, 5)
-  outs <- as.integer(substring(state, 7, 7))
-  balls <- as.integer(substring(state, 9, 9))
-  strikes <- as.integer(substring(state, 10, 10))
-  disengagements <- as.integer(substring(state, 12, 12))
+  bases <- substring(state, 1, 3)
+  outs <- as.integer(substring(state, 5, 5))
+  balls <- as.integer(substring(state, 7, 7))
+  strikes <- as.integer(substring(state, 8, 8))
+  disengagements <- as.integer(substring(state, 10, 10))
+  first <- as.integer(substring(state, 12, 12))
   return(
     tibble::tibble(
-      first = first,
       bases = bases,
       outs = outs,
       balls = balls,
       strikes = strikes,
-      disengagements = disengagements
+      disengagements = disengagements,
+      first = first
     )
   )
 }
