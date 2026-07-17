@@ -396,22 +396,27 @@ if (fig_make) {
 
 # Write results tables ----
 
-policy_zsg_se <- policy_zsg_boot |>
+policy_zsg_se <- tibble::as_tibble(policy_zsg) |>
+  dplyr::left_join(policy_zsg_boot, by = "state", suffix = c("", "_boot")) |>
   dplyr::mutate(
     state = pickoffgame::deconstruct_state(state),
-    first = state$first,
     bases = state$bases,
     outs = state$outs,
     balls = state$balls,
     strikes = state$strikes,
-    disengagements = state$disengagements
+    disengagements = state$disengagements,
+    first = state$first
   ) |>
   dplyr::filter(bases == "100", !(first == 0 & balls == 0 & strikes == 0 & disengagements == 0)) |>
   dplyr::group_by(outs, balls, strikes, disengagements) |>
-  dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
+  dplyr::summarize(
+    policy_runner = mean(policy_runner),
+    se = sd(policy_runner_boot),
+    .groups = "drop"
+  ) |>
   dplyr::mutate(
     count = glue::glue("{balls}-{strikes}"),
-    policy = glue::glue("{sprintf('%.1f', mean)} {{\\color{{gray}} $\\pm$ {sprintf('%.1f', sd)}}}")
+    policy = glue::glue("{sprintf('%.1f', policy_runner)} {{\\color{{gray}} $\\pm$ {sprintf('%.1f', se)}}}")
   ) |>
   dplyr::arrange(strikes, balls, outs, disengagements) |>
   dplyr::select(outs, count, disengagements, policy)
@@ -422,7 +427,7 @@ policy_zsg_se |>
   tidyr::pivot_wider(names_from = disengagements, values_from = policy) |>
   sputil::write_latex_table(
     file = "output/tables/policy_by_count_zsg.tex",
-    prefix_rows = "& \\multicolumn{3}{c}{Prior Disengagements}",
+    prefix_rows = "& \\multicolumn{3}{c}{Optimal Lead by Prior Disengagements}",
     colnames = c("Count", "0", "1", "2"),
     align = "c|ccc",
     hline.after = c(0, 4, 8, 12)
@@ -434,13 +439,14 @@ policy_zsg_se |>
   tidyr::pivot_wider(names_from = disengagements, values_from = policy) |>
   sputil::write_latex_table(
     file = "output/tables/policy_by_outs_zsg.tex",
-    prefix_rows = "& \\multicolumn{3}{c}{Prior Disengagements}",
+    prefix_rows = "& \\multicolumn{3}{c}{Optimal Lead by Prior Disengagements}",
     colnames = c("Outs", "0", "1", "2"),
     align = "c|ccc"
   )
 
 
-policy_mdp_se <- policy_mdp_boot |>
+policy_mdp_se <- tibble::as_tibble(policy_mdp) |>
+  dplyr::left_join(policy_mdp_boot, by = "state", suffix = c("", "_boot")) |>
   dplyr::mutate(
     state = pickoffgame::deconstruct_state(state),
     first = state$first,
@@ -452,10 +458,14 @@ policy_mdp_se <- policy_mdp_boot |>
   ) |>
   dplyr::filter(bases == "100", !(first == 0 & balls == 0 & strikes == 0 & disengagements == 0)) |>
   dplyr::group_by(outs, balls, strikes, disengagements) |>
-  dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
+  dplyr::summarize(
+    policy_runner = mean(policy_runner),
+    se = sd(policy_runner_boot),
+    .groups = "drop"
+  ) |>
   dplyr::mutate(
     count = glue::glue("{balls}-{strikes}"),
-    policy = glue::glue("{sprintf('%.1f', mean)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', sd)}}}")
+    policy = glue::glue("{sprintf('%.1f', policy_runner)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', se)}}}")
   ) |>
   dplyr::arrange(strikes, balls, outs, disengagements) |>
   dplyr::select(outs, count, disengagements, policy)
@@ -466,14 +476,15 @@ policy_mdp_se |>
   tidyr::pivot_wider(names_from = disengagements, values_from = policy) |>
   sputil::write_latex_table(
     file = "output/tables/policy_by_count_mdp.tex",
-    prefix_rows = "& \\multicolumn{3}{c}{Prior Disengagements}",
+    prefix_rows = "& \\multicolumn{3}{c}{Optimal Lead by Prior Disengagements}",
     colnames = c("Count", "0", "1", "2"),
     align = "c|ccc",
     hline.after = c(0, 4, 8, 12)
   )
 
 
-lead_increase_long <- policy_mdp_boot |>
+lead_increase_long <- tibble::as_tibble(policy_mdp) |>
+  dplyr::left_join(policy_mdp_boot, by = "state", suffix = c("", "_boot")) |>
   dplyr::mutate(
     state = pickoffgame::deconstruct_state(state),
     first = state$first,
@@ -488,25 +499,36 @@ lead_increase_long <- policy_mdp_boot |>
     !(first == 0 & pre_balls == 0 & pre_strikes == 0 & pre_disengagements == 0)
   ) |>
   dplyr::select(
-    bag, pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements, policy_runner
+    bag, pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements, policy_runner, policy_runner_boot
   ) |>
-  tidyr::pivot_wider(names_from = pre_disengagements, values_from = policy_runner) |>
-  dplyr::mutate(`0` = `1` - `0`, `1` = `2` - `1`) |>
-  dplyr::select(bag, pre_bases, pre_outs, pre_balls, pre_strikes, `0`, `1`)
+  tidyr::pivot_longer(cols = dplyr::starts_with("policy_runner")) |>
+  dplyr::mutate(name = paste0(name, "_", pre_disengagements)) |>
+  dplyr::select(bag, pre_bases, pre_outs, pre_balls, pre_strikes, name, value) |>
+  tidyr::pivot_wider() |>
+  dplyr::mutate(
+    increase_runner_1 = policy_runner_1 - policy_runner_0,
+    increase_runner_2 = policy_runner_2 - policy_runner_1,
+    increase_runner_1_boot = policy_runner_boot_1 - policy_runner_boot_0,
+    increase_runner_2_boot = policy_runner_boot_2 - policy_runner_boot_1
+  ) |>
+  dplyr::select(bag, pre_bases, pre_outs, pre_balls, pre_strikes, dplyr::starts_with("increase"))
 
 lead_increase_by_state <- lead_increase_long |>
   dplyr::group_by(pre_bases, pre_outs, pre_balls, pre_strikes) |>
   dplyr::summarize(
-    dplyr::across(.cols = c(`0`, `1`), .fns = c(mean = mean, sd = sd)),
+    increase_runner_1 = mean(increase_runner_1),
+    increase_runner_2 = mean(increase_runner_2),
+    se_1 = sd(increase_runner_1_boot),
+    se_2 = sd(increase_runner_2_boot),
     .groups = "drop"
   ) |>
   dplyr::mutate(
     increase_1 = glue::glue(
-      "{sprintf('%.1f', `0_mean`)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', `0_sd`)}}}"
+      "{sprintf('%.1f', increase_runner_1)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', se_1)}}}"
     ),
     increase_1 = ifelse(pre_balls == 3 & pre_strikes == 2 & pre_outs == 2, NA, increase_1),
     increase_2 = glue::glue(
-      "{sprintf('%.1f', `1_mean`)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', `1_sd`)}}}"
+      "{sprintf('%.1f', increase_runner_2)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', se_2)}}}"
     ),
     increase_2 = ifelse(pre_balls == 3 & pre_strikes == 2 & pre_outs == 2, NA, increase_2)
   )
@@ -523,7 +545,7 @@ lead_increase_by_state |>
   tidyr::pivot_wider() |>
   sputil::write_latex_table(
     file = "output/tables/policy_increase_mdp.tex",
-    prefix_rows = "& \\multicolumn{3}{c}{After 1$^\\text{st}$ Disengagement} & \\multicolumn{3}{c}{After 2$^\\text{nd}$ Disengagement}",
+    prefix_rows = "& \\multicolumn{3}{c}{Increase after 1$^\\text{st}$ Disengagement} & \\multicolumn{3}{c}{Increase after 2$^\\text{nd}$ Disengagement}",
     colnames = c("Count", "0 Outs", "1 Out", "2 Outs", "0 Outs", "1 Out", "2 Outs"),
     align = "c|ccc|ccc",
     hline.after = c(0, 4, 8, 12)
@@ -538,28 +560,38 @@ state_frequency <- data_glmer |>
   dplyr::count(pre_outs, pre_balls, pre_strikes, pre_disengagements)
 
 lead_increase_long |>
-  tidyr::pivot_longer(cols = c(`0`, `1`), values_to = "lead_distance_increase") |>
-  dplyr::mutate(pre_disengagements = as.integer(substring(name, 1, 1))) |>
+  tidyr::pivot_longer(cols = dplyr::starts_with("increase_runner")) |>
+  dplyr::mutate(
+    pre_disengagements = as.integer(substring(name, 17, 17)) - 1,
+    name = paste0("increase_runner", substring(name, 18))
+  ) |>
+  tidyr::pivot_wider() |>
   dplyr::left_join(
     y = state_frequency,
     by = c("pre_outs", "pre_balls", "pre_strikes", "pre_disengagements")
   ) |>
   dplyr::filter(pre_outs < 2 | pre_balls < 3 | pre_strikes < 2) |>  # no SB allowed in these states
-  dplyr::group_by(bag) |>
+  dplyr::group_by(bag, pre_disengagements) |>
   dplyr::summarize(
-    lead_distance_increase = weighted.mean(lead_distance_increase, w = n),
+    increase_runner = weighted.mean(increase_runner, w = n),
+    increase_runner_boot = weighted.mean(increase_runner_boot, w = n),
     .groups = "drop"
   ) |>
+  dplyr::group_by(pre_disengagements) |>
   dplyr::summarize(
-    increase_mean = mean(lead_distance_increase),
-    increase_sd = sd(lead_distance_increase)
+    increase_runner = mean(increase_runner),
+    se = sd(increase_runner_boot)
   )
 
 
 
 
-
-policy_mdp_skill_se <- policy_mdp_skill_boot |>
+policy_mdp_skill_se <- tibble::as_tibble(policy_mdp_skill) |>
+  dplyr::left_join(
+    y = policy_mdp_skill_boot,
+    by = c("state", "pct_runner", "pct_battery"),
+    suffix = c("", "_boot")
+  ) |>
   dplyr::mutate(
     state = pickoffgame::deconstruct_state(state),
     first = state$first,
@@ -577,16 +609,24 @@ policy_mdp_skill_se <- policy_mdp_skill_boot |>
     strikes == 0
   ) |>
   dplyr::group_by(pct_runner, pct_battery, disengagements) |>
-  dplyr::summarize(mean = mean(policy_runner), sd = sd(policy_runner), .groups = "drop") |>
+  dplyr::summarize(
+    policy_runner = mean(policy_runner),
+    se = sd(policy_runner_boot),
+    .groups = "drop"
+  ) |>
   dplyr::mutate(
-    policy = glue::glue("{sprintf('%.1f', mean)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', sd)}}}")
+    policy = glue::glue("{sprintf('%.1f', policy_runner)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', se)}}}")
   ) |>
   dplyr::select(pct_runner, pct_battery, disengagements, policy) |>
   tidyr::pivot_wider(names_from = disengagements, values_from = policy) |>
   dplyr::arrange(-pct_runner, pct_battery)
 
-
-increase_mdp_skill_se <- policy_mdp_skill_boot |>
+increase_mdp_skill_se <- tibble::as_tibble(policy_mdp_skill) |>
+  dplyr::left_join(
+    y = policy_mdp_skill_boot,
+    by = c("state", "pct_runner", "pct_battery"),
+    suffix = c("", "_boot")
+  ) |>
   dplyr::mutate(
     state = pickoffgame::deconstruct_state(state),
     first = state$first,
@@ -603,30 +643,49 @@ increase_mdp_skill_se <- policy_mdp_skill_boot |>
   ) |>
   dplyr::select(
     pre_bases, pre_outs, pre_balls, pre_strikes, pre_disengagements,
-    bag, pct_runner, pct_battery, policy_runner
+    bag, pct_runner, pct_battery, policy_runner, policy_runner_boot
   ) |>
-  tidyr::pivot_wider(names_from = pre_disengagements, values_from = policy_runner) |>
-  dplyr::mutate(`0` = `1` - `0`, `1` = `2` - `1`) |>    # report inches
-  tidyr::pivot_longer(
-    cols = c(`0`, `1`),
-    names_to = "pre_disengagements",
-    values_to = "increase"
+  tidyr::pivot_longer(cols = dplyr::starts_with("policy_runner")) |>
+  dplyr::mutate(name = paste0(name, "_", pre_disengagements)) |>
+  dplyr::select(bag, pre_bases, pre_outs, pre_balls, pre_strikes, pct_runner, pct_battery, name, value) |>
+  tidyr::pivot_wider() |>
+  dplyr::mutate(
+    increase_runner_1 = policy_runner_1 - policy_runner_0,
+    increase_runner_2 = policy_runner_2 - policy_runner_1,
+    increase_runner_1_boot = policy_runner_boot_1 - policy_runner_boot_0,
+    increase_runner_2_boot = policy_runner_boot_2 - policy_runner_boot_1
   ) |>
-  dplyr::mutate(pre_disengagements = as.integer(pre_disengagements)) |>
+  dplyr::select(bag, pre_bases, pre_outs, pre_balls, pre_strikes, pct_runner, pct_battery, dplyr::starts_with("increase")) |>
+  tidyr::pivot_longer(cols = dplyr::starts_with("increase_runner")) |>
+  dplyr::mutate(
+    pre_disengagements = as.integer(substring(name, 17, 17)) - 1,
+    name = paste0("increase_runner", substring(name, 18))
+  ) |>
+  tidyr::pivot_wider() |>
   dplyr::left_join(
     y = state_frequency,
     by = c("pre_outs", "pre_balls", "pre_strikes", "pre_disengagements")
   ) |>
-  dplyr::group_by(bag, pct_runner, pct_battery) |>
-  dplyr::summarize(increase = weighted.mean(increase, w = n), .groups = "drop") |>
-  dplyr::group_by(pct_runner, pct_battery) |>
-  dplyr::summarize(increase_mean = mean(increase), increase_sd = sd(increase), .groups = "drop") |>
+  dplyr::filter(pre_outs < 2 | pre_balls < 3 | pre_strikes < 2) |>  # no SB allowed in these states
+  dplyr::group_by(bag, pct_runner, pct_battery, pre_disengagements) |>
+  dplyr::summarize(
+    increase_runner = weighted.mean(increase_runner, w = n),
+    increase_runner_boot = weighted.mean(increase_runner_boot, w = n),
+    .groups = "drop"
+  ) |>
+  dplyr::group_by(pct_runner, pct_battery, pre_disengagements) |>
+  dplyr::summarize(
+    increase_runner = mean(increase_runner),
+    se = sd(increase_runner_boot),
+    .groups = "drop"
+  ) |>
   dplyr::mutate(
     increase = glue::glue(
-      "{sprintf('%.1f', increase_mean)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', increase_sd)}}}"
+      "{sprintf('%.1f', increase_runner)} {{\\color{{gray}}$\\pm$ {sprintf('%.1f', se)}}}"
     )
   ) |>
-  dplyr::select(pct_runner, pct_battery, increase)
+  dplyr::select(pct_runner, pct_battery, pre_disengagements, increase) |>
+  tidyr::pivot_wider(names_from = pre_disengagements, values_from = increase)
 
 policy_mdp_skill_se |>
   dplyr::left_join(increase_mdp_skill_se, by = c("pct_runner", "pct_battery")) |>
@@ -636,19 +695,22 @@ policy_mdp_skill_se |>
   ) |>
   sputil::write_latex_table(
     file = "output/tables/policy_increase_by_skill_mdp.tex",
-    prefix_rows = "\\multicolumn{2}{c|}{Skill Percentile} & \\multicolumn{3}{c|}{Lead by Disengagements (0 outs, 0-0 count)} & Mean Increase",
+    prefix_rows = "\\multicolumn{2}{c|}{Skill Percentile} & \\multicolumn{3}{c|}{Lead by Disengagements (0 outs, 0-0 count)} & \\multicolumn{2}{c}{Mean Increase (all outs/counts)}",
     colnames = c(
-      "Runner", "Battery", "0", "1", "2", "(all states)"
+      "Runner", "Battery", "0", "1", "2", "after 1$^\\text{{st}}$ Dis.", "after 2$^\\text{{nd}}$ Dis."
     ),
-    align = "cc|ccc|c",
+    align = "cc|ccc|cc",
     hline.after = c(0, 3, 6)
   )
+
+
+
 
 policy_mdp_boot |>
   dplyr::rename(value_mdp = value) |>
   dplyr::left_join(dplyr::rename(policy_mrp_boot, value_mrp = value), by = c("bag", "state")) |>
   dplyr::left_join(dplyr::rename(policy_zsg_boot, value_zsg = value), by = c("bag", "state")) |>
-  dplyr::filter(state == "1_000_0_00_0") |>
+  dplyr::filter(state == "000_0_00_0_1") |>
   dplyr::summarize(
     mean_value_mdp = mean(value_mdp),
     mean_value_mrp = mean(value_mrp),

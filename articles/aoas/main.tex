@@ -621,9 +621,9 @@
       Table \ref{tab:policy-increase-by-skill-mdp} shows the \revision{optimal runner policy by number of disengagements for different combinations of battery skill and runner skill.} Against batteries more skilled at controlling the run game, the optimal lead distance is shorter. For more skilled runners, the optimal lead distance is longer. \revision{However, the relationship between disengagements and recommenced lead distance is similar for different combinations of player skill. The first disengagement increases recommended lead distance by 0.9--1.7 feet, and the second disengagement results in an increase of 1.8--2.7 feet.}
     
       \begin{table}
-        \small
-        \centering
-        \inputtable{policy_increase_by_skill_mdp.tex}
+        \resizebox{\linewidth}{!}{
+          \inputtable{policy_increase_by_skill_mdp.tex}
+        }
         \caption{
           \revision{
             \it Average increase in optimal lead distance (in inches) by runner and battery skill percentile under the one-player MDP. The reported increase reflects the average increase across game states in which unsuccessful pickoff attempts occur. The hypothetical 90$^\text{th}$-percentile battery represents the 90$^\text{th}$ percentile at attempting pickoffs, successfully executing pickoffs, suppressing stolen base attempts, and catching would-be base stealers.
