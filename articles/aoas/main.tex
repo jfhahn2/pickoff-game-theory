@@ -91,7 +91,7 @@
 %% \orcid{0000-0000-0000-0000}               %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \author[A]{\fnms{Scott}~\snm{Powers}\ead[label=e1]{scott.powers@rice.edu}}
-\author[B]{\fnms{Sivaramakrishnan}~\snm{Ramani}\ead[label=e2]{sivaramakrishnan.ramani@rice.edu}}
+\author[B]{\fnms{Sivaramakrishnan}~\snm{Ramani}\ead[label=e2]{sivar@rice.edu}}
 \author[A]{\fnms{Jacob}~\snm{Hahn}\ead[label=e3]{jacob.f.hahn@rice.edu}}
 \author[B]{\fnms{Andrew J.}~\snm{Schaefer}\ead[label=e4]{andrew.schaefer@rice.edu}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -270,12 +270,9 @@
     \begin{align}
     \label{eqn:vi_algorithm}
       V^k(s) &\defeq \max_{a_\text{R} \in A_\text{R}(s)} \min_{a_\text{p} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in \mathcal{S}}[r(s'|s) + V^{k-1}(s')] p(s'|s,a_\text{R},a_\text{P}) \quad \forall s \in \mathcal{S}.
-    \end{align}
-    % TODO: Decide what is meant by an informal theorem and format this accordingly.
-    {\bf Theorem 1} (Informal) {\it 
-    The iterates $V^k$ generated in \eqref{eqn:vi_algorithm} converge to the optimal value function $V^*$.}
+    \end{align}     
      
-    \noindent This result is proved in the Supplementary Material. Furthermore, the proof of Theorem 1 also establishes a convergence rate of the form $\abs{V^k(s) - V^*(s)} \leq O(\rho^k)$ for all $s \in {\cal S}$ and a $\rho \in (0,1)$.
+    \noindent {\color{blue}{We establish in the Supplementary Material that the iterates $V^k$ generated in \eqref{eqn:vi_algorithm} converge to the optimal value function $V^*$ at a linear rate.}}  
     
     We note that fixing a pitcher policy reduces our two-player sequential game to a \revision{one}-player MDP whose objective is to optimize the lead distance for the first-base runner. Optimality criterion similar to the two-player sequential game also exists for MDP with undiscounted rewards \citep[Section 7.2]{bertsekas_dynamic_2012}. Numerical experiments using this decision  model for a specific pitcher policy are presented in Section \ref{sec:results-one-player}. These results may provide more immediately actionable insights for lead distance selection, as we discuss in Section \ref{sec:discussion}.
 
