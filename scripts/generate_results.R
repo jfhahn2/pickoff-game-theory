@@ -217,7 +217,7 @@ if (fig_make) {
       values = c("solid", "solid", "dashed", "dotted")
     ) +
     ggplot2::labs(title = "Pickoff Attempt", x = "Lead Distance", y = "Probability") +
-    ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.7)) +
+    ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.6)) +
     sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.4, 0.7))
   print(plot)
@@ -276,7 +276,7 @@ if (fig_make) {
       values = c("dotted", "solid", "dashed")
     ) +
     ggplot2::labs(title = "Pickoff Success", x = "Lead Distance", y = "Probability") +
-    ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.7)) +
+    ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.6)) +
     sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.3, 0.7))
   print(plot)
@@ -339,6 +339,10 @@ if (fig_make) {
   dev.off()
 }
 
+# What percentage of variation in catcher effect is explained by arm strength?
+with(stolen_base_effect_catcher, cor(arm_strength, effect)^2)
+
+
 runner_grid <- stolen_base_effect_runner |>
   dplyr::arrange(effect) |>
   dplyr::slice(round(dplyr::n() * c(0.9, 0.5, 0.1, 0.5))) |>
@@ -393,6 +397,9 @@ if (fig_make) {
   dev.off()
 }
 
+# What percentage of variation in runner effect is explained by sprint speed?
+with(stolen_base_effect_runner, cor(sprint_speed, effect)^2)
+
 
 # Write results tables ----
 
@@ -443,6 +450,23 @@ policy_zsg_se |>
     colnames = c("Outs", "0", "1", "2"),
     align = "c|ccc"
   )
+
+
+behavior_vs_equilibrium <- data_glmer |>
+  dplyr::filter(year == 2023) |>
+  dplyr::left_join(policy_zsg, by = c("pre_state" = "state")) |>
+  dplyr::mutate(lead_exceeds_recommendation = lead_distance > policy_runner)
+
+# How does runner behavior in 2023 compare with the equilibrium?
+behavior_vs_equilibrium |>
+  dplyr::group_by(pre_disengagements) |>
+  dplyr::summarize(n = dplyr::n(), mean(lead_exceeds_recommendation))
+  
+# How does pitcher behavior in 2023 compare with the equilibrium?
+behavior_vs_equilibrium |>
+  dplyr::group_by(pre_disengagements, lead_exceeds_recommendation) |>
+  dplyr::summarize(n = dplyr::n(), mean(is_pickoff_attempt))
+
 
 
 policy_mdp_se <- tibble::as_tibble(policy_mdp) |>
@@ -703,6 +727,24 @@ policy_mdp_skill_se |>
     hline.after = c(0, 3, 6)
   )
 
+
+example <- tibble::tibble(
+  year = factor(2023, levels = 2022:2023),
+  pre_outs = factor(0, levels = 0:2),
+  pre_balls = factor(3, levels = 0:3),
+  pre_strikes = factor(2, levels = 0:2),
+  pre_disengagements = factor(2, levels = 0:2),
+  lead_distance_centered = 14.4 - 10,
+  sprint_speed_centered = 0,
+  arm_strength_centered = 0,
+  pitcher_id = -1,
+  runner_id = -1,
+  catcher_id = -1
+)
+
+# Explain why a 14.4-foot lead with a 3-2 count and 2 prior disengagements is not ridiculous
+predict(fit_runner_outcome$pickoff_success, newdata = example, type = "response", allow.new.levels = TRUE)
+predict(fit_runner_outcome$stolen_base, newdata = example, type = "response", allow.new.levels = TRUE)
 
 
 
