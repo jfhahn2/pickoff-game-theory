@@ -149,7 +149,7 @@
            \allowdisplaybreaks
            \begin{align*}
                 \rho &\defeq \sup_{\pi_\text{R} \in \overline\Pi_\text{R}, \pi_\text{P} \in \overline\Pi_\text{P}, s \in {\cal S}} \rho(\pi_\text{R},\pi_\text{P},s) < 1,\\
-                \text{ where }       \rho(\pi_\text{R},\pi_\text{P},s) &\defeq \mathbb{P}^{\pi_\text{R}, \pi_\text{P}}[S_m \neq \Delta|S_0=s] \ \forall \pi_\text{R} \in \overline\Pi_\text{R}, \, \overline\pi_\text{P} \in \Pi_\text{P}, \, s \in {\cal S}.          
+                \text{ where }       \rho(\pi_\text{R},\pi_\text{P},s) &\defeq \mathbb{P}^{\pi_\text{R}, \pi_\text{P}}[S_m \neq \Delta|S_0=s] \ \forall \pi_\text{R} \in \overline\Pi_\text{R}, \, \pi_\text{P} \in \overline\Pi_\text{P}, \, s \in {\cal S}.          
            \end{align*}
            \endgroup
        \end{assumption}
@@ -254,7 +254,7 @@
            \label{assum:transition_pby_continuous}
            The transition probability $p(\cdot|s,a_\text{R},a_\text{P})$ satisfies the following conditions. Fix $s \in {\cal S}$. Consider sequences $\{a_\text{R}^k\} \in A_\text{R}(s)$ and $\{a_\text{P}^k\} \in A_\text{P}(s,a_\text{R}^k)$ such that $\lim_{k \to \infty}a_\text{R}^k = a_\text{R} \in A_\text{R}(s)$ and  $\lim_{k \to \infty}a_\text{P}^k = a_\text{P} \in A_\text{P}(s,a_\text{R})$. Then $\lim_{k \to \infty}p(s'|s,a_\text{R}^k,a_\text{P}^k) = p(s'|s,a_\text{R},a_\text{P})$ for all $s' \in {\cal S}$.
        \end{assumption}
-       \noindent Assumption \ref{assum:transition_pby_continuous} is a continuity condition imposed on the transition probabilities when viewed as a function of the runner and pitcher actions. Propositions  \ref{lem:bellman_equations} to \ref{lem:policy_iteration} rely upon this assumption to prove their stated claims. Our construction of transition probabilities in Section 3 satisfy this assumption. Note that this assumption trivially holds if the action space of the runner $A_\text{R}(s)$ is finite for all $s \in {\cal S}$.
+       \noindent Assumption \ref{assum:transition_pby_continuous} is a continuity condition imposed on the transition probabilities when viewed as a function of the runner and pitcher actions. Propositions  \ref{lem:bellman_equations} to \ref{lem:policy_iteration} rely upon this assumption to prove their stated claims. Our construction of transition probabilities in Section 3 satisfy this assumption. This assumption trivially holds if the action space of the runner $A_\text{R}(s)$ is finite for all $s \in {\cal S}$.
     
        \begin{proposition}
            \label{lem:bellman_equations}
@@ -298,7 +298,7 @@
            &\lim_{k \to \infty}\min_{a_\text{P} \in A_\text{P}(s,a_\text{R}^k)}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R}^k,a_\text{P}) \\
            &= \lim_{k \to \infty}\min\Bigg(\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R}^k,0),\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R}^k,1)\Bigg)\\
            &= \min\Bigg(\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},0),\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},1)\Bigg)\\
-           &= \min_{a_\text{P} \in A_\text{P}(s,a_\text{R}^k)}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P}),
+           &= \min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P}),
            \end{align*}
            \endgroup
            where the second equality follows from Assumption \ref{assum:transition_pby_continuous} and the convergence of $u_{k-1}$ to $V^*$ established in Theorem \ref{lem:vi_convergence}. Thus, we have established the continuous convergence of the sequence of functions $\big\{\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})\big\}_k$ over $A_\text{R}(s)$. Next, the set $A_\text{R}(s)$ in (1)  is compact. Hence, by Theorem 5 in Subsection X, Section 21 in  \cite{kuratowski_topology_2014}, $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + u_{k-1}(s')\big]p(s'|s,a_\text{R},a_\text{P})$ converges to $\min_{a_\text{P} \in A_\text{P}(s,a_\text{R})}\sum_{s' \in {\cal S}}\big[r(s'|s) + V^*(s')\big]p(s'|s,a_\text{R},a_\text{P})$ uniformly over $A_\text{R}(s)$.
@@ -374,7 +374,7 @@
     
        If the state- and action-spaces are all finite, the convergence in th policy iteration algorithm happens in a finite number of steps. In that case, the policy obtained in the last iterate, say, $\pi_\text{R}^*$, is optimal for the runner. The pitcher's optimal policy (best response), $\pi_\text{P}^*$, can then be obtained as 
        \[
-       \pi_\text{P}^*(s,\pi_\text{R}^*(s)) \in \argmin_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}^*(s))}[r(s'|s) + V^*(s')] p(s'|s,\pi_\text{R}^*(s),a_\text{P}) \ \forall s \in {\cal S}, \pi_\text{R}^*(s) \in A_\text{R}(s).
+       \pi_\text{P}^*(s,\pi_\text{R}^*(s)) \in \argmin_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}^*(s))}\sum_{s' \in {\cal S}}[r(s'|s) + V^*(s')] p(s'|s,\pi_\text{R}^*(s),a_\text{P}) \ \forall s \in {\cal S}, \pi_\text{R}^*(s) \in A_\text{R}(s).
        \]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                  The Bibliography                       %%
