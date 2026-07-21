@@ -49,7 +49,7 @@ predict_runner_outcome_prob <- function(runner_outcome_grid,
         arm_strength_centered = 0
       )
     }
-    re_form <- NA
+    include_ranef <- FALSE
 
   } else {
     for (runner_outcome in names(fit_runner_outcome)) {
@@ -60,7 +60,7 @@ predict_runner_outcome_prob <- function(runner_outcome_grid,
           dplyr::filter(pct_battery == battery_percentile)
       )
     }
-    re_form <- NULL
+    include_ranef <- TRUE
   }
 
   runner_outcome_prob <- runner_outcome_grid |>
@@ -70,46 +70,41 @@ predict_runner_outcome_prob <- function(runner_outcome_grid,
         !is_1b_only | is_full_count_two_outs ~ 0,
         action_pitcher == "pickoff" ~ 1,
         action_pitcher == "pitch" ~ 0,
-        TRUE ~ predict(
+        TRUE ~ predict_runner_outcome_component(
           object = fit_runner_outcome$pickoff_attempt,
           newdata = runner_outcome_grid |>
             dplyr::cross_join(representative_players$pickoff_attempt),
-          type = "response",
-          re.form = re_form
+          include_ranef = include_ranef
         )
       ),
-      prob_pickoff_success = predict(
+      prob_pickoff_success = predict_runner_outcome_component(
         object = fit_runner_outcome$pickoff_success,
         newdata = runner_outcome_grid |>
           dplyr::cross_join(representative_players$pickoff_success),
-        type = "response",
-        re.form = re_form
+          include_ranef = include_ranef
       ),
       prob_runner_going = ifelse(
         # our model only allows pickoffs and steals with only 1B occupied, not full count two outs
         test = is_1b_only & !is_full_count_two_outs,
-        yes = predict(
+        yes = predict_runner_outcome_component(
           object = fit_runner_outcome$runner_going,
           newdata = runner_outcome_grid |>
             dplyr::cross_join(representative_players$runner_going),
-          type = "response",
-          re.form = re_form
+          include_ranef = include_ranef
         ),
         no = 0
       ),
-      prob_going_interrupt = predict(
-          object = fit_runner_outcome$going_interrupt,
-          newdata = runner_outcome_grid |>
-            dplyr::cross_join(representative_players$going_interrupt),
-          type = "response",
-          re.form = re_form
+      prob_going_interrupt = predict_runner_outcome_component(
+        object = fit_runner_outcome$going_interrupt,
+        newdata = runner_outcome_grid |>
+          dplyr::cross_join(representative_players$going_interrupt),
+        include_ranef = include_ranef
       ),
-      prob_stolen_base = predict(
+      prob_stolen_base = predict_runner_outcome_component(
         object = fit_runner_outcome$stolen_base,
         newdata = runner_outcome_grid |>
           dplyr::cross_join(representative_players$stolen_base),
-        type = "response",
-        re.form = re_form
+        include_ranef = include_ranef
       ),
       prob = dplyr::case_when(
         runner_outcome == "PO+" ~ prob_pickoff_attempt * prob_pickoff_success,
