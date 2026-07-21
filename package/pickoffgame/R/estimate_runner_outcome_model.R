@@ -27,7 +27,7 @@
 #' @param include_going_interrupt logical, should batter interruption model be estimated?
 #' @param include_stolen_base logical, should stolen base success model be estimated?
 #'
-#' @return A named list containing four fitted \code{glmerMod} objects:
+#' @return A named list containing five fitted \code{glmmTMB} objects:
 #'   \itemize{
 #'     \item \code{pickoff_attempt}: GLMM for the probability of a pickoff attempt.
 #'     \item \code{pickoff_success}: GLMM for the probability of a successful pickoff.
@@ -36,7 +36,7 @@
 #'     \item \code{stolen_base}: GLMM for the probability of a successful stolen base.
 #'   }
 #'
-#' @importFrom lme4 glmer
+#' @importFrom glmmTMB glmmTMB
 #' @importFrom dplyr group_by filter mutate ungroup
 #' @importFrom logger log_info
 #' @export
