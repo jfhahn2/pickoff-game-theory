@@ -77,9 +77,8 @@
 %%                                          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \title{
-  Technical results for ``Strategies under a pickoff limit in Major League Baseball: A zero-sum sequential game with multilevel models''
+  Appendices for ``Strategies under a pickoff limit in baseball: A zero-sum sequential game with multilevel models''
 }
-\runtitle{Technical results}
 
 \begin{aug}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,9 +113,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Main text entry area:
 
+\appendix
 
-
-\section*{Technical results}
+\section{Theoretical framework and optimality proofs}
     % \label{sec:appendix}
     We present a formal description of the sequential game described in Section 2 and the related optimality characterizations.
     
@@ -130,7 +129,7 @@
         \end{align*}
         \endgroup
     
-       \noindent The set $\mathbb{F}_\text{R}$ is the set of all deterministic decision rules for the runner. Recall that a deterministic decision rule for the pitcher takes as input a state and a runner action, and maps it to an allowable action for the pitcher. The set $\mathbb{K}_\text{P}$ includes the set of all possible state and runner action pairs. The set $\mathbb{F}_\text{P}$ then captures the set of all deterministic decision rules for the pitcher. A deterministic, Markovian policy for the runner is a sequence $\pi = (\pi_0,\pi_1,\ldots,)$ such that $\pi_t \in \mathbb{F}_\text{R}$ for all integers $t \geq 0$. A deterministic, stationary policy for the runner is a sequence $\pi = (\pi_0,\pi_1,\ldots,)$ such that $\pi_t = \bar\pi \in \mathbb{F}_\text{R}$ for all integers $t \geq 0$. That is a stationary policy employs the same decision rule in all time-stages. Similarly, a deterministic, Markovian policy for the pitcher is a sequence $\tilde\pi = (\tilde\pi_0,\tilde\pi_1,\ldots,)$ such that $\tilde\pi_t \in \mathbb{F}_\text{P}$ for all integers $t \geq 0$. Finally, a deterministic, stationary policy for the pitcher is a sequence $\tilde\pi = (\tilde\pi_0,\tilde\pi_1,\ldots,)$ such that $\tilde\pi_t = \hat\pi \in \mathbb{F}_\text{P}$ for all integers $t \geq 0$. Consistent with the notation used in Section 2, we denote the set of deterministic, stationary policies for the runner and pitcher by $\Pi_\text{R}$ and $\Pi_\text{P}$, respectively. Following this style of notation, we denote the set of deterministic, Markovian policies for the pitcher and runner by $\overline\Pi_\text{R}$ and $\overline\Pi_\text{P}$, respectively. Clearly, $\Pi_\text{R} \subseteq \overline\Pi_\text{R}$ and $\Pi_\text{P} \subseteq \overline\Pi_\text{P}$.
+       \noindent The set $\mathbb{F}_\text{R}$ is the set of all deterministic decision rules for the runner. Recall that a deterministic decision rule for the pitcher takes as input a state and a runner action, and maps it to an allowable action for the pitcher. The set $\mathbb{K}_\text{P}$ includes the set of all possible state and runner action pairs. The set $\mathbb{F}_\text{P}$ then captures the set of all deterministic decision rules for the pitcher. A deterministic, Markovian policy for the runner is a sequence $\pi = (\pi_0,\pi_1,\ldots,)$ such that $\pi_t \in \mathbb{F}_\text{R}$ for all integers $t \geq 0$. A deterministic, stationary policy for the runner is a sequence $\pi = (\pi_0,\pi_1,\ldots,)$ such that $\pi_t = \bar\pi \in \mathbb{F}_\text{R}$ for all integers $t \geq 0$. That is, a stationary policy employs the same decision rule in all time-stages. Similarly, a deterministic, Markovian policy for the pitcher is a sequence $\tilde\pi = (\tilde\pi_0,\tilde\pi_1,\ldots,)$ such that $\tilde\pi_t \in \mathbb{F}_\text{P}$ for all integers $t \geq 0$. Finally, a deterministic, stationary policy for the pitcher is a sequence $\tilde\pi = (\tilde\pi_0,\tilde\pi_1,\ldots,)$ such that $\tilde\pi_t = \hat\pi \in \mathbb{F}_\text{P}$ for all integers $t \geq 0$. Consistent with the notation used in Section 2, we denote the set of deterministic, stationary policies for the runner and pitcher by $\Pi_\text{R}$ and $\Pi_\text{P}$, respectively. Following this style of notation, we denote the set of deterministic, Markovian policies for the pitcher and runner by $\overline\Pi_\text{R}$ and $\overline\Pi_\text{P}$, respectively. Clearly, $\Pi_\text{R} \subseteq \overline\Pi_\text{R}$ and $\Pi_\text{P} \subseteq \overline\Pi_\text{P}$.
     
        The optimal value function is then defined as
        \begingroup
@@ -372,10 +371,38 @@
            By Lemma  \ref{lem:sg_pol_val_well_defined}, it follows that $V^{\pi_\text{R}}$ is uniformly bounded over $\Pi_\text{R} \times {\cal S}$. Hence, $V^{\pi_\text{R}^k} \uparrow \bar V \in \mathbb{R}^{\abs{\cal S}}$. We prove that $\bar V = V^*$. Using arguments similar to the ones used in the proof of Proposition  \ref{lem:bellman_equations}, it follows that $T$ is a  continuous operator on $\mathbb{R}^{\abs{\cal S}}$, i.e., $T u^k \to T u$ for all $u^k \to u$. Hence, passing to limit $k \to \infty$ in \eqref{eqn:policy_iteration_temp2} gives us $T \bar V = \bar V$. From Proposition  \ref{lem:bellman_equations}(a), it follows that $\bar V = V^*$, thereby completing the proof.
        \end{proof}
     
-       If the state- and action-spaces are all finite, the convergence in th policy iteration algorithm happens in a finite number of steps. In that case, the policy obtained in the last iterate, say, $\pi_\text{R}^*$, is optimal for the runner. The pitcher's optimal policy (best response), $\pi_\text{P}^*$, can then be obtained as 
+       If the state- and action-spaces are all finite, the convergence in the policy iteration algorithm happens in a finite number of steps. In that case, the policy obtained in the last iterate, say, $\pi_\text{R}^*$, is optimal for the runner. The pitcher's optimal policy (best response), $\pi_\text{P}^*$, can then be obtained as 
        \[
        \pi_\text{P}^*(s,\pi_\text{R}^*(s)) \in \argmin_{a_\text{P} \in A_\text{P}(s,\pi_\text{R}^*(s))}\sum_{s' \in {\cal S}}[r(s'|s) + V^*(s')] p(s'|s,\pi_\text{R}^*(s),a_\text{P}) \ \forall s \in {\cal S}, \pi_\text{R}^*(s) \in A_\text{R}(s).
        \]
+
+
+\section{Supplementary policy tables and skill sensitivity}
+
+  In this appendix we present different cross-sections of the optimal policy for the two-player sequential game and the one-player MDP. Table \ref{tab:policy-by-outs-zsg} reports how the optimal runner policy for the two-player sequential game varies by outs and disengagements. For zero and one prior disengagement, the optimal lead increases slightly with the number of outs. This makes intuitive sense because the runner is less likely to score without more aggressive action. In other words, the riskier lead distance is more palatable because the runner has a lower baseline probability of scoring from first base with two outs.
+
+  \begin{table}[b]
+    \small
+    \centering       
+    \inputtable{policy_by_outs_zsg.tex}
+    \caption{
+      \it The optimal lead distance (in feet) by outs and prior disengagements under the two-player sequential game, assuming an average runner on first base facing an average battery (pitcher and catcher) with an 0-0 count and third base empty. Estimates include standard errors estimated via bootstrapping.
+    }
+    \label{tab:policy-by-outs-zsg}
+  \end{table}
+    
+  Table \ref{tab:policy-increase-by-skill-mdp} shows how the optimal runner policy for the one-player MDP varies by player skill. Against batteries more skilled at controlling the run game, the optimal lead distance is shorter. For more skilled runners, the optimal lead distance is longer. Counterintuitively, we recommend greater lead increases for less skilled runners against more skilled batteries. This is because the recommended lead distance with zero disengagements is shorter for less skilled runners against more skilled batteries. When the runner has a greater skill advantage, the recommended lead starts longer. Depending on the skills of the players involved, the average recommended lead distance increase after the first disengagement ranges from 1.3 to 2.0 feet. After the second disengagement, the recommended increase ranges from 1.8 to 3.3 feet. These increases are approximately in line with the Two-Foot Rule.
+
+  \begin{table}[b]
+    \resizebox{\linewidth}{!}{
+      \inputtable{policy_increase_by_skill_mdp.tex}
+    }
+    \caption{
+      \it Average increase in optimal lead distance (in feet) by runner and battery skill percentile under the one-player MDP. The reported increase reflects the average increase across game states in which unsuccessful pickoff attempts occur. The hypothetical 90$^\text{th}$-percentile battery represents the 90$^\text{th}$ percentile at attempting pickoffs, successfully executing pickoffs, suppressing stolen base attempts, and catching would-be base stealers.
+    }
+    \label{tab:policy-increase-by-skill-mdp}
+  \end{table}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                  The Bibliography                       %%
 %%                                                         %%

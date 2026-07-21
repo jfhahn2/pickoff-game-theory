@@ -28,15 +28,32 @@ devtools::install("package/pickoffgame")
 
 We are not at liberty to share the raw pitch-by-pitch lead distance data, but all other data are publicly available, and we provide code to reproduce results beyond the point of estimating the GLMMs for runner outcome probabilities. Unfortunately, parametric bootstrapping for the GLMMs would require the raw lead distance data, so bootstrap standard errors are not publicly reproducible.
 
+To download the publicly available data we use from the MLB Stats API, run:
+```
+Rscript scripts/download_data.R         # this should take about 20 minutes
+```
+
+You will need to obtain the following files from where we host them (TBD):
+```
+input/data/arm_strength/2022.csv
+input/data/arm_strength/2023.csv
+input/data/batter_event.csv
+input/data/batter_pitch.csv
+input/data/sprint_speed/2022.csv
+input/data/sprint_speed/2023.csv
+output/models/fit_runner_outcome.rds
+```
+
 To run the analysis pipeline from the point after GLMM estimation, run:
 ```
-Rscript scripts/estimate_models.R
+Rscript scripts/estimate_models.R       # this should take about 10 minutes
 ```
 
 After running the analysis pipeline, you can produce the results from the paper using:
 ```
-Rscript scripts/generate_results.R
+Rscript scripts/generate_results.R      # this should take less than 1 minute
 ```
+Both scripts write their results to the `output` folder.
 
 ## Folder Structure
 

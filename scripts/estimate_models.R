@@ -1,7 +1,7 @@
 
 # If you are running this script without the raw play-by-play lead distance data, then both
 # of these need to be FALSE, in which case the fitted model objects will be read from file.
-estimate_glmms <- TRUE
+estimate_glmms <- FALSE
 validate_glmms <- FALSE
 
 # WRANGLE DATA ----
@@ -59,6 +59,7 @@ if (estimate_glmms) {
     dir.create("output/models", recursive = TRUE)
   }
   saveRDS(results$fit_runner_outcome, file = "output/models/fit_runner_outcome.rds")
+  saveRDS(results$fit_runner_outcome_reduced, file = "output/models/fit_runner_outcome_reduced.rds")
 }
 
 if (validate_glmms) {
