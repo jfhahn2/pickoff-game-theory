@@ -2,7 +2,7 @@
 # This script will work without the raw lead distance data, but you need to first run
 # scripts/estimate_models.R and set `include_bootstrap_se <- FALSE` below. This will cause the
 # bootstrap standard errors to be written as zero because they cannot be calculated.
-include_bootstrap_se <- TRUE
+include_bootstrap_se <- FALSE
 fig_make <- TRUE
 fig_mode <- "light"
 
@@ -761,6 +761,9 @@ policy_mdp_skill_se |>
   )
 
 
+
+# Explain why a 14.4-foot lead with a 3-2 count and 2 prior disengagements is not ridiculous
+
 example <- tibble::tibble(
   year = factor(2023, levels = 2022:2023),
   pre_outs = factor(0, levels = 0:2),
@@ -775,7 +778,6 @@ example <- tibble::tibble(
   catcher_id = "-1"
 )
 
-# Explain why a 14.4-foot lead with a 3-2 count and 2 prior disengagements is not ridiculous
 predict_runner_outcome_component(
   object = fit_runner_outcome$pickoff_success,
   newdata = example,
@@ -791,17 +793,35 @@ predict_runner_outcome_component(
 
 
 
-policy_mdp_boot |>
-  dplyr::rename(value_mdp = value) |>
-  dplyr::left_join(dplyr::rename(policy_mrp_boot, value_mrp = value), by = c("bag", "state")) |>
-  dplyr::left_join(dplyr::rename(policy_zsg_boot, value_zsg = value), by = c("bag", "state")) |>
+# What is the run value of the start-of-inning state under each model?
+
+policy_mrp |>
+  dplyr::filter(state == '000_0_00_0_0') |>
+  dplyr::pull(value)
+
+policy_zsg |>
+  dplyr::filter(state == '000_0_00_0_0') |>
+  dplyr::pull(value)
+
+policy_mrp |>
+  dplyr::filter(state == '000_0_00_0_0') |>
+  dplyr::pull(value)
+
+
+
+# How many runs is the policy work, relative to a Markov reward process without agency?
+
+policy <- policy_mrp |>
+  dplyr::left_join(policy_mdp, by = "state", suffix = c("_mrp", "_mdp"))
+
+policy_boot <- policy_mrp_boot |>
+  dplyr::left_join(policy_mdp_boot, by = c("state", "bag"), suffix = c("_mrp", "_mdp"))
+
+policy |>
+  dplyr::left_join(policy_boot, by = "state", suffix = c("", "_boot")) |>
   dplyr::filter(state == "000_0_00_0_1") |>
   dplyr::summarize(
-    mean_value_mdp = mean(value_mdp),
-    mean_value_mrp = mean(value_mrp),
-    mean_value_zsg = mean(value_zsg),
     mean_diff = 9 * 162 * mean(value_mdp - value_mrp),
-    sd_diff = 9 * 162 * sd(value_mdp - value_mrp),
+    se_diff = 9 * 162 * sd(value_mdp_boot - value_mrp_boot),
     .groups = "drop"
   )
-
