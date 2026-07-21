@@ -20,12 +20,12 @@
 #'
 #' @param play table of play info containing base occupancy, balls, strikes, and outs
 #' @param pitch table containing pitch descriptions and play identifiers
-#' @param lead_distance table containing lead distances from first base
 #' @param event table tracking player identities and event indexes
 #' @param sprint_speed table containing runner sprint speed
 #' @param arm_strength table containing catcher arm strength
 #' @param pitch_map table mapping text descriptions to standardized pitch outcomes
 #' @param event_map table mapping text descriptions to standardized plate appearance outcomes
+#' @param lead_distance table containing lead distances from first base
 #'
 #' @return A data frame containing processed capability covariates, categorical runner outcomes, 
 #' and standardized pre- and post-state string identifiers.
@@ -34,12 +34,18 @@
 #' @export
 wrangle_data <- function(play,
                          pitch,
-                         lead_distance,
                          event,
                          sprint_speed,
                          arm_strength,
                          pitch_map,
-                         event_map) {
+                         event_map,
+                         lead_distance = NULL) {
+
+  if (is.null(lead_distance)) {
+    lead_distance <- play |>
+      dplyr::select(play_id) |>
+      dplyr::mutate(runner_id_statcast = NA_integer_, lead_distance = NA_real_)
+  }
 
   event_info <- event |>
     dplyr::select(
@@ -50,12 +56,13 @@ wrangle_data <- function(play,
     dplyr::left_join(pitch, by = "play_id") |>
     dplyr::left_join(lead_distance, by = "play_id") |>
     dplyr::left_join(event_info, by = c("game_id", "event_index")) |>
-    dplyr::left_join(sprint_speed, by = c("runner_id" = "player_id")) |>
+    dplyr::left_join(sprint_speed, by = c("pre_runner_1b_id" = "player_id")) |>
     dplyr::left_join(arm_strength, by = c("catcher_id" = "player_id")) |>
     dplyr::left_join(pitch_map, by = "description") |>
     dplyr::left_join(event_map, by = "event") |>
     dplyr::arrange(game_id, event_index, play_index) |>
     dplyr::mutate(
+      runner_id = pre_runner_1b_id,
       # Impute average arm strength and sprint speed when missing
       arm_strength = dplyr::coalesce(arm_strength, mean(arm_strength, na.rm = TRUE)),
       sprint_speed = dplyr::coalesce(sprint_speed, mean(sprint_speed, na.rm = TRUE)),

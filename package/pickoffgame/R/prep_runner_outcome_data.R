@@ -9,6 +9,8 @@
 #'   columns include \code{pre_runner_1b_id}, \code{is_1b_only}, 
 #'   \code{is_full_count_two_outs}, \code{is_runner_going}, \code{runner_id}, 
 #'   \code{year}, and \code{pre_disengagements}.
+#' @param estimate_glmms logical, will these data be used to estimate GLMMs? If so,
+#'   we filter out any rows missing lead distance. Defaults to TRUE.
 #'
 #' @return A processed data frame filtered to relevant base-stealing contexts, with 
 #'   \code{pre_disengagements} and \code{year} converted to factors.
@@ -28,15 +30,13 @@
 #'
 #' @importFrom dplyr group_by filter ungroup mutate case_when
 #' @export
-prep_runner_outcome_data <- function(data) {
-   data |>
+prep_runner_outcome_data <- function(data, estimate_glmms = TRUE) {
+  data_glmm <- data |>
     dplyr::filter(
       # For modeling purposes, we consider only plays in which only first base is occupied
       is_1b_only,
       # Exclude full count with two outs because runners because these are not really steal attempts
-      !is_full_count_two_outs,
-      # The runner taking the lead from first base should match the runner on first base
-      runner_id == pre_runner_1b_id | runner_id == 0
+      !is_full_count_two_outs
     ) |>
     dplyr::mutate(
       pre_outs = as.factor(pre_outs),
@@ -52,4 +52,16 @@ prep_runner_outcome_data <- function(data) {
         as.factor(),
       year = as.factor(year)
     )
+  
+  # We separate these filtering steps in case we want to run the function without lead distance data
+  if (estimate_glmms) {
+    data_glmm <- data_glmm |>
+      dplyr::filter(
+        # The runner taking the lead from first base should match the runner on first base
+        (runner_id == runner_id_statcast) | (runner_id == 0),
+        !is.na(lead_distance)
+      )
+  }
+
+  return(data_glmm)
 }
