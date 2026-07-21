@@ -15,15 +15,17 @@
 #'   \code{glmmTMB:::simulate.glmmTMB}, ignored if \code{bootstrap_index} is NULL.
 #' @param bootstrap_fit_original optional list of original fitted \code{glmmTMB} objects
 #'   for refitting, ignored if \code{bootstrap_index} is NULL.
-#' @param validate_glmer_models Logical. If \code{TRUE}, performs a 5-fold stratified 
-#'   cross-validation on the runner outcome models before proceeding. Expect this to 
-#'   add roughly 7 minutes to execution time. Defaults to \code{FALSE}.
+#'  @param estimate_glmms Logical. Should GLMM models be estimated? If \code{FALSE},
+#'   the function attempts to read the file file output/models/fit_runner_outcome.rds.
+#'   Defaults to \code{TRUE}.
+#' @param validate_glmms Logical. If \code{TRUE}, performs cross-validation on the
+#'   runner outcome models. Defaults to \code{FALSE}.
 #'
 #' @return A named list containing five components:
 #'   \itemize{
 #'     \item \code{runner_outcome_model_validation}: Results from cross-validation, 
 #'           or \code{NULL} if skipped.
-#'     \item \code{fit_runner_outcome}: The four fitted \code{glmerMod} objects for runner actions.
+#'     \item \code{fit_runner_outcome}: The five fitted \code{glmmTMB} objects for runner actions.
 #'     \item \code{policy_mdp}: Optimal runner policy evaluated in a single-player environment.
 #'     \item \code{policy_zsg}: Optimal runner/pitcher policy evaluated as a two-player zero-sum game.
 #'     \item \code{policy_mdp_skill}: A consolidated data frame containing optimal single-player 
@@ -33,47 +35,56 @@
 #' @importFrom logger log_info
 #' @importFrom tibble tibble
 #' @importFrom dplyr mutate bind_rows
-#' @importFrom pickoffgame prep_runner_outcome_data validate_runner_outcome_model estimate_runner_outcome_model extract_percentile_players estimate_game_model
 #' @export
 run_analysis_pipeline <- function(game_state,
                                   bootstrap_index = NULL,
                                   bootstrap_resample = NULL,
                                   bootstrap_simulate = NULL,
                                   bootstrap_fit_original = NULL,
-                                  validate_glmer_models = FALSE) {
+                                  estimate_glmms = TRUE,
+                                  validate_glmms = FALSE) {
 
-  data_glmer <- pickoffgame::prep_runner_outcome_data(data = game_state)
+  data_glmm <- prep_runner_outcome_data(data = game_state, estimate_glmms = estimate_glmms)
 
   if (!is.null(bootstrap_index)) {
     # If we're doing bootstrapping, replace the dataset with a bootstrap resample
     game_state <- rsample::analysis(bootstrap_resample$splits[[bootstrap_index]])
   }
 
-  if (validate_glmer_models) {
+  if (validate_glmms) {
     logger::log_info("Validating runner outcome models")    # 7 minutes
 
     set.seed(42)
-    runner_outcome_model_validation <- validate_runner_outcome_model(data_glmer)
+    runner_outcome_model_validation <- validate_runner_outcome_model(data_glmm)
 
   } else {
     runner_outcome_model_validation <- NULL
   }
 
   # FIT RUNNER OUTCOME MODELS ----
-  logger::log_info("Fitting runner outcome models")         # 2 minutes
 
-  fit_runner_outcome <- data_glmer |>
-    pickoffgame::estimate_runner_outcome_model(
-      bootstrap_index = bootstrap_index,
-      bootstrap_simulate = bootstrap_simulate,
-      bootstrap_fit_original = bootstrap_fit_original
-    )
+  if (estimate_glmms) {
+    logger::log_info("Fitting runner outcome models")         # 2 minutes
+    fit_runner_outcome <- data_glmm |>
+      estimate_runner_outcome_model(
+        bootstrap_index = bootstrap_index,
+        bootstrap_simulate = bootstrap_simulate,
+        bootstrap_fit_original = bootstrap_fit_original
+      )
+
+  } else {
+    runner_outcome_file <- "output/models/fit_runner_outcome.rds"
+    if (!file.exists(runner_outcome_file)) {
+      stop("If not estimating the GLMMs yourself, you need output/models/fit_runner_outcome.rds")
+    }
+    fit_runner_outcome <- readRDS(runner_outcome_file)
+  }
 
   percentile_players <- list()
   for (outcome in names(fit_runner_outcome)) {
-    percentile_players[[outcome]] <- pickoffgame::extract_percentile_players(
+    percentile_players[[outcome]] <- extract_percentile_players(
       object = fit_runner_outcome[[outcome]],
-      data = data_glmer,
+      data = data_glmm,
       flip = outcome %in% c("pickoff_attempt", "pickoff_success", "going_interrupt")
     )
   }
@@ -81,25 +92,25 @@ run_analysis_pipeline <- function(game_state,
   # ESTIMATE GAME MODELS ----
   logger::log_info("Estimating game models")                # 10 minutes
 
-  policy_observed <- data_glmer |>
+  policy_observed <- data_glmm |>
     dplyr::filter(year == 2023, !is.na(lead_distance)) |>
     dplyr::group_by(pre_state) |>
     dplyr::summarize(lead_distance = round(mean(lead_distance), 1))
 
-  policy_mrp <- pickoffgame::estimate_game_model(
+  policy_mrp <- estimate_game_model(
     data = game_state,
     fit_runner_outcome = fit_runner_outcome,
     players = "one",
     fixed_policy = policy_observed
   )
 
-  policy_mdp <- pickoffgame::estimate_game_model(
+  policy_mdp <- estimate_game_model(
     data = game_state,
     fit_runner_outcome = fit_runner_outcome,
     players = "one"
   )
 
-  policy_zsg <- pickoffgame::estimate_game_model(
+  policy_zsg <- estimate_game_model(
     data = game_state,
     fit_runner_outcome = fit_runner_outcome,
     players = "two"
@@ -108,7 +119,7 @@ run_analysis_pipeline <- function(game_state,
   policy_mdp_skill <- tibble::tibble()
   for (runner_percentile in c(0.1, 0.5, 0.9)) {
     for (battery_percentile in c(0.1, 0.5, 0.9)) {
-      policy_mdp_skill <- pickoffgame::estimate_game_model(
+      policy_mdp_skill <- estimate_game_model(
         data = game_state,
         fit_runner_outcome = fit_runner_outcome,
         players = "one",
@@ -127,7 +138,7 @@ run_analysis_pipeline <- function(game_state,
 
   return(
     list(
-      data_glmer = data_glmer,
+      data_glmm = data_glmm,
       runner_outcome_model_validation = runner_outcome_model_validation,
       fit_runner_outcome = fit_runner_outcome,
       policy_mrp = policy_mrp,
