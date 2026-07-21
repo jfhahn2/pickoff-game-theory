@@ -1,4 +1,11 @@
 
+# This script will only work if you have a full fit_runner_outcome fit from the raw lead distance
+# data because parametric bootstrapping for the GLMM fit requires the original data.
+
+if (!dir.exists("output/bootstrap")) {
+  dir.create("output/bootstrap", recursive = TRUE)
+}
+
 bags <- 100
 
 # WRANGLE DATA ----

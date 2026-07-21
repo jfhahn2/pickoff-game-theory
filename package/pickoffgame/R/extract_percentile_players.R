@@ -4,7 +4,7 @@
 #' to specific performance percentiles based on fixed effects and random effects 
 #' extracted from a fitted lme4 model.
 #'
-#' @param object A fitted model object (e.g., \code{glmerMod}) containing 
+#' @param object A fitted \code{glmmTMB} model object containing 
 #'   random effects for \code{runner_id}, \code{pitcher_id}, and/or \code{catcher_id},
 #'   and possibly fixed effects for \code{sprint_speed_centered} and \code{arm_strength_centered}.
 #' @param data A table containing the data used to train \code{object}, including 
@@ -29,7 +29,16 @@
 #' @export
 extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.9), flip = FALSE) {
 
-  ranef <- glmmTMB::ranef(object)$cond
+  if (class(object) == "glmmTMB") {
+    ranef <- glmmTMB::ranef(object)$cond
+    fixef_sprint_speed <- glmmTMB::fixef(object)$cond["sprint_speed_centered"]
+    fixef_arm_strength <- glmmTMB::fixef(object)$cond["arm_strength_centered"]
+
+  } else if (class(object) == "glmmTMBreduced") {
+    ranef <- object$ranef
+    fixef_sprint_speed <- object$fixef["sprint_speed_centered"]
+    fixef_arm_strength <- object$fixef["arm_strength_centered"]
+  }
 
   if ("runner_id" %in% names(ranef)) {
 
@@ -70,10 +79,10 @@ extract_percentile_players <- function(object, data, percentile = c(0.1, 0.5, 0.
     data$ranef_catcher <- 0
   }
 
-  sprint_speed_effect <- glmmTMB::fixef(object)$cond["sprint_speed_centered"] |>
+  sprint_speed_effect <- fixef_sprint_speed |>
     dplyr::coalesce(0)
 
-  arm_strength_effect <- glmmTMB::fixef(object)$cond["arm_strength_centered"] |>
+  arm_strength_effect <- fixef_arm_strength |>
     dplyr::coalesce(0)
 
   percentile_runner <- data |>

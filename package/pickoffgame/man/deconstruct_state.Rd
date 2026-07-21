@@ -7,8 +7,8 @@
 deconstruct_state(state)
 }
 \arguments{
-\item{state}{Character string formatted as "{bases}\emph{{outs}}{balls}{strikes}_{disengagements}"
-(e.g., "100_1_21_0").}
+\item{state}{Character string formatted as "{bases}\emph{{outs}}{balls}{strikes}\emph{{disengagements}}{first}"
+(e.g., "100_1_21_0_0").}
 }
 \value{
 A single-row tibble with the following columns:
@@ -19,6 +19,8 @@ A single-row tibble with the following columns:
 \item \code{strikes}: Integer count of strikes (index 8).
 \item \code{disengagements}: Integer count of prior disengagements (index 10).
 Returns \code{NA} if the input string does not contain a tenth character.
+\item \code{first}: Binary 0/1 indicator of first pitch of play (index 12).
+Returns \code{NA} if the input string does not contain a twelfth character.
 }
 }
 \description{

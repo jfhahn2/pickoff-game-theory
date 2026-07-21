@@ -12,7 +12,7 @@ extract_percentile_players(
 )
 }
 \arguments{
-\item{object}{A fitted model object (e.g., \code{glmerMod}) containing
+\item{object}{A fitted \code{glmmTMB} model object containing
 random effects for \code{runner_id}, \code{pitcher_id}, and/or \code{catcher_id},
 and possibly fixed effects for \code{sprint_speed_centered} and \code{arm_strength_centered}.}
 

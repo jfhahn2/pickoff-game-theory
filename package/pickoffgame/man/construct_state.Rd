@@ -4,11 +4,16 @@
 \alias{construct_state}
 \title{Construct game state}
 \usage{
-construct_state(first, bases, outs, balls, strikes, disengagements = NULL)
+construct_state(
+  bases,
+  outs,
+  balls,
+  strikes,
+  disengagements = NULL,
+  first = NULL
+)
 }
 \arguments{
-\item{first}{Binary 0/1 indicating whether this is the first play of the current event.}
-
 \item{bases}{Character string representing base occupancy (e.g., "100" for a runner on first base).}
 
 \item{outs}{Integer or character count of outs (0, 1, or 2).}
@@ -17,12 +22,16 @@ construct_state(first, bases, outs, balls, strikes, disengagements = NULL)
 
 \item{strikes}{Integer or character count of strikes (0 to 2).}
 
-\item{disengagements}{Optional integer or character count of prior pitcher disengagements (0 to 2). Defaults to \code{NULL}.}
+\item{disengagements}{Optional integer or character count of prior pitcher disengagements (0 to 2).
+Defaults to \code{NULL} (for reduced states).}
+
+\item{first}{Optional binary 0/1 indicating whether this is the first play of the current event.
+Defaults to \code{NULL} (for reduced states).}
 }
 \value{
-A character string formatted as "bases_outs_ballsstrikes_disengagements"
-(e.g., "100_1_21_0"). If \code{disengagements} is omitted or \code{NULL}, the trailing
-underscore and disengagement count are excluded from the output string.
+A character string formatted as "first_bases_outs_ballsstrikes_disengagements"
+(e.g., "100_1_21_0"). If \code{first}/\code{disengagements} is omitted or \code{NULL}, the leading/trailing
+characters are excluded from the output string.
 }
 \description{
 Combines base occupancy, outs, balls, strikes, and optionally disengagements

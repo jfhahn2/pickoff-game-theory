@@ -50,7 +50,7 @@ Defaults to \code{FALSE}.}
 \item{include_stolen_base}{logical, should stolen base success model be estimated?}
 }
 \value{
-A named list containing four fitted \code{glmerMod} objects:
+A named list containing five fitted \code{glmmTMB} objects:
 \itemize{
 \item \code{pickoff_attempt}: GLMM for the probability of a pickoff attempt.
 \item \code{pickoff_success}: GLMM for the probability of a successful pickoff.

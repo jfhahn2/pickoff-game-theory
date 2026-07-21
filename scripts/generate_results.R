@@ -1,6 +1,18 @@
 
+# This script will work without the raw lead distance data, but you need to first run
+# scripts/estimate_models.R and set `include_bootstrap_se <- FALSE` below. This will cause the
+# bootstrap standard errors to be written as zero because they cannot be calculated.
+include_bootstrap_se <- TRUE
 fig_make <- TRUE
 fig_mode <- "light"
+
+if (!dir.exists("output/figures")) {
+  dir.create("output/figures", recursive = TRUE)
+}
+
+if (!dir.exists("output/tables")) {
+  dir.create("output/tables", recursive = TRUE)
+}
 
 
 # Read data ----
@@ -10,8 +22,9 @@ arm_strength <- data.table::fread("input/data/arm_strength/2023.csv") |>
 sprint_speed <- data.table::fread("input/data/sprint_speed/2023.csv") |>
   dplyr::select(player_id, player_name = `last_name, first_name`, sprint_speed, competitive_runs)
 
-data_glmer <- data.table::fread("output/data/data_glmer.csv")
+data_glmm <- data.table::fread("output/data/data_glmm.csv")
 
+policy_mrp <- data.table::fread("output/policy_mrp.csv")
 policy_mdp <- data.table::fread("output/policy_mdp.csv")
 policy_zsg <- data.table::fread("output/policy_zsg.csv")
 policy_mdp_skill <- data.table::fread("output/policy_mdp_skill.csv")
@@ -20,42 +33,54 @@ policy_mdp_skill <- data.table::fread("output/policy_mdp_skill.csv")
 
 # Read bootstrap results ----
 
-policy_mrp_boot <- NULL
-policy_mdp_boot <- NULL
-policy_zsg_boot <- NULL
-policy_mdp_skill_boot <- NULL
+if (include_bootstrap_se) {
 
-result <- list()
-for (file in list.files("output/bootstrap")) {
-  bag <- as.integer(gsub("([0-9]+).*$", "\\1", file))
-  result[[bag]] <- readRDS(file.path("output", "bootstrap", file))
+  policy_mrp_boot <- NULL
+  policy_mdp_boot <- NULL
+  policy_zsg_boot <- NULL
+  policy_mdp_skill_boot <- NULL
+  
+  result <- list()
+  for (file in list.files("output/bootstrap")) {
+    bag <- as.integer(gsub("([0-9]+).*$", "\\1", file))
+    result[[bag]] <- readRDS(file.path("output", "bootstrap", file))
+  
+    policy_mrp_boot <- result[[bag]]$policy_mrp |>
+      dplyr::mutate(bag = bag, .before = 1) |>
+      dplyr::bind_rows(policy_mrp_boot)
+  
+    policy_mdp_boot <- result[[bag]]$policy_mdp |>
+      dplyr::mutate(bag = bag, .before = 1) |>
+      dplyr::bind_rows(policy_mdp_boot)
+  
+    policy_zsg_boot <- result[[bag]]$policy_zsg |>
+      dplyr::mutate(bag = bag, .before = 1) |>
+      dplyr::bind_rows(policy_zsg_boot)
+  
+    policy_mdp_skill_boot <- result[[bag]]$policy_mdp_skill |>
+      dplyr::mutate(bag = bag, .before = 1) |>
+      dplyr::bind_rows(policy_mdp_skill_boot)
+  }
 
-  policy_mrp_boot <- result[[bag]]$policy_mrp |>
-    dplyr::mutate(bag = bag, .before = 1) |>
-    dplyr::bind_rows(policy_mrp_boot)
-
-  policy_mdp_boot <- result[[bag]]$policy_mdp |>
-    dplyr::mutate(bag = bag, .before = 1) |>
-    dplyr::bind_rows(policy_mdp_boot)
-
-  policy_zsg_boot <- result[[bag]]$policy_zsg |>
-    dplyr::mutate(bag = bag, .before = 1) |>
-    dplyr::bind_rows(policy_zsg_boot)
-
-  policy_mdp_skill_boot <- result[[bag]]$policy_mdp_skill |>
-    dplyr::mutate(bag = bag, .before = 1) |>
-    dplyr::bind_rows(policy_mdp_skill_boot)
+} else {
+  # If we don't have the bootstrapped results, we're just going to hack it so that the rest of the
+  # code runs correctly and results in bootstrap errors equal to zero.
+  policy_mrp_boot <- tidyr::expand_grid(policy_mrp, bag = 0:1)
+  policy_mdp_boot <- tidyr::expand_grid(policy_mdp, bag = 0:1)
+  policy_zsg_boot <- tidyr::expand_grid(policy_zsg, bag = 0:1)
+  policy_mdp_skill_boot <- tidyr::expand_grid(policy_mdp_skill, bag = 0:1)
 }
+
 
 
 # Plot data summary ----
 
 breaks <- seq(from = 4, to = 16, by = 2)
 
-if (fig_make) {
+if (fig_make & !all(is.na(data_glmm$lead_distance))) {
 
   sputil::open_device(glue::glue("output/figures/leads_overall_{fig_mode}.pdf"), height = 4, width = 8)
-  plot <- data_glmer |>
+  plot <- data_glmm |>
     dplyr::mutate(
       year_dis = dplyr::case_when(
         year == 2022 ~ "2022 - All Situations",
@@ -94,12 +119,20 @@ if (fig_make) {
 fit_runner_outcome <- readRDS("output/models/fit_runner_outcome.rds")
 
 extract_model_fit <- function(model) {
+
+  if (class(model) == "glmmTMB") {
+    summary <- summary(model)
+
+  } else if (class(model) == "glmmTMBreduced") {
+    summary <- model$summary
+  }
+
   ranef <- tibble::tibble(
     type = "random",
-    variable = names(glmmTMB::VarCorr(model)$cond),
-    `Std. Error` = sapply(glmmTMB::VarCorr(model)$cond, function(x) {attr(x, "stddev")})
+    variable = names(summary$varcor$cond),
+    `Std. Error` = sapply(summary$varcor$cond, function(x) {attr(x, "stddev")})
   )
-  summary(model)$coefficients$cond |>
+  summary$coefficients$cond |>
     tibble::as_tibble(rownames = "variable") |>
     dplyr::mutate(type = "fixed") |>
     dplyr::bind_rows(ranef) |>
@@ -165,9 +198,9 @@ table_pickoff_attempt |>
 # Plot runner outcome probabilities as functions of lead distance ----
 
 covariate_baseline <- tibble::tibble(
-  pre_outs = 0,
-  pre_balls = 0,
-  pre_strikes = 0,
+  pre_outs = factor(0, levels = 0:2),
+  pre_balls = factor(0, levels = 0:3),
+  pre_strikes = factor(0, levels = 0:2),
   arm_strength_centered = 0
 )
 lead_distance_grid <- tibble::tibble(
@@ -192,11 +225,10 @@ if (fig_make) {
     )
   plot <- covariate_grid |>
     dplyr::mutate(
-      prob_pickoff_attempt = predict(
+      prob_pickoff_attempt = predict_runner_outcome_component(
         object = fit_runner_outcome$pickoff_attempt,
         newdata = covariate_grid,
-        type = "response",
-        re.form = NA
+        include_ranef = FALSE
       )
     ) |>
     ggplot2::ggplot(
@@ -217,7 +249,7 @@ if (fig_make) {
       values = c("solid", "solid", "dashed", "dotted")
     ) +
     ggplot2::labs(title = "Pickoff Attempt", x = "Lead Distance", y = "Probability") +
-    ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.7)) +
+    ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.6)) +
     sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.4, 0.7))
   print(plot)
@@ -225,7 +257,7 @@ if (fig_make) {
 }
 
 
-pitcher_grid <- glmmTMB::ranef(fit_runner_outcome$pickoff_success)$cond$pitcher_id |>
+pitcher_grid <- pickoffgame::extract_ranef(fit_runner_outcome$pickoff_success)$pitcher_id |>
   dplyr::arrange(`(Intercept)`) |>
   dplyr::slice(round(dplyr::n() * c(0.9, 0.5, 0.1))) |>
   tibble::rownames_to_column("pitcher_id") |>
@@ -247,15 +279,15 @@ if (fig_make) {
     dplyr::cross_join(lead_distance_grid) |>
     dplyr::cross_join(pitcher_grid) |>
     dplyr::mutate(
-      year = "2023",
-      pre_disengagements = "0"
+      year = factor(2023, levels = 2022:2023),
+      pre_disengagements = factor(0, levels = 0:2)
     )
   plot <- covariate_grid |>
     dplyr::mutate(
-      prob_pickoff_attempt = predict(
+      prob_pickoff_attempt = predict_runner_outcome_component(
         object = fit_runner_outcome$pickoff_success,
         newdata = covariate_grid,
-        type = "response"
+        include_ranef = TRUE
       )
     ) |>
     ggplot2::ggplot(
@@ -276,21 +308,21 @@ if (fig_make) {
       values = c("dotted", "solid", "dashed")
     ) +
     ggplot2::labs(title = "Pickoff Success", x = "Lead Distance", y = "Probability") +
-    ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.7)) +
+    ggplot2::coord_cartesian(xlim = c(3, 16), ylim = c(0, 0.6)) +
     sputil::theme_sleek(mode = fig_mode) +
     ggplot2::theme(legend.position.inside = c(0.3, 0.7))
   print(plot)
   dev.off()
 }
 
-stolen_base_effect_runner <- glmmTMB::ranef(fit_runner_outcome$stolen_base)$cond$runner_id |>
+stolen_base_effect_runner <- pickoffgame::extract_ranef(fit_runner_outcome$stolen_base)$runner_id |>
   tibble::rownames_to_column("player_id") |>
   dplyr::mutate(player_id = as.integer(player_id)) |>
   dplyr::inner_join(sprint_speed, by = "player_id") |>
   dplyr::mutate(
     effect = `(Intercept)` +
       (
-        glmmTMB::fixef(fit_runner_outcome$stolen_base)$cond["sprint_speed_centered"] *
+        pickoffgame::extract_fixef(fit_runner_outcome$stolen_base)["sprint_speed_centered"] *
         (sprint_speed - 27)
       )
   )
@@ -311,14 +343,14 @@ if (fig_make) {
   dev.off()
 }
 
-stolen_base_effect_catcher <- glmmTMB::ranef(fit_runner_outcome$stolen_base)$cond$catcher_id |>
+stolen_base_effect_catcher <- pickoffgame::extract_ranef(fit_runner_outcome$stolen_base)$catcher_id |>
   tibble::rownames_to_column("player_id") |>
   dplyr::mutate(player_id = as.integer(player_id)) |>
   dplyr::inner_join(arm_strength, by = "player_id") |>
   dplyr::mutate(
     effect = `(Intercept)` +
       (
-        glmmTMB::fixef(fit_runner_outcome$stolen_base)$cond["arm_strength_centered"] *
+        pickoffgame::extract_fixef(fit_runner_outcome$stolen_base)["arm_strength_centered"] *
         (arm_strength - 80)
       )
   )
@@ -339,6 +371,10 @@ if (fig_make) {
   dev.off()
 }
 
+# What percentage of variation in catcher effect is explained by arm strength?
+with(stolen_base_effect_catcher, cor(arm_strength, effect)^2)
+
+
 runner_grid <- stolen_base_effect_runner |>
   dplyr::arrange(effect) |>
   dplyr::slice(round(dplyr::n() * c(0.9, 0.5, 0.1, 0.5))) |>
@@ -350,8 +386,8 @@ runner_grid <- stolen_base_effect_runner |>
       x = paste0(year, "; ", c(90, 50, 10, 50), "th Pct Runner"),
       levels = paste0(year, "; ", c(90, 50, 10, 50), "th Pct Runner")
     ),
-    pitcher_id = 0,
-    catcher_id = 0
+    pitcher_id = "0",
+    catcher_id = "0"
   )
 
 if (fig_make) {
@@ -361,11 +397,11 @@ if (fig_make) {
     dplyr::cross_join(runner_grid)
   plot <- covariate_grid |>
     dplyr::mutate(
-      prob_stolen_base = predict(
+      prob_stolen_base = predict_runner_outcome_component(
         object = fit_runner_outcome$stolen_base,
         newdata = covariate_grid,
-        type = "response",
-        allow.new.levels = TRUE
+        include_ranef = TRUE,
+        allow_new_levels = TRUE
       )
     ) |>
     ggplot2::ggplot(
@@ -392,6 +428,9 @@ if (fig_make) {
   print(plot)
   dev.off()
 }
+
+# What percentage of variation in runner effect is explained by sprint speed?
+with(stolen_base_effect_runner, cor(sprint_speed, effect)^2)
 
 
 # Write results tables ----
@@ -443,6 +482,23 @@ policy_zsg_se |>
     colnames = c("Outs", "0", "1", "2"),
     align = "c|ccc"
   )
+
+
+behavior_vs_equilibrium <- data_glmm |>
+  dplyr::filter(year == 2023) |>
+  dplyr::left_join(policy_zsg, by = c("pre_state" = "state")) |>
+  dplyr::mutate(lead_exceeds_recommendation = lead_distance > policy_runner)
+
+# How does runner behavior in 2023 compare with the equilibrium?
+behavior_vs_equilibrium |>
+  dplyr::group_by(pre_disengagements) |>
+  dplyr::summarize(n = dplyr::n(), mean(lead_exceeds_recommendation), .groups = "drop")
+  
+# How does pitcher behavior in 2023 compare with the equilibrium?
+behavior_vs_equilibrium |>
+  dplyr::group_by(pre_disengagements, lead_exceeds_recommendation) |>
+  dplyr::summarize(n = dplyr::n(), mean(is_pickoff_attempt), .groups = "drop")
+
 
 
 policy_mdp_se <- tibble::as_tibble(policy_mdp) |>
@@ -555,7 +611,7 @@ lead_increase_by_state |>
 # What is the average recommended increase in lead distance, weighted by frequency of
 # (pre_outs, pre_balls, pre_strikes, pre_disengagements) in which unsuccessful pickoffs occur?
 
-state_frequency <- data_glmer |>
+state_frequency <- data_glmm |>
   dplyr::filter(is_pickoff_attempt, !is_pickoff_success) |>
   dplyr::count(pre_outs, pre_balls, pre_strikes, pre_disengagements)
 
@@ -580,7 +636,8 @@ lead_increase_long |>
   dplyr::group_by(pre_disengagements) |>
   dplyr::summarize(
     increase_runner = mean(increase_runner),
-    se = sd(increase_runner_boot)
+    se = sd(increase_runner_boot),
+    .groups = "drop"
   )
 
 
@@ -703,6 +760,34 @@ policy_mdp_skill_se |>
     hline.after = c(0, 3, 6)
   )
 
+
+example <- tibble::tibble(
+  year = factor(2023, levels = 2022:2023),
+  pre_outs = factor(0, levels = 0:2),
+  pre_balls = factor(3, levels = 0:3),
+  pre_strikes = factor(2, levels = 0:2),
+  pre_disengagements = factor(2, levels = 0:2),
+  lead_distance_centered = 14.4 - 10,
+  sprint_speed_centered = 0,
+  arm_strength_centered = 0,
+  pitcher_id = "-1",
+  runner_id = "-1",
+  catcher_id = "-1"
+)
+
+# Explain why a 14.4-foot lead with a 3-2 count and 2 prior disengagements is not ridiculous
+predict_runner_outcome_component(
+  object = fit_runner_outcome$pickoff_success,
+  newdata = example,
+  include_ranef = TRUE,
+  allow_new_levels = TRUE
+)
+predict_runner_outcome_component(
+  object = fit_runner_outcome$stolen_base,
+  newdata = example,
+  include_ranef = TRUE,
+  allow_new_levels = TRUE
+)
 
 
 

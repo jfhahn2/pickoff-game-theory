@@ -1,5 +1,5 @@
 
-# Lead distance under a pickoff limit in Major League Baseball: A sequential game model
+# Strategies under a pickoff limit in Major League Baseball: A zero-sum sequential game with multilevel models
 
 Scott Powers, Sivaramakrishnan Ramani, Jacob Hahn and Andrew J Schaefer
 [preprint](https://arxiv.org/abs/2601.15608)
@@ -13,6 +13,31 @@ Scott Powers, Sivaramakrishnan Ramani, Jacob Hahn and Andrew J Schaefer
 
 In this project, we use game theoretic concepts to analyze the effects of the 2023 MLB rule changes surrounding baserunning. Specifically, we were interested in how the rule limiting pitchers to two disengagements per plate appearance affects the strategies chosen by both teams when a runner reaches first base. There has been very little analysis of leadoff and pickoff decisions, so we wanted to determine optimal strategies for these situations and calculate the value that could be gained here. We came up with a simple rule of thumb that works well in most situations: with each disengagement, runners should extend their leadoff by about two feet in order to maximize the run expectancy for their team.
 
+## Installation
+
+```
+devtools::install_github("jfhahn2/pickoff-game-theory/package/pickoffgame")
+```
+
+Or, if you'd like to install your local version of the package:
+```
+devtools::install("package/pickoffgame")
+```
+
+## Reproducing Results
+
+We are not at liberty to share the raw pitch-by-pitch lead distance data, but all other data are publicly available, and we provide code to reproduce results beyond the point of estimating the GLMMs for runner outcome probabilities. Unfortunately, parametric bootstrapping for the GLMMs would require the raw lead distance data, so bootstrap standard errors are not publicly reproducible.
+
+To run the analysis pipeline from the point after GLMM estimation, run:
+```
+Rscript scripts/estimate_models.R
+```
+
+After running the analysis pipeline, you can produce the results from the paper using:
+```
+Rscript scripts/generate_results.R
+```
+
 ## Folder Structure
 
 ```
@@ -22,6 +47,7 @@ In this project, we use game theoretic concepts to analyze the effects of the 20
 ├── output                              # models, figures, tables go here
 └── scripts                             # R code for reproducing results
     ├── sandbox
+    ├── bootstrap_results.R
     ├── estimate_models.R
     └── generate_results.R
 ```

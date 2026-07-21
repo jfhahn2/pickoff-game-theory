@@ -1,7 +1,8 @@
 
-# TODO: Handle full-count strike-em-out throw-em-out (currently debit for strikeout is assigned to steal decision)
-
-validate_glmer_models <- FALSE
+# If you are running this script without the raw play-by-play lead distance data, then both
+# of these need to be FALSE, in which case the fitted model objects will be read from file.
+estimate_glmms <- TRUE
+validate_glmms <- FALSE
 
 # WRANGLE DATA ----
 logger::log_info("Wrangling data")    # 1 minute
@@ -41,23 +42,33 @@ game_state <- dplyr::bind_rows(game_state_2022, game_state_2023)
 
 results <- pickoffgame::run_analysis_pipeline(
   game_state = game_state,
-  validate_glmer_models = validate_glmer_models
+  estimate_glmms = estimate_glmms,
+  validate_glmms = validate_glmms
 )
 
 
 # WRITE RESULTS TO FILE ----
 
-data.table::fwrite(results$data_glmer, file = "output/data/data_glmer.csv")
+if (!dir.exists("output/data")) {
+  dir.create("output/data", recursive = TRUE)
+}
+data.table::fwrite(results$data_glmm, file = "output/data/data_glmm.csv")
 
-if (validate_glmer_models) {
+if (estimate_glmms) {
+  if (!dir.exists("output/models")) {
+    dir.create("output/models", recursive = TRUE)
+  }
+  saveRDS(results$fit_runner_outcome, file = "output/models/fit_runner_outcome.rds")
+}
+
+if (validate_glmms) {
   data.table::fwrite(
     x = results$runner_outcome_model_validation,
     file = "output/runner_outcome_validation.csv"
   )
 }
 
-saveRDS(results$fit_runner_outcome, file = "output/models/fit_runner_outcome.rds")
-
+data.table::fwrite(results$policy_mrp, file = "output/policy_mrp.csv")
 data.table::fwrite(results$policy_mdp, file = "output/policy_mdp.csv")
 data.table::fwrite(results$policy_zsg, file = "output/policy_zsg.csv")
 data.table::fwrite(results$policy_mdp_skill, file = "output/policy_mdp_skill.csv")

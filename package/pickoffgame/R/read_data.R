@@ -35,9 +35,17 @@ read_data <- function(year) {
   pitch <- data.table::fread(glue::glue("input/data/pitch/{year}.csv")) |>
     dplyr::select(play_id, description)
 
-  lead_distance <- data.table::fread(glue::glue("input/data/lead_distance/{year}.csv")) |>
-    dplyr::distinct() |>    # sometimes rows are duplicated
-    dplyr::filter(base == "1st Base")
+  lead_distance_file <- glue::glue("input/data/lead_distance/{year}.csv")
+  if (!file.exists(lead_distance_file)) {
+    warning(glue::glue("{lead_distance_file} not found. Proceeding without raw lead distance."))
+    lead_distance <- NULL
+  } else {
+    lead_distance <- data.table::fread(lead_distance_file) |>
+      dplyr::distinct() |>                                # sometimes rows are duplicated
+      dplyr::filter(base == "1st Base") |>
+      dplyr::mutate(runner_id_statcast = as.character(runner_id)) |>    # may not match statsapi
+      dplyr::select(play_id, runner_id_statcast, lead_distance)
+  }
 
   event <- data.table::fread(glue::glue("input/data/event/{year}.csv"))
 

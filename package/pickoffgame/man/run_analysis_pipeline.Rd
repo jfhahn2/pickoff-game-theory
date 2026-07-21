@@ -10,7 +10,8 @@ run_analysis_pipeline(
   bootstrap_resample = NULL,
   bootstrap_simulate = NULL,
   bootstrap_fit_original = NULL,
-  validate_glmer_models = FALSE
+  estimate_glmms = TRUE,
+  validate_glmms = FALSE
 )
 }
 \arguments{
@@ -26,18 +27,20 @@ bootstrap samples, ignored if \code{bootstrap_index} is NULL.}
 \code{glmmTMB:::simulate.glmmTMB}, ignored if \code{bootstrap_index} is NULL.}
 
 \item{bootstrap_fit_original}{optional list of original fitted \code{glmmTMB} objects
-for refitting, ignored if \code{bootstrap_index} is NULL.}
+for refitting, ignored if \code{bootstrap_index} is NULL.
+@param estimate_glmms Logical. Should GLMM models be estimated? If \code{FALSE},
+the function attempts to read the file file output/models/fit_runner_outcome.rds.
+Defaults to \code{TRUE}.}
 
-\item{validate_glmer_models}{Logical. If \code{TRUE}, performs a 5-fold stratified
-cross-validation on the runner outcome models before proceeding. Expect this to
-add roughly 7 minutes to execution time. Defaults to \code{FALSE}.}
+\item{validate_glmms}{Logical. If \code{TRUE}, performs cross-validation on the
+runner outcome models. Defaults to \code{FALSE}.}
 }
 \value{
 A named list containing five components:
 \itemize{
 \item \code{runner_outcome_model_validation}: Results from cross-validation,
 or \code{NULL} if skipped.
-\item \code{fit_runner_outcome}: The four fitted \code{glmerMod} objects for runner actions.
+\item \code{fit_runner_outcome}: The five fitted \code{glmmTMB} objects for runner actions.
 \item \code{policy_mdp}: Optimal runner policy evaluated in a single-player environment.
 \item \code{policy_zsg}: Optimal runner/pitcher policy evaluated as a two-player zero-sum game.
 \item \code{policy_mdp_skill}: A consolidated data frame containing optimal single-player
