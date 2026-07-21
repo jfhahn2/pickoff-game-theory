@@ -7,20 +7,18 @@
 wrangle_data(
   play,
   pitch,
-  lead_distance,
   event,
   sprint_speed,
   arm_strength,
   pitch_map,
-  event_map
+  event_map,
+  lead_distance = NULL
 )
 }
 \arguments{
 \item{play}{table of play info containing base occupancy, balls, strikes, and outs}
 
 \item{pitch}{table containing pitch descriptions and play identifiers}
-
-\item{lead_distance}{table containing lead distances from first base}
 
 \item{event}{table tracking player identities and event indexes}
 
@@ -31,6 +29,8 @@ wrangle_data(
 \item{pitch_map}{table mapping text descriptions to standardized pitch outcomes}
 
 \item{event_map}{table mapping text descriptions to standardized plate appearance outcomes}
+
+\item{lead_distance}{table containing lead distances from first base}
 }
 \value{
 A data frame containing processed capability covariates, categorical runner outcomes,

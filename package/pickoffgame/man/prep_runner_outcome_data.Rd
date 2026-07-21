@@ -4,13 +4,16 @@
 \alias{prep_runner_outcome_data}
 \title{Prepare runner outcome data for modeling}
 \usage{
-prep_runner_outcome_data(data)
+prep_runner_outcome_data(data, estimate_glmms = TRUE)
 }
 \arguments{
 \item{data}{A data frame containing play-by-play baseball data. Expected
 columns include \code{pre_runner_1b_id}, \code{is_1b_only},
 \code{is_full_count_two_outs}, \code{is_runner_going}, \code{runner_id},
 \code{year}, and \code{pre_disengagements}.}
+
+\item{estimate_glmms}{logical, will these data be used to estimate GLMMs? If so,
+we filter out any rows missing lead distance. Defaults to TRUE.}
 }
 \value{
 A processed data frame filtered to relevant base-stealing contexts, with
