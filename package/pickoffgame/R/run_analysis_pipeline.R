@@ -71,6 +71,10 @@ run_analysis_pipeline <- function(game_state,
         bootstrap_simulate = bootstrap_simulate,
         bootstrap_fit_original = bootstrap_fit_original
       )
+    fit_runner_outcome_reduced <- list()
+    for (outcome in names(fit_runner_outcome)) {
+      fit_runner_outcome_reduced <- reduce.glmmTMB(fit_runner_outcome[[outcome]])
+    }
 
   } else {
     runner_outcome_file <- "output/models/fit_runner_outcome.rds"
@@ -78,6 +82,7 @@ run_analysis_pipeline <- function(game_state,
       stop("If not estimating the GLMMs yourself, you need output/models/fit_runner_outcome.rds")
     }
     fit_runner_outcome <- readRDS(runner_outcome_file)
+    fit_runner_outcome_reduced <- NULL
   }
 
   percentile_players <- list()
@@ -141,6 +146,7 @@ run_analysis_pipeline <- function(game_state,
       data_glmm = data_glmm,
       runner_outcome_model_validation = runner_outcome_model_validation,
       fit_runner_outcome = fit_runner_outcome,
+      fit_runner_outcome_reduced = fit_runner_outcome_reduced,
       policy_mrp = policy_mrp,
       policy_mdp = policy_mdp,
       policy_zsg = policy_zsg,

@@ -17,6 +17,7 @@
 #' 
 #' @importFrom glmmTMB fixef ranef
 #' @importFrom reformulas nobars
+#' @importFrom butcher butcher
 #' 
 reduce.glmmTMB <- function(object) {
   summary <- list(
@@ -28,7 +29,8 @@ reduce.glmmTMB <- function(object) {
     ranef = glmmTMB::ranef(object)$cond,
     formula_fixef = formula(object) |>
       update(NULL ~ .) |>                   # remove LHS
-      reformulas::nobars(),                 # remove random effects
+      reformulas::nobars() |>               # remove random effects
+      butcher::butcher(),
     summary = summary
   )
   class(object_reduced) <- "glmmTMBreduced"
